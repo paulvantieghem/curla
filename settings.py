@@ -1,16 +1,18 @@
 
+SHOW_PREVIEW = False
+
 # RGB camera settings
-IM_WIDTH = 960
-IM_HEIGHT = 540
+IM_WIDTH = 800
+IM_HEIGHT = 800
 FOV = 110
 
 # RGB camera relative position
-CAM_X = 1.2
+CAM_X = 1.5
 CAM_Y = 0.0
 CAM_Z = 1.5
 
 # Episode settings
-SECONDS_PER_EPISODE = 60
+SECONDS_PER_EPISODE = 10
 
 # Carla map configuration
 map_config = {

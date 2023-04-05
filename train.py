@@ -99,6 +99,8 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
+            print('--> Resetting for evaluation')
+            env.destroy_all_actors()
             obs = env.reset()
             video.init(enabled=(i == 0))
             done = False
@@ -165,39 +167,46 @@ def make_agent(obs_shape, action_shape, args, device):
         assert 'agent is not supported: %s' % args.agent
 
 def main():
+
+    # Parse arguments
     args = parse_args()
     if args.seed == -1: 
         args.__dict__["seed"] = np.random.randint(1,1000000)
-    utils.set_seed_everywhere(args.seed)
-    env = CarlaEnv(args.carla_town)
- 
-    env.seed(args.seed)
 
-    # stack several consecutive frames together
+    # Random seed
+    utils.set_seed_everywhere(args.seed)
+
+    # Carla environment
+    env = CarlaEnv(args.carla_town)
+    env.seed(args.seed)
+    env.reset()
+    action_shape = env.action_space.shape
+
+    # Stack several consecutive frames together
     if args.encoder_type == 'pixel':
         env = utils.FrameStack(env, k=args.frame_stack)
     
-    # make directory
+    # Make necessary directories
     ts = time.gmtime() 
     ts = time.strftime("%m-%d", ts)    
-    env_name = args.domain_name + '-' + args.task_name
+    env_name = args.carla_town
     exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
-    args.work_dir = args.work_dir + '/'  + exp_name
-
+    args.work_dir = os.path.join(args.work_dir, exp_name)
     utils.make_dir(args.work_dir)
     video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
     model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
     buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
 
+    # Video recorder
     video = VideoRecorder(video_dir if args.save_video else None)
 
+    # Store used arguments for repeatability
     with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
+    # Make use of GPUs if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    action_shape = env.action_space.shape
 
     if args.encoder_type == 'pixel':
         obs_shape = (3*args.frame_stack, args.image_size, args.image_size)
@@ -239,6 +248,7 @@ def main():
                 replay_buffer.save(buffer_dir)
 
         if done:
+            print('DONE!!!')
             if step > 0:
                 if step % args.log_interval == 0:
                     L.log('train/duration', time.time() - start_time, step)
@@ -247,6 +257,10 @@ def main():
             if step % args.log_interval == 0:
                 L.log('train/episode_reward', episode_reward, step)
 
+            # Destroy all actors in Carla simulator
+            env.destroy_all_actors()
+
+            # Reset episode and environment
             obs = env.reset()
             done = False
             episode_reward = 0
@@ -270,7 +284,7 @@ def main():
 
         next_obs, reward, done, _ = env.step(action)
 
-        # allow infinit bootstrap
+        # allow infinite bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
             done
         )

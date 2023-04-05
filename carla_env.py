@@ -20,10 +20,12 @@ import time
 import math
 import numpy as np
 import settings
+import cv2
 
 class CarlaEnv:
 
     # Constants
+    show_preview = settings.SHOW_PREVIEW
     im_width = settings.IM_WIDTH
     im_height = settings.IM_HEIGHT
     fov = settings.FOV
@@ -69,7 +71,9 @@ class CarlaEnv:
         self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
         # Action space shape
-        self.action_space = np.array((2,))        
+        self.action_space = np.zeros((2,))
+        self.observation_space = np.zeros((self.im_width, self.im_height, 3))
+        self._max_episode_steps = 100  
 
     def reset(self):
 
@@ -80,7 +84,14 @@ class CarlaEnv:
         self.lane_invasion_len = 0
 
         # Spawn ego vehicle
-        self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
+        while True:
+            try:
+                self.ego_vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
+                self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
+                break
+            except:
+                print('Spawn failed because of collision at spawn position, trying again')
+                time.sleep(0.01)
         self.actor_list.append(self.ego_vehicle)
         print('created %s' % self.ego_vehicle.type_id)
 
@@ -133,7 +144,11 @@ class CarlaEnv:
         image = np.array(carla_im_data.raw_data)
         image = image.reshape((self.im_height, self.im_width, -1))
         image = image[:, :, :3]
-        self.front_camera = image
+        if self.show_preview:
+            cv2.imshow('', image)
+            cv2.waitKey(1)
+            time.sleep(0.1)
+        self.front_camera = image.reshape((3, self.im_height, self.im_width))
 
     def step(self, action):
 
@@ -183,9 +198,11 @@ class CarlaEnv:
     def destroy_all_actors(self):
         print('destroying actors')
         self.camera_sensor.destroy()
+        self.lane_invasion_sensor.destroy()
+        self.collision_sensor.destroy()
         self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
         print('done.')
 
-    def seed(seed):
+    def seed(self, seed):
         random.seed(seed)
     
