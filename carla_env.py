@@ -63,7 +63,7 @@ class CarlaEnv:
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = self.client.set_timeout(20.0)
+        self.timeout = self.client.set_timeout(30.0)
 
         # World
         self.world = self.client.load_world(carla_town)

@@ -16,17 +16,18 @@ module load intel/2021a
 module load anaconda3/2022.10
 module load libpng
 module load libjpeg-turbo
-echo "[PAUL] Modules loaded"
 
+# Set the CONDA_ALWAYS_YES environment variable
+export CONDA_ALWAYS_YES="true"
 
 # Launch the CARLA simulator
 cd $VSC_DATA/lib/carla
-./CarlaUE4.sh
+./CarlaUE4.sh & CARLA=$!
 
 # Train CURL agent on CARLA simulator
 cd $VSC_DATA/lib/curla
 conda activate curla
-python train.py
+python train.py --num_train_steps 100000
 
 # Terminate session
 kill $CARLA
