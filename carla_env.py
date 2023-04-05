@@ -47,6 +47,7 @@ class CarlaEnv:
     fps = settings.FPS
     dt = 1.0/fps
     initial_speed = settings.INITIAL_SPEED
+    desired_speed = settings.DESIRED_SPEED
 
     # Initial values
     front_camera = None
@@ -145,7 +146,10 @@ class CarlaEnv:
         # Spawn ego vehicle
         while True:
             try:
-                self.ego_vehicle_transform = random.choice(self.map.get_spawn_points())
+                map_config = settings.map_config
+                self.highway_spawn_points = list(map_config[self.carla_town]['spawn_ids']['highway'])
+                id = random.choice(self.highway_spawn_points)
+                self.ego_vehicle_transform = self.map.get_spawn_points()[id]
                 color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
                 self.ego_vehicle_bp.set_attribute('color', color)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
@@ -158,15 +162,12 @@ class CarlaEnv:
 
         # Place spectator
         if self.enable_spectator:
-            self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(z=75),carla.Rotation(pitch=-90)))
-
-        # Set the initial speed to desired speed
-        # yaw = (self.ego_vehicle.get_transform().rotation.yaw) * np.pi / 180.0
-        # init_velocity = carla.Vector3D(
-        #     x=self.initial_speed * np.cos(yaw),
-        #     y=self.initial_speed * np.sin(yaw))
-        # self.ego_vehicle.set_target_velocity(init_velocity)
-        # time.sleep(2*self.dt) # Sleep for the duration of 2 frames in order for 'set_target_velocity' to take effect
+            yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
+            dist = -7.5
+            dx = dist*math.cos(yaw)
+            dy = dist*math.sin(yaw)
+            self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(x=dx, y=dy, z=5), 
+                                                         carla.Rotation(yaw=self.ego_vehicle_transform.rotation.yaw, pitch=-25)))
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -201,6 +202,13 @@ class CarlaEnv:
             # Randomly set the probability that a vehicle will ignore traffic lights
             self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
 
+        # Set the initial speed to desired speed of the ego vehicle
+        yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
+        vx = (self.initial_speed/3.6)*math.cos(yaw)
+        vy = (self.initial_speed/3.6)*math.sin(yaw)
+        self.ego_vehicle.set_target_velocity(carla.Vector3D(vx, vy, 0))
+        time.sleep(2*self.dt)
+
         # Enable synchronous mode
         self.set_synchronous_mode(True)
 
@@ -232,21 +240,19 @@ class CarlaEnv:
         # Initialize reward
         reward = 0
         done = False
-        mistake = False
 
         # Reward for collision event
         if len(self.collision_history) != 0:
             if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
                 if self.verbose: print('episode done: collision')
                 done = True
-                reward += -100
-                mistake = True
+                reward += -self._max_episode_steps
 
-        # Reward for  speed
-        if abs_kmh > 1 and abs_kmh < 90:
-            reward += abs_kmh/20
-        else:
-            reward += -2
+        # Reward for speed
+        speed_delta = np.abs(abs_kmh - self.desired_speed)
+        reward += -speed_delta/self.desired_speed
+        if np.isclose(abs_kmh, self.desired_speed, atol=1e-1):
+            reward += 1
         
         # Reward for lane invasion
         if self.lane_invasion_len < len(self.lane_invasion_history):
@@ -254,19 +260,17 @@ class CarlaEnv:
             if self.episode_step + self.starting_frame == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
                 self.lane_invasion_len = len(self.lane_invasion_history)
                 lane_markings = lane_invasion_event.crossed_lane_markings
-                mistake = True
                 for marking in lane_markings:
                     if str(marking.type) == 'Solid':
-                        reward += -10
+                        reward += -self._max_episode_steps/2
                     else:
-                        reward += -5
+                        reward += -self._max_episode_steps/20
 
-        # Reward for the norm of the control actions
-        # reward += -0.1*np.linalg.norm(action)**2
+        # Reward for steering angle:
+        reward += -np.abs(action[1])
 
-        # Reward for not making any mistakes
-        if mistake == False:
-            reward += 1
+        # Normalize reward
+        reward = reward/self._max_episode_steps
 
         # Maximum episode time check
         if self.episode_step*self.dt + self.dt >= self.seconds_per_episode:

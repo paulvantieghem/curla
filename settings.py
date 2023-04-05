@@ -8,8 +8,9 @@ SPECTATOR = True
 SHOW_PREVIEW = False
 SAVE_IMGS = False
 
-# Initial speed in m/s
-INITIAL_SPEED = 20/3.6
+# Speeds in km/h
+INITIAL_SPEED = 5  # km/h
+DESIRED_SPEED = 90 # km/h
 
 # Synchronous mode FPS
 FPS = 30
@@ -25,7 +26,7 @@ CAM_Y = 0.0
 CAM_Z = 1.75
 
 # Episode settings
-SECONDS_PER_EPISODE = 10
+SECONDS_PER_EPISODE = 60
 
 # Carla map configuration
 map_config = {
