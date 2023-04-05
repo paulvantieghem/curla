@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --cluster=wice
-#SBATCH --job-name="CURLA_v0"
+#SBATCH --job-name="CURLA_train"
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --partition=gpu
