@@ -15,14 +15,14 @@ INITIAL_SPEED = 20/3.6
 FPS = 30
 
 # RGB camera settings
-IM_WIDTH = 100
+IM_WIDTH = 112
 IM_HEIGHT = IM_WIDTH
 FOV = 110
 
 # RGB camera relative position
 CAM_X = 1.5
 CAM_Y = 0.0
-CAM_Z = 1.5
+CAM_Z = 1.75
 
 # Episode settings
 SECONDS_PER_EPISODE = 10

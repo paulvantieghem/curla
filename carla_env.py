@@ -55,8 +55,8 @@ class CarlaEnv:
 
         # Set parameters
         self.carla_town = carla_town
-        self.max_npc_vehicles = max_npc_vehicles
-        self.npc_ignore_traffic_lights_prob = npc_ignore_traffic_lights_prob
+        self.max_npc_vehicles = int(max_npc_vehicles)
+        self.npc_ignore_traffic_lights_prob = int(npc_ignore_traffic_lights_prob)
 
         # Client
         self.client = carla.Client('localhost', 2000)
@@ -118,8 +118,8 @@ class CarlaEnv:
         # Spectator
         self.spectator = self.world.get_spectator()
 
-        # @TODO: change this
-        self._max_episode_steps = 100
+        # @TODO: investigate this
+        self._max_episode_steps = self.seconds_per_episode*self.fps
 
         # Save camera sensor images
         if self.save_imgs:
@@ -161,12 +161,12 @@ class CarlaEnv:
             self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(z=75),carla.Rotation(pitch=-90)))
 
         # Set the initial speed to desired speed
-        yaw = (self.ego_vehicle.get_transform().rotation.yaw) * np.pi / 180.0
-        init_velocity = carla.Vector3D(
-            x=self.initial_speed * np.cos(yaw),
-            y=self.initial_speed * np.sin(yaw))
-        self.ego_vehicle.set_target_velocity(init_velocity)
-        time.sleep(2*self.dt) # Sleep for the duration of 2 frames in order for 'set_target_velocity' to take effect
+        # yaw = (self.ego_vehicle.get_transform().rotation.yaw) * np.pi / 180.0
+        # init_velocity = carla.Vector3D(
+        #     x=self.initial_speed * np.cos(yaw),
+        #     y=self.initial_speed * np.sin(yaw))
+        # self.ego_vehicle.set_target_velocity(init_velocity)
+        # time.sleep(2*self.dt) # Sleep for the duration of 2 frames in order for 'set_target_velocity' to take effect
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -262,7 +262,7 @@ class CarlaEnv:
                         reward += -5
 
         # Reward for the norm of the control actions
-        reward += -0.1*np.linalg.norm(action)**2
+        # reward += -0.1*np.linalg.norm(action)**2
 
         # Reward for not making any mistakes
         if mistake == False:
@@ -286,6 +286,9 @@ class CarlaEnv:
 
         return self.front_camera, reward, done, extra_information
     
+    def render(self, mode):
+        return self.image
+    
     @property
     def observation_space(self, *args, **kwargs):
         """Returns the observation spec of the sensor."""
@@ -304,24 +307,24 @@ class CarlaEnv:
     def process_camera_data(self, carla_im_data):
 
         # Extract image data
-        image = np.array(carla_im_data.raw_data)
+        self.image = np.array(carla_im_data.raw_data)
 
         # Reshape image data to (H, W, X) format (X = channels + alpha)
-        image = image.reshape((self.im_height, self.im_width, -1))
+        self.image = self.image.reshape((self.im_height, self.im_width, -1))
 
         # Remove alpha to obtain (H, W, C) image
-        image = image[:, :, :3]
+        self.image = self.image[:, :, :3]
 
         # Display/record if requested
         if self.show_preview:
-            cv2.imshow('', image)
+            cv2.imshow('', self.image)
             cv2.waitKey(1)
             time.sleep(0.2)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), image)
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.image)
 
         # Reshape image to (C, H, W) format required by the CURL model
-        self.front_camera = np.transpose(image, (2, 0, 1))
+        self.front_camera = np.transpose(self.image, (2, 0, 1))
     
     def process_collision_data(self, event):
         self.collision_history.append(event)

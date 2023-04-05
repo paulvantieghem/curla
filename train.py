@@ -32,10 +32,9 @@ def parse_args():
     # environment
     parser.add_argument('--carla_town', default='Town04')
     parser.add_argument('--max_npc_vehicles', default=50)
-    parser.add_argument('--npc_ignore_traffic_lights_prob', default=50)
+    parser.add_argument('--npc_ignore_traffic_lights_prob', default=10)
     parser.add_argument('--pre_transform_image_size', default=100, type=int)
     parser.add_argument('--image_size', default=84, type=int)
-    parser.add_argument('--action_repeat', default=1, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
 
     # replay buffer
@@ -188,7 +187,7 @@ def main():
     
     # Make necessary directories
     ts = time.gmtime() 
-    ts = time.strftime("%m-%d", ts)    
+    ts = time.strftime("%m-%d-%H-%M-%S", ts)    
     env_name = args.carla_town
     exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type

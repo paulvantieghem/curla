@@ -55,6 +55,7 @@ def module_hash(module):
 
 
 def make_dir(dir_path):
+    # dir_path = os.path.join(os.path.abspath(os.getcwd()), dir_path)
     try:
         os.mkdir(dir_path)
     except OSError:
