@@ -15,23 +15,12 @@ import time
 import numpy as np
 import cv2
 
-# Add the carla library location to the system path for import
-os_name = platform.system()
-if os_name == 'Windows':
-    attachment = 'win-amd64'
-elif os_name == 'Linux':
-    attachment = 'linux-x86_64'
-else:
-    raise Exception("System OS must be either Windows or Linux") 
+import utils
 
-try:
-    sys.path.append(glob.glob('../carla/PythonAPI/carla/dist/carla-*%d.%d-%s.egg' % (
-        sys.version_info.major,
-        sys.version_info.minor,
-        attachment))[0])
-    import carla
-except IndexError:
-    raise Exception("Something went wrong when trying to add the carla library to the system path and/or importing carla")
+# Add the carla library location to the system path for import
+utils.add_carla_path()
+OS_NAME = utils.get_os_name()
+import carla
 
 # Parameters of the camera attached to the ego vehicle
 IM_H = 540
