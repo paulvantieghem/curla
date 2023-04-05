@@ -31,6 +31,8 @@ class CarlaEnv:
     cam_y = settings.CAM_Y
     cam_z = settings.CAM_Z
     seconds_per_episode = settings.SECONDS_PER_EPISODE
+    town = settings.TOWN
+    map_config = settings.map_config
 
     # Initial values
     front_camera = None
@@ -39,10 +41,12 @@ class CarlaEnv:
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = self.client.set_timeout(10.0)
+        self.timeout = self.client.set_timeout(20.0)
 
         # World
+        self.world = self.client.load_world(self.town)
         self.world = self.client.get_world()
+        print('loaded town %s' % self.town)
 
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
