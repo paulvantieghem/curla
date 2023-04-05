@@ -245,11 +245,12 @@ def main():
     # Initializations
     episode, episode_reward, done, info = 0, 0, True, None
     start_time = time.time()
+    fps = 0
 
     for step in range(args.num_train_steps+1):
 
         # Evaluate agent periodically
-        if step % args.eval_freq == 0 and step > 0:
+        if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
             if args.save_model:
@@ -265,6 +266,7 @@ def main():
                 L.log('train/episode_mean_r1', info['r1'], step)
                 L.log('train/episode_mean_r2', info['r2'], step)
                 L.log('train/episode_mean_r3', info['r3'], step)
+                L.log('train/episode_mean_fps', fps, step)
 
         # Reset if done
         if done:
@@ -309,6 +311,7 @@ def main():
         replay_buffer.add(obs, action, reward, next_obs, done_bool)
         obs = next_obs
         episode_step += 1
+        fps = round(episode_step / (time.time() - start_time), 2)
 
     # Clear the environment
     env.deactivate()

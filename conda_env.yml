@@ -1,23 +1,26 @@
 name: curla
 channels:
   - defaults
+  - pytorch
+  - nvidia
 dependencies:
   - python=3.7.9
-  - pytorch
-  - torchvision
+  - pip
+  - pyparsing
   - cudatoolkit=9.2
   - absl-py
-  - pyparsing
   - pillow=6.1
-  - pip
+  - torchvision==0.14.1
+  - torchaudio==0.13.1
+  - pytorch==1.13.1
+  - pytorch-cuda=11.7
   - pip:
-    - termcolor
+    - numpy
     - gymnasium
-    - tb-nightly
     - imageio
     - imageio-ffmpeg
-    - torchvision
-    - scikit-image
     - tqdm
     - opencv-python
-    - numpy
+    - tensorboard
+    - termcolor
+    - scikit-image

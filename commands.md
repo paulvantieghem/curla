@@ -1,13 +1,21 @@
-conda env create -f conda_env.yml
+# Commands 
 
-conda activate curla
+Create conda environment from YAML file and activate it:
+`conda env create -f conda_env.yml`
+`conda activate curla`
 
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
-pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
+Save minimal conda environment to YAML file:
+`conda env export --from-history > conda_env.yml`
 
-tensorboard --logdir tmp --port 6006
+Install PyTorch 1.13.1 with CUDA 11.7:
+`conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia`
+`pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117`
 
-# Test command:
+Activate tensorboard logging
+`tensorboard --logdir tmp --port 6006`
+
+Test command:
+```
 python train.py ^
     --carla_town Town04 ^
     --max_npc_vehicles 75 ^
@@ -31,8 +39,10 @@ python train.py ^
     --batch_size 128 ^
     --log_interval 10 ^
     --num_train_steps 200
+```   
 
-# Train command
+Train command
+``` 
 python train.py ^
     --carla_town Town04 ^
     --max_npc_vehicles 75 ^
@@ -55,3 +65,4 @@ python train.py ^
     --eval_freq 5000 ^
     --batch_size 128 ^
     --num_train_steps 20000
+``` 
