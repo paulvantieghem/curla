@@ -19,29 +19,21 @@ import random
 import time
 import math
 import numpy as np
-import cv2
-
-# Constants
-SHOW_PREVIEW = True
-IM_WIDTH = 960
-IM_HEIGHT = 540
-FOV = 110
-CAM_X = 1.2
-CAM_Y = 0.0
-CAM_Z = 1.5
-SECONDS_PER_EPISODE = 60
+import settings
 
 class CarlaEnv:
-    SHOW_CAM = SHOW_PREVIEW
-    STEER_AMT = 1.0
-    im_width = IM_WIDTH
-    im_height = IM_HEIGHT
-    fov = FOV
-    cam_x = CAM_X
-    cam_y = CAM_Y
-    cam_z = CAM_Z
+
+    # Constants
+    im_width = settings.IM_WIDTH
+    im_height = settings.IM_HEIGHT
+    fov = settings.FOV
+    cam_x = settings.CAM_X
+    cam_y = settings.CAM_Y
+    cam_z = settings.CAM_Z
+    seconds_per_episode = settings.SECONDS_PER_EPISODE
+
+    # Initial values
     front_camera = None
-    seconds_per_episode = SECONDS_PER_EPISODE
 
     def __init__(self):
 
@@ -61,7 +53,7 @@ class CarlaEnv:
         self.ego_vehicle_bp.set_attribute('color', color)
         self.ego_vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
 
-        # Sensor settings
+        # Camera sensor settings
         self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
         self.camera_sensor_bp.set_attribute('image_size_x', f'{self.im_width}')
         self.camera_sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
@@ -70,13 +62,18 @@ class CarlaEnv:
 
         # Collision sensor settings
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
+
+        # Lane invasion sensor settings
+        self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
         
 
     def reset(self):
 
         # Administration
-        self.collision_history = []
         self.actor_list = []
+        self.collision_history = []
+        self.lane_invasion_history = []
+        self.lane_invasion_len = 0
 
         # Spawn ego vehicle
         self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
@@ -99,6 +96,13 @@ class CarlaEnv:
         self.collision_sensor.listen(lambda event: self.collision_data(event))
         print('created %s' % self.collision_sensor.type_id)
 
+        # Spawn lane invasion sensor
+        self.lane_invasion_sensor = self.world.spawn_actor(self.lane_invasion_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
+        self.actor_list.append(self.lane_invasion_sensor)
+        self.lane_invasion_sensor.listen(lambda event: self.lane_invasion_data(event))
+        print('created %s' % self.lane_invasion_sensor.type_id)
+
+
         # Wait for camera sensor to start receiving images
         while self.front_camera is None: # self.front_camera gets set to an image by the self.process_image function attached to the sensor
             time.sleep(0.01)
@@ -114,8 +118,10 @@ class CarlaEnv:
 
     def collision_data(self, event):
         self.collision_history.append(event)
-    
 
+    def lane_invasion_data(self, event):
+        self.lane_invasion_history.append(event)
+    
     def process_image(self, carla_im_data):
         '''
         Convert RGBA flat array to RGB numpy 3-channel array
@@ -123,10 +129,7 @@ class CarlaEnv:
         image = np.array(carla_im_data.raw_data)
         image = image.reshape((self.im_height, self.im_width, -1))
         image = image[:, :, :3]
-        if self.SHOW_CAM:
-            cv2.imshow('', image)
-            cv2.waitKey(1)
-        self.front_camera = image/255.0 # Image gets normalized to values between 0 and 1 before passing it to a Neural Network!
+        self.front_camera = image
 
     def step(self, action):
 
@@ -145,10 +148,20 @@ class CarlaEnv:
         if len(self.collision_history) != 0:
             print('EPISODE STOPPED: collision')
             done = True
-            reward = -200
+            reward = -100
         elif abs_kmh < 10:
             done = False
             reward = -1
+        elif self.lane_invasion_len < len(self.lane_invasion_history):
+            lane_invasion_event = self.lane_invasion_history[-1]
+            lane_markings = lane_invasion_event.crossed_lane_markings
+            for marking in lane_markings:
+                print(str(marking.type))
+                if str(marking.type) == 'Solid':
+                    reward = -10
+                else:
+                    reward = -5
+            done = False
         else:
             done = False
             reward = 1
