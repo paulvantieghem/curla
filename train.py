@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument('--save_tb', default=False, action='store_true')
     parser.add_argument('--save_buffer', default=False, action='store_true')
     parser.add_argument('--save_video', default=False, action='store_true')
-    parser.add_argument('--save_model', default=False, action='store_true')
+    parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
 
     parser.add_argument('--log_interval', default=100, type=int)
@@ -207,7 +207,6 @@ def main():
 
     # Make use of GPUs if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('[PyTorch] Torch device: ', device)
 
     if args.encoder_type == 'pixel':
         obs_shape = (3*args.frame_stack, args.image_size, args.image_size)
@@ -271,7 +270,7 @@ def main():
             action = env.action_space.sample()
         else:
             with utils.eval_mode(agent):
-                action = agent.sample_action(obs)
+                action = agent.sample_action(obs) # Evaluates the neural network
 
         # Run training update
         if step >= args.init_steps:
@@ -292,8 +291,8 @@ def main():
         episode_step += 1
 
         # Console logging
-        if step%50  == 0:
-            print('------------Current step:', step, '| Current episode reward:', episode_reward)
+        # if step%50  == 0:
+        #     print('------------Current step:', step, '| Current episode reward:', episode_reward)
 
     
     env.deactivate()

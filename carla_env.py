@@ -35,6 +35,8 @@ class CarlaEnv:
     # Constants
     show_preview = settings.SHOW_PREVIEW
     save_imgs = settings.SAVE_IMGS
+    verbose = settings.VERBOSE
+    enable_spectator = settings.SPECTATOR
     im_width = settings.IM_WIDTH
     im_height = settings.IM_HEIGHT
     fov = settings.FOV
@@ -44,6 +46,7 @@ class CarlaEnv:
     seconds_per_episode = settings.SECONDS_PER_EPISODE
     fps = settings.FPS
     dt = 1.0/fps
+    initial_speed = settings.INITIAL_SPEED
 
     # Initial values
     front_camera = None
@@ -57,13 +60,13 @@ class CarlaEnv:
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = self.client.set_timeout(10.0)
+        self.timeout = self.client.set_timeout(20.0)
 
         # World
         self.world = self.client.load_world(carla_town)
         self.world = self.client.get_world()
         self.map = self.world.get_map()
-        print('loaded town %s' % self.map)
+        if self.verbose: print('loaded town %s' % self.map)
 
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
@@ -71,9 +74,9 @@ class CarlaEnv:
         self.world.apply_settings(self.settings)
 
         # Record the time of total steps and resetting steps
-        self.reset_step = 0 # Counts how many times the environment has been reset (episode counter)
-        self.time_step = 0  # Counts the amount of time steps within the current episode
-        self.total_step = 0 # Counts the total amount of time steps
+        self.reset_step = 0     # Counts how many times the environment has been reset (episode counter)
+        self.episode_step = 0   # Counts the amount of time steps taken within the current episode
+        self.total_step = 0     # Counts the total amount of time steps
 
         # Administration
         self.actor_list = []
@@ -86,9 +89,6 @@ class CarlaEnv:
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
-        color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
-        self.ego_vehicle_bp.set_attribute('color', color)
-        self.ego_vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
 
         # Camera sensor settings
         self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
@@ -145,14 +145,28 @@ class CarlaEnv:
         # Spawn ego vehicle
         while True:
             try:
-                self.ego_vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
+                self.ego_vehicle_transform = random.choice(self.map.get_spawn_points())
+                color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
+                self.ego_vehicle_bp.set_attribute('color', color)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
                 break
             except:
-                print('Spawn failed because of collision at spawn position, trying again')
+                if self.verbose: print('Spawn failed because of collision at spawn position, trying again')
                 time.sleep(0.01)
         self.actor_list.append(self.ego_vehicle)
-        print('created %s' % self.ego_vehicle.type_id)
+        if self.verbose: print('created %s' % self.ego_vehicle.type_id)
+
+        # Place spectator
+        if self.enable_spectator:
+            self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(z=75),carla.Rotation(pitch=-90)))
+
+        # Set the initial speed to desired speed
+        yaw = (self.ego_vehicle.get_transform().rotation.yaw) * np.pi / 180.0
+        init_velocity = carla.Vector3D(
+            x=self.initial_speed * np.cos(yaw),
+            y=self.initial_speed * np.sin(yaw))
+        self.ego_vehicle.set_target_velocity(init_velocity)
+        time.sleep(2*self.dt) # Sleep for the duration of 2 frames in order for 'set_target_velocity' to take effect
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -160,19 +174,19 @@ class CarlaEnv:
         # self.camera_sensor.listen(lambda image: self.process_camera_data(image))
         self.camera_sensor_queue = queue.Queue()
         self.camera_sensor.listen(self.camera_sensor_queue.put)
-        print('created %s' % self.camera_sensor.type_id)
+        if self.verbose: print('created %s' % self.camera_sensor.type_id)
 
         # Spawn collision sensor
         self.collision_sensor = self.world.spawn_actor(self.collision_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
         self.actor_list.append(self.collision_sensor)
         self.collision_sensor.listen(lambda event: self.process_collision_data(event))
-        print('created %s' % self.collision_sensor.type_id)
+        if self.verbose: print('created %s' % self.collision_sensor.type_id)
 
         # Spawn lane invasion sensor
         self.lane_invasion_sensor = self.world.spawn_actor(self.lane_invasion_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
         self.actor_list.append(self.lane_invasion_sensor)
         self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
-        print('created %s' % self.lane_invasion_sensor.type_id)
+        if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
 
         # Spawn NPC vehicles
         for i, spawn_point in enumerate(random.sample(self.npc_vehicle_spawn_points, self.max_npc_vehicles)):
@@ -187,28 +201,16 @@ class CarlaEnv:
             # Randomly set the probability that a vehicle will ignore traffic lights
             self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
 
-        # Place spectator
-        self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(z=150),carla.Rotation(pitch=-90)))
-
         # Enable synchronous mode
         self.set_synchronous_mode(True)
 
-        # Update time steps
-        self.world.tick()
-        self.time_step = 1
+        # Administration
         self.reset_step += 1
+        self.episode_step = 0
+        if self.verbose: print('episode started')
+
+        # Collect initial data
         self.starting_frame = self.collect_sensor_data()
-
-        # Wait for camera sensor to start receiving images
-        while self.front_camera is None: # self.front_camera gets set to an image by the self.process_camera_data function attached to the sensor
-            print('Waiting for front camera to get an image..')
-            time.sleep(0.5)
-        print('%s is now receiving images' % self.camera_sensor.type_id)
-
-        # Start episode
-        self.episode_time = 0.0
-        self.ego_vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
-        print('episode started')
 
         return self.front_camera
 
@@ -216,17 +218,12 @@ class CarlaEnv:
     def step(self, action):
 
         # Apply the action to the ego vehicle
-        # if action[0]> 0:
-        #     control_action = carla.VehicleControl(throttle=float(action[0]), steer=float(action[1]), brake=0)
-        # else:
-        #     control_action = carla.VehicleControl(throttle=0, steer=float(action[1]), brake=-float(action[0]))
-        control_action = carla.VehicleControl(throttle=1.0, steer=0.0)
+        if action[0]> 0:
+            control_action = carla.VehicleControl(throttle=float(action[0]), steer=float(action[1]), brake=0)
+        else:
+            control_action = carla.VehicleControl(throttle=0, steer=float(action[1]), brake=-float(action[0]))
+        # control_action = carla.VehicleControl(throttle=1.0, steer=0.0)
         self.ego_vehicle.apply_control(control_action)
-
-        # Tick world
-        self.world.tick()
-        self.episode_time += self.dt
-        self.collect_sensor_data()
 
         # Velocity conversion from vector in m/s to absolute speed in km/h
         v = self.ego_vehicle.get_velocity()
@@ -238,25 +235,23 @@ class CarlaEnv:
         mistake = False
 
         # Reward for collision event
-
         if len(self.collision_history) != 0:
-            if self.time_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
-                print(self.collision_history[0])
-                print('episode done: collision')
+            if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
+                if self.verbose: print('episode done: collision')
                 done = True
                 reward += -100
                 mistake = True
 
         # Reward for  speed
-        if abs_kmh > 30 and abs_kmh < 90:
-            reward += 1
+        if abs_kmh > 1 and abs_kmh < 90:
+            reward += abs_kmh/20
         else:
-            reward += -1
+            reward += -2
         
         # Reward for lane invasion
         if self.lane_invasion_len < len(self.lane_invasion_history):
             lane_invasion_event = self.lane_invasion_history[-1]
-            if self.time_step + self.starting_frame == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
+            if self.episode_step + self.starting_frame == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
                 self.lane_invasion_len = len(self.lane_invasion_history)
                 lane_markings = lane_invasion_event.crossed_lane_markings
                 mistake = True
@@ -269,21 +264,25 @@ class CarlaEnv:
         # Reward for the norm of the control actions
         reward += -0.1*np.linalg.norm(action)**2
 
+        # Reward for not making any mistakes
         if mistake == False:
             reward += 1
 
         # Maximum episode time check
-        assert(np.isclose(self.episode_time, self.time_step*self.dt, rtol=1e-05, atol=1e-08, equal_nan=False))
-        if self.episode_time + self.dt >= self.seconds_per_episode:
-            print('episode done: episode time is up')
+        if self.episode_step*self.dt + self.dt >= self.seconds_per_episode:
+            if self.verbose: print('episode done: episode time is up')
             done = True
 
         # Extra information
         extra_information = None
 
-        # Update time steps
-        self.time_step += 1
+        # Tick world
+        self.world.tick()
+        self.episode_step += 1
         self.total_step += 1
+
+        # Collect sensor data
+        self.collect_sensor_data()
 
         return self.front_camera, reward, done, extra_information
     
@@ -303,16 +302,26 @@ class CarlaEnv:
         self.traffic_manager.set_synchronous_mode(synchronous)
 
     def process_camera_data(self, carla_im_data):
+
+        # Extract image data
         image = np.array(carla_im_data.raw_data)
+
+        # Reshape image data to (H, W, X) format (X = channels + alpha)
         image = image.reshape((self.im_height, self.im_width, -1))
+
+        # Remove alpha to obtain (H, W, C) image
         image = image[:, :, :3]
+
+        # Display/record if requested
         if self.show_preview:
             cv2.imshow('', image)
             cv2.waitKey(1)
             time.sleep(0.2)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.time_step}.png'), image)
-        self.front_camera = image.reshape((3, self.im_height, self.im_width))
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), image)
+
+        # Reshape image to (C, H, W) format required by the CURL model
+        self.front_camera = np.transpose(image, (2, 0, 1))
     
     def process_collision_data(self, event):
         self.collision_history.append(event)
@@ -334,7 +343,7 @@ class CarlaEnv:
         return seed
     
     def destroy_all_actors(self):
-        print('destroying actors')
+        if self.verbose: print('destroying actors')
         if len(self.actor_list) != 0:
             try: 
                 self.camera_sensor.destroy()
@@ -343,9 +352,9 @@ class CarlaEnv:
             except:
                 pass
             self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
-        print('done.')
-        print()
-        print()
+        if self.verbose: print('done.')
+        if self.verbose: print()
+        if self.verbose: print()
 
     def deactivate(self):
         self.set_synchronous_mode(False)

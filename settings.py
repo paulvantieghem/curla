@@ -1,12 +1,21 @@
+# Verbosity
+VERBOSE = False
+
+# Move spectator to ego vehicle spawn location
+SPECTATOR = True
+
 # Display camera sensor with OpenCV
 SHOW_PREVIEW = False
-SAVE_IMGS = True
+SAVE_IMGS = False
+
+# Initial speed in m/s
+INITIAL_SPEED = 20/3.6
 
 # Synchronous mode FPS
 FPS = 30
 
 # RGB camera settings
-IM_WIDTH = 200
+IM_WIDTH = 100
 IM_HEIGHT = IM_WIDTH
 FOV = 110
 
