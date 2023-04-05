@@ -22,14 +22,14 @@ import numpy as np
 import cv2
 
 # Constants
-SHOW_PREVIEW = False
-IM_WIDTH = 640
-IM_HEIGHT = 480
+SHOW_PREVIEW = True
+IM_WIDTH = 960
+IM_HEIGHT = 540
 FOV = 110
 CAM_X = 1.2
 CAM_Y = 0.0
 CAM_Z = 1.5
-SECONDS_PER_EPISODE = 10
+SECONDS_PER_EPISODE = 60
 
 class CarlaEnv:
     SHOW_CAM = SHOW_PREVIEW
@@ -43,11 +43,11 @@ class CarlaEnv:
     front_camera = None
     seconds_per_episode = SECONDS_PER_EPISODE
 
-    def __init__(self) -> None:
+    def __init__(self):
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = carla.set_timeout(10.0)
+        self.timeout = self.client.set_timeout(10.0)
 
         # World
         self.world = self.client.get_world()
@@ -59,17 +59,18 @@ class CarlaEnv:
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
         color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
         self.ego_vehicle_bp.set_attribute('color', color)
-        self.vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
+        self.ego_vehicle_transform = random.choice(self.world.get_map().get_spawn_points())
 
         # Sensor settings
-        self.sensor_bp = self.blueprint_library.find('sensors.camera.rgb')
-        self.sensor_bp.set_attribute('image_size_x', f'{self.im_width}')
-        self.sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
-        self.sensor_bp.set_attribute('fov', f'{self.fov}')
-        self.sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z))
+        self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
+        self.camera_sensor_bp.set_attribute('image_size_x', f'{self.im_width}')
+        self.camera_sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
+        self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
+        self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z))
 
         # Collision sensor settings
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
+        
 
     def reset(self):
 
@@ -78,30 +79,35 @@ class CarlaEnv:
         self.actor_list = []
 
         # Spawn ego vehicle
-        self.ego_vehicle = self.world.spawn_actor(self.model_3, self.vehicle_transform)
+        self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
         self.actor_list.append(self.ego_vehicle)
-
-        # Spawn sensor
-        self.sensor = self.world.spawn_actor(self.sensor_bp, self.sensor_transform, attach_to=self.ego_vehicle)
-        self.actor_list.append(self.sensor)
-        self.sensor.listen(lambda image: self.process_image(image))
+        print('created %s' % self.ego_vehicle.type_id)
 
         # Trigger ego vehicle with trivial input to activate it faster after spawning and wait for complete activation
         self.ego_vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
         time.sleep(4.0)
 
+        # Spawn RGB camera sensor
+        self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
+        self.actor_list.append(self.camera_sensor)
+        self.camera_sensor.listen(lambda image: self.process_image(image))
+        print('created %s' % self.camera_sensor.type_id)
+
         # Spawn collision sensor
         self.collision_sensor = self.world.spawn_actor(self.collision_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
         self.actor_list.append(self.collision_sensor)
         self.collision_sensor.listen(lambda event: self.collision_data(event))
+        print('created %s' % self.collision_sensor.type_id)
 
-        # Wait for sensor to start
-        while self.front_camera is None:
+        # Wait for camera sensor to start receiving images
+        while self.front_camera is None: # self.front_camera gets set to an image by the self.process_image function attached to the sensor
             time.sleep(0.01)
+        print('%s is now receiving images' % self.camera_sensor.type_id)
 
         # Start episode
         self.episode_start = time.time()
         self.ego_vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
+        print('episode started')
 
         return self.front_camera
     
@@ -120,32 +126,46 @@ class CarlaEnv:
         if self.SHOW_CAM:
             cv2.imshow('', image)
             cv2.waitKey(1)
-        self.front_camera = image
+        self.front_camera = image/255.0 # Image gets normalized to values between 0 and 1 before passing it to a Neural Network!
 
     def step(self, action):
-        if action == 0:
-            self.ego_vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer = -1*self.STEER_AMT, brake=0.0))
-        elif action == 1:
-            self.ego_vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer = 0, brake=0.0))
-        elif action == 2:
-            self.ego_vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer = 1*self.STEER_AMT, brake=0.0))
 
+        # Apply the action to the ego vehicle
+        if action[0]> 0:
+            control_action = carla.VehicleControl(throttle=float(action[0]), steer=float(action[1]), brake=0)
+        else:
+            control_action = carla.VehicleControl(throttle=0, steer=float(action[1]), brake=-float(action[0]))
+        self.ego_vehicle.apply_control(control_action)
+
+        # Velocity conversion from vector in m/s to absolute speed in km/h
         v = self.ego_vehicle.get_velocity()
-        kmh = int(3.6*math.sqrt(v.x**2 + v.y**2 + v.z**2))
+        abs_kmh = int(3.6*math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
-        if len(self.collision_history != 0):
+        # Calculate current reward
+        if len(self.collision_history) != 0:
+            print('EPISODE STOPPED: collision')
             done = True
             reward = -200
-        elif kmh < 50:
+        elif abs_kmh < 10:
             done = False
             reward = -1
         else:
             done = False
             reward = 1
 
+        # Maximum episode time check
         if self.episode_start + self.seconds_per_episode < time.time():
+            print('EPISODE STOPPED: episode done')
             done = True
 
+        # Extra information
         extra_information = None
 
         return self.front_camera, reward, done, extra_information
+    
+    def destroy_all_actors(self):
+        print('destroying actors')
+        self.camera_sensor.destroy()
+        self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
+        print('done.')
+    

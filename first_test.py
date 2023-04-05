@@ -11,15 +11,16 @@ import sys
 import platform
 import random
 import time
+import os
 
 import numpy as np
 import cv2
 
-import utils
-
 # Add the carla library location to the system path for import
-utils.add_carla_path()
-OS_NAME = utils.get_os_name()
+try:
+    sys.path.append(glob.glob(f'../carla/PythonAPI/carla/dist/carla-*{sys.version_info.major}.{sys.version_info.minor}-{"win-amd64" if os.name == "nt" else "linux-x86_64"}.egg')[0])
+except IndexError:
+    pass
 import carla
 
 # Parameters of the camera attached to the ego vehicle
