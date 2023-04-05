@@ -22,6 +22,7 @@ import numpy as np
 import settings
 import cv2
 import gymnasium as gym
+gym.logger.set_level(40) # Sets the gym logger in ERROR mode (will not mention warnings)
 
 class CarlaEnv:
 
@@ -45,7 +46,7 @@ class CarlaEnv:
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = self.client.set_timeout(20.0)
+        self.timeout = self.client.set_timeout(10.0)
 
         # World
         self.world = self.client.load_world(carla_town)
@@ -80,7 +81,7 @@ class CarlaEnv:
         # Lane invasion sensor settings
         self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
-        # TO DO: change this
+        # @TODO: change this
         self._max_episode_steps = 100
 
     
@@ -126,7 +127,6 @@ class CarlaEnv:
 
         # Trigger ego vehicle with trivial input to activate it faster after spawning and wait for complete activation
         self.ego_vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
-        time.sleep(4.0)
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -176,7 +176,7 @@ class CarlaEnv:
         if self.show_preview:
             cv2.imshow('', image)
             cv2.waitKey(1)
-            time.sleep(0.1)
+            time.sleep(0.2)
         self.front_camera = image.reshape((3, self.im_height, self.im_width))
 
     def step(self, action):
@@ -192,31 +192,44 @@ class CarlaEnv:
         v = self.ego_vehicle.get_velocity()
         abs_kmh = int(3.6*math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
-        # Calculate current reward
+        # Initialize reward
+        reward = 0
+        done = False
+        mistake = False
+
+        # Reward for collision event
         if len(self.collision_history) != 0:
-            print('EPISODE STOPPED: collision')
+            print('episode done: collision')
             done = True
-            reward = -100
-        elif abs_kmh < 10:
-            done = False
-            reward = -1
-        elif self.lane_invasion_len < len(self.lane_invasion_history):
+            reward += -100
+            mistake = True
+
+        # Reward for  speed
+        if abs_kmh > 30 and abs_kmh < 90:
+            reward += 1
+        else:
+            reward += -1
+        
+        # Reward for lane invasion
+        if self.lane_invasion_len < len(self.lane_invasion_history):
             lane_invasion_event = self.lane_invasion_history[-1]
             lane_markings = lane_invasion_event.crossed_lane_markings
+            mistake = True
             for marking in lane_markings:
-                print(str(marking.type))
                 if str(marking.type) == 'Solid':
-                    reward = -10
+                    reward += -10
                 else:
-                    reward = -5
-            done = False
-        else:
-            done = False
-            reward = 1
+                    reward += -5
+
+        # Reward for the norm of the control actions
+        reward += -0.1*np.linalg.norm(action)**2
+
+        if mistake == False:
+            reward += 1
 
         # Maximum episode time check
         if self.episode_start + self.seconds_per_episode < time.time():
-            print('EPISODE STOPPED: episode done')
+            print('episode done: episode time is up')
             done = True
 
         # Extra information

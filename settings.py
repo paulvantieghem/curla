@@ -1,5 +1,5 @@
 
-SHOW_PREVIEW = False
+SHOW_PREVIEW = True
 
 # RGB camera settings
 IM_WIDTH = 100

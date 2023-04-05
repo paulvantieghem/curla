@@ -240,7 +240,6 @@ def main():
 
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
-            print(step, args.eval_freq, 'biboboiisdfqs')
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
             if args.save_model:
                 agent.save_curl(model_dir, step)
@@ -278,6 +277,7 @@ def main():
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
 
+        # Take the environment step
         next_obs, reward, done, _ = env.step(action)
 
         # allow infinite bootstrap

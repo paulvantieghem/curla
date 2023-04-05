@@ -2,6 +2,8 @@ conda env create -f conda_env.yml
 
 conda activate curla
 
+conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.6 -c pytorch -c nvidia
+
 # Bad parameters, do not use for real training
 python train.py ^
     --carla_town Town04 ^
