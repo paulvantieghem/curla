@@ -1,4 +1,4 @@
-name: curla_2
+name: curla
 channels:
   - defaults
   - pytorch
