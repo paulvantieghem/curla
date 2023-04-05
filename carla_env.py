@@ -31,22 +31,20 @@ class CarlaEnv:
     cam_y = settings.CAM_Y
     cam_z = settings.CAM_Z
     seconds_per_episode = settings.SECONDS_PER_EPISODE
-    town = settings.TOWN
-    map_config = settings.map_config
 
     # Initial values
     front_camera = None
 
-    def __init__(self):
+    def __init__(self, carla_town):
 
         # Client
         self.client = carla.Client('localhost', 2000)
         self.timeout = self.client.set_timeout(20.0)
 
         # World
-        self.world = self.client.load_world(self.town)
+        self.world = self.client.load_world(carla_town)
         self.world = self.client.get_world()
-        print('loaded town %s' % self.town)
+        print('loaded town %s' % carla_town)
 
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
@@ -69,7 +67,9 @@ class CarlaEnv:
 
         # Lane invasion sensor settings
         self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
-        
+
+        # Action space shape
+        self.action_space = np.array((2,))        
 
     def reset(self):
 
@@ -185,4 +185,7 @@ class CarlaEnv:
         self.camera_sensor.destroy()
         self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
         print('done.')
+
+    def seed(seed):
+        random.seed(seed)
     

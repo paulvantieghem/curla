@@ -13,8 +13,6 @@ CAM_Z = 1.5
 SECONDS_PER_EPISODE = 60
 
 # Carla map configuration
-TOWN = "Town04"
-
 map_config = {
     "Town04": {
         "spawn_ids": {
