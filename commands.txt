@@ -2,11 +2,12 @@ conda env create -f conda_env.yml
 
 conda activate curla
 
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.6 -c pytorch -c nvidia
+conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
 
 # Bad parameters, do not use for real training
 python train.py ^
-    --carla_town Town04 ^
+    --carla_town Town03 ^
     --num_eval_episodes 1 ^
     --init_steps 1 ^
     --encoder_type pixel ^
@@ -16,5 +17,6 @@ python train.py ^
     --image_size 84 ^
     --replay_buffer_capacity 1000 ^
     --work_dir .\tmp ^
-    --agent curl_sac --frame_stack 3 ^
-    --seed -1 --critic_lr 1e-3 --actor_lr 1e-3 --eval_freq 10000 --batch_size 128 --num_train_steps 1000000
+    --agent curl_sac ^
+    --frame_stack 3 ^
+    --seed -1 --critic_lr 1e-3 --actor_lr 1e-3 --eval_freq 10000 --batch_size 128 --num_train_steps 300

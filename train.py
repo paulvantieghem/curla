@@ -30,7 +30,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     # environment
-    parser.add_argument('--carla_town', default='Town04')
+    parser.add_argument('--carla_town', default='Town03')
     parser.add_argument('--pre_transform_image_size', default=100, type=int)
     parser.add_argument('--image_size', default=84, type=int)
     parser.add_argument('--action_repeat', default=1, type=int)
@@ -205,6 +205,7 @@ def main():
 
     # Make use of GPUs if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('[PyTorch] Torch device: ', device)
 
     if args.encoder_type == 'pixel':
         obs_shape = (3*args.frame_stack, args.image_size, args.image_size)
@@ -291,8 +292,23 @@ def main():
         obs = next_obs
         episode_step += 1
 
+    
+    env.deactivate()
+
 
 if __name__ == '__main__':
+
+    # Torch multiprocessing
     torch.multiprocessing.set_start_method('spawn')
 
+    # GPU information
+    print('-'*100)
+    print('PyTorch version:', torch.__version__)
+    print('CUDA availability:', torch.cuda.is_available())
+    print('CUDA device count:', torch.cuda.device_count())
+    print('CUDA current device:', torch.cuda.current_device())
+    print('CUDA device name (0):', torch.cuda.get_device_name(0))
+    print('-'*100)
+
+    # Main loop
     main()

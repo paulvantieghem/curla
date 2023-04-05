@@ -1,5 +1,9 @@
+# Display camera sensor with OpenCV
+SHOW_PREVIEW = False
+SAVE_IMGS = False
 
-SHOW_PREVIEW = True
+# Synchronous mode FPS
+FPS = 30
 
 # RGB camera settings
 IM_WIDTH = 100
@@ -12,7 +16,7 @@ CAM_Y = 0.0
 CAM_Z = 1.5
 
 # Episode settings
-SECONDS_PER_EPISODE = 30
+SECONDS_PER_EPISODE = 10
 
 # Carla map configuration
 map_config = {
