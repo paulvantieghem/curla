@@ -71,6 +71,16 @@ class CarlaEnv:
         self.map = self.world.get_map()
         if self.verbose: print('loaded town %s' % self.map)
 
+        # Weather
+        self.weather_presets = [carla.WeatherParameters.ClearNoon, 
+                                carla.WeatherParameters.ClearSunset, 
+                                carla.WeatherParameters.CloudyNoon, 
+                                carla.WeatherParameters.CloudySunset, 
+                                carla.WeatherParameters.WetNoon, 
+                                carla.WeatherParameters.WetSunset, 
+                                carla.WeatherParameters.MidRainyNoon, 
+                                carla.WeatherParameters.MidRainSunset]
+
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
         self.settings.fixed_delta_seconds = self.dt
@@ -147,6 +157,9 @@ class CarlaEnv:
 
         # Disable synchronous mode
         self.set_synchronous_mode(False)
+
+        # Set random weather
+        self.world.set_weather(random.choice(self.weather_presets))
 
         # Spawn ego vehicle
         while True:
@@ -242,7 +255,7 @@ class CarlaEnv:
         self.ego_vehicle.apply_control(control_action)
 
         # Calculate reward
-        reward, done, extra_information = self.reward_function_2(action)
+        reward, done, info = self.reward_function_2(action)
 
         # Maximum episode time check
         if self.episode_step*self.dt + self.dt >= self.seconds_per_episode:
@@ -257,7 +270,7 @@ class CarlaEnv:
         # Collect sensor data
         self.collect_sensor_data()
 
-        return self.front_camera, reward, done, extra_information
+        return self.front_camera, reward, done, info
     
     def reward_function_1(self, action):
 
@@ -322,6 +335,8 @@ class CarlaEnv:
         if self.episode_step == 0:
             self.previous_waypoint = self.ego_vehicle.get_location()
             self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
+            self.reward_history = {'r1': [0,], 'r2': [0,], 'r3': [0,]}
+
         
         # Update waypoints
         new_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
@@ -368,8 +383,17 @@ class CarlaEnv:
         # Total reward 
         if self.episode_step > 0:
             reward += r1 + r2 + r3
+
+        # Extra information
+        self.reward_history['r1'].append(r1)
+        self.reward_history['r2'].append(r2)
+        self.reward_history['r3'].append(r3)
+        r1_avg = np.mean(self.reward_history['r1'])
+        r2_avg = np.mean(self.reward_history['r2'])
+        r3_avg = np.mean(self.reward_history['r3'])
+        info = {'r1': r1_avg, 'r2': r2_avg, 'r3': r3_avg}
         
-        return reward, done, None
+        return reward, done, info
 
     
     def render(self, mode):

@@ -124,10 +124,12 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
             all_ep_rewards.append(episode_reward)
         
         L.log('eval/' + prefix + 'eval_time', time.time()-start_time , step)
-        mean_ep_reward = np.mean(all_ep_rewards)
         best_ep_reward = np.max(all_ep_rewards)
-        L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
+        mean_ep_reward = np.mean(all_ep_rewards)
+        std_ep_reward = np.std(all_ep_rewards)
         L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
+        L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
+        L.log('eval/' + prefix + 'std_episode_reward', std_ep_reward, step)
 
     run_eval_loop(sample_stochastically=False)
     L.dump(step)
@@ -177,17 +179,9 @@ def main():
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
-    # Carla environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob)
-    env.seed(args.seed)
-    env.reset()
-    action_shape = env.action_space.shape
-
-    # Stack several consecutive frames together
-    if args.encoder_type == 'pixel':
-        env = utils.FrameStack(env, k=args.frame_stack)
-    
     # Make necessary directories
+    if not os.path.exists(args.work_dir):
+        os.makedirs(args.work_dir)
     ts = time.gmtime() 
     ts = time.strftime("%m-%d-%H-%M-%S", ts)    
     env_name = args.carla_town
@@ -199,6 +193,19 @@ def main():
     model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
     buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
 
+    # Logger
+    L = Logger(args.work_dir, use_tb=args.save_tb)
+
+    # Carla environment
+    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob)
+    env.seed(args.seed)
+    env.reset()
+    action_shape = env.action_space.shape
+
+    # Stack several consecutive frames together
+    if args.encoder_type == 'pixel':
+        env = utils.FrameStack(env, k=args.frame_stack)
+
     # Video recorder
     video = VideoRecorder(video_dir if args.save_video else None)
 
@@ -206,9 +213,10 @@ def main():
     with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
-    # Make use of GPUs if available
+    # Make use of GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # Encoder type and observation shapes
     if args.encoder_type == 'pixel':
         obs_shape = (3*args.frame_stack, args.image_height, args.image_width)
         pre_aug_obs_shape = (3*args.frame_stack,args.pre_transform_image_height, args.pre_transform_image_width)
@@ -216,6 +224,7 @@ def main():
         obs_shape = env.observation_space.shape
         pre_aug_obs_shape = obs_shape
 
+    # Replay buffer
     replay_buffer = utils.ReplayBuffer(
         obs_shape=pre_aug_obs_shape,
         action_shape=action_shape,
@@ -225,6 +234,7 @@ def main():
         image_shape=(args.image_height, args.image_width),
     )
 
+    # Agent
     agent = make_agent(
         obs_shape=obs_shape,
         action_shape=action_shape,
@@ -232,15 +242,14 @@ def main():
         device=device
     )
 
-    L = Logger(args.work_dir, use_tb=args.save_tb)
-
-    episode, episode_reward, done = 0, 0, True
+    # Initializations
+    episode, episode_reward, done, info = 0, 0, True, None
     start_time = time.time()
 
-    for step in range(args.num_train_steps):
+    for step in range(args.num_train_steps+1):
 
         # Evaluate agent periodically
-        if step % args.eval_freq == 0:
+        if step % args.eval_freq == 0 and step > 0:
             L.log('eval/episode', episode, step)
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
             if args.save_model:
@@ -248,17 +257,24 @@ def main():
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
 
+        # Log training stats
+        if step % args.log_interval == 0 and step > 0:
+            L.log('train/duration', time.time() - start_time, step)
+            L.log('train/episode_reward', episode_reward, step)
+            if info != None:
+                L.log('train/episode_mean_r1', info['r1'], step)
+                L.log('train/episode_mean_r2', info['r2'], step)
+                L.log('train/episode_mean_r3', info['r3'], step)
+
+        # Reset if done
         if done:
-            if step > 0:
-                print("Episode {} finished in {} steps with final reward: {}".format(episode, episode_step, episode_reward))
-                if step % args.log_interval == 0:
-                    L.log('train/duration', time.time() - start_time, step)
-                    L.dump(step)
-                start_time = time.time()
-            if step % args.log_interval == 0:
-                L.log('train/episode_reward', episode_reward, step)
+
+            # Dump log
+            if step % args.log_interval == 0 and step > 0:
+                L.dump(step)
 
             # Reset episode and environment
+            start_time = time.time()
             obs = env.reset()
             done = False
             episode_reward = 0
@@ -267,21 +283,23 @@ def main():
             if step % args.log_interval == 0:
                 L.log('train/episode', episode, step)
 
-        # Sample action for data collection
+        # Sample action from the agent
         if step < args.init_steps:
+            # Sample a random action within the bounds of the action space
             action = env.action_space.sample()
         else:
+            # Evaluate the policy (CURL model) based on the observation
             with utils.eval_mode(agent):
-                action = agent.sample_action(obs) # Evaluates the neural network
+                action = agent.sample_action(obs)
 
-        # Run training update
+        # Update the weights of the CURL model
         if step >= args.init_steps:
             num_updates = 1 
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
 
         # Take the environment step
-        next_obs, reward, done, _ = env.step(action)
+        next_obs, reward, done, info = env.step(action)
 
         # Allow infinite bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(done)
@@ -292,7 +310,7 @@ def main():
         obs = next_obs
         episode_step += 1
 
-    
+    # Clear the environment
     env.deactivate()
 
 

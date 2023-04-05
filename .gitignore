@@ -1,6 +1,6 @@
 # Data
 _out/
-tmp/
+tmp*/
 
 # macOS files
 .DS_Store
