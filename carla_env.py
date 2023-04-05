@@ -14,6 +14,7 @@ import random
 import time
 import math
 import queue
+import shutil
 
 # Installed 
 try:
@@ -42,15 +43,17 @@ class CarlaEnv:
     cam_z = settings.CAM_Z
     seconds_per_episode = settings.SECONDS_PER_EPISODE
     fps = settings.FPS
-    dt = 1/fps
+    dt = 1.0/fps
 
     # Initial values
     front_camera = None
 
-    def __init__(self, carla_town):
+    def __init__(self, carla_town, max_npc_vehicles, npc_ignore_traffic_lights_prob):
 
         # Set parameters
         self.carla_town = carla_town
+        self.max_npc_vehicles = max_npc_vehicles
+        self.npc_ignore_traffic_lights_prob = npc_ignore_traffic_lights_prob
 
         # Client
         self.client = carla.Client('localhost', 2000)
@@ -62,12 +65,10 @@ class CarlaEnv:
         self.map = self.world.get_map()
         print('loaded town %s' % self.map)
 
-        # Set weather
-        # self.world.set_weather(carla.WeatherParameters.ClearNoon)
-
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
         self.settings.fixed_delta_seconds = self.dt
+        self.world.apply_settings(self.settings)
 
         # Record the time of total steps and resetting steps
         self.reset_step = 0 # Counts how many times the environment has been reset (episode counter)
@@ -102,10 +103,28 @@ class CarlaEnv:
         # Lane invasion sensor settings
         self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
+        # Traffic manager
+        self.traffic_manager = self.client.get_trafficmanager()
+
+        # Setup for NPC vehicles
+        self.npc_vehicle_spawn_points = self.world.get_map().get_spawn_points()
+        self.npc_vehicle_models = ['dodge', 'audi', 'model3', 'mini', 'mustang', 'lincoln', 'prius', 'nissan', 'crown', 'impala']
+        self.npc_vehicle_blueprints = []
+        for vehicle in self.blueprint_library.filter('*vehicle*'):
+            if any(model in vehicle.id for model in self.npc_vehicle_models):
+                self.npc_vehicle_blueprints.append(vehicle)
+        self.max_npc_vehicles = min([self.max_npc_vehicles, len(self.npc_vehicle_spawn_points)])
+
+        # Spectator
+        self.spectator = self.world.get_spectator()
+
         # @TODO: change this
         self._max_episode_steps = 100
 
-        if self.save_imgs and not os.path.exists('_out'):
+        # Save camera sensor images
+        if self.save_imgs:
+            if os.path.exists('_out'):
+                shutil.rmtree('_out')
             os.mkdir('_out')
 
     def reset(self):
@@ -115,6 +134,7 @@ class CarlaEnv:
 
         # Administration
         self.actor_list = []
+        self.npc_vehicles_list = []
         self.collision_history = []
         self.lane_invasion_history = []
         self.lane_invasion_len = 0
@@ -154,6 +174,22 @@ class CarlaEnv:
         self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
         print('created %s' % self.lane_invasion_sensor.type_id)
 
+        # Spawn NPC vehicles
+        for i, spawn_point in enumerate(random.sample(self.npc_vehicle_spawn_points, self.max_npc_vehicles)):
+            temp = self.world.try_spawn_actor(random.choice(self.npc_vehicle_blueprints), spawn_point)
+            if temp is not None:
+                self.npc_vehicles_list.append(temp)
+                self.actor_list.append(temp)
+
+        # Parse the list of spawned NPC vehicles and give control to the TM through set_autopilot()
+        for vehicle in self.npc_vehicles_list:
+            vehicle.set_autopilot(True)
+            # Randomly set the probability that a vehicle will ignore traffic lights
+            self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
+
+        # Place spectator
+        self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(z=150),carla.Rotation(pitch=-90)))
+
         # Enable synchronous mode
         self.set_synchronous_mode(True)
 
@@ -161,7 +197,7 @@ class CarlaEnv:
         self.world.tick()
         self.time_step = 1
         self.reset_step += 1
-        self.collect_sensor_data()
+        self.starting_frame = self.collect_sensor_data()
 
         # Wait for camera sensor to start receiving images
         while self.front_camera is None: # self.front_camera gets set to an image by the self.process_camera_data function attached to the sensor
@@ -202,11 +238,14 @@ class CarlaEnv:
         mistake = False
 
         # Reward for collision event
+
         if len(self.collision_history) != 0:
-            print('episode done: collision')
-            done = True
-            reward += -100
-            mistake = True
+            if self.time_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
+                print(self.collision_history[0])
+                print('episode done: collision')
+                done = True
+                reward += -100
+                mistake = True
 
         # Reward for  speed
         if abs_kmh > 30 and abs_kmh < 90:
@@ -217,13 +256,15 @@ class CarlaEnv:
         # Reward for lane invasion
         if self.lane_invasion_len < len(self.lane_invasion_history):
             lane_invasion_event = self.lane_invasion_history[-1]
-            lane_markings = lane_invasion_event.crossed_lane_markings
-            mistake = True
-            for marking in lane_markings:
-                if str(marking.type) == 'Solid':
-                    reward += -10
-                else:
-                    reward += -5
+            if self.time_step + self.starting_frame == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
+                self.lane_invasion_len = len(self.lane_invasion_history)
+                lane_markings = lane_invasion_event.crossed_lane_markings
+                mistake = True
+                for marking in lane_markings:
+                    if str(marking.type) == 'Solid':
+                        reward += -10
+                    else:
+                        reward += -5
 
         # Reward for the norm of the control actions
         reward += -0.1*np.linalg.norm(action)**2
@@ -259,6 +300,7 @@ class CarlaEnv:
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous
         self.world.apply_settings(self.settings)
+        self.traffic_manager.set_synchronous_mode(synchronous)
 
     def process_camera_data(self, carla_im_data):
         image = np.array(carla_im_data.raw_data)
@@ -279,16 +321,16 @@ class CarlaEnv:
         self.lane_invasion_history.append(event)
 
     def collect_sensor_data(self):
-
-        # Process camera data
         camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
         self.process_camera_data(camera_sensor_data)
+        return camera_sensor_data.frame
 
     def seed(self, seed):
         if not seed:
             seed = 7
         random.seed(seed)
         self._np_random = np.random.RandomState(seed) 
+        self.traffic_manager.set_random_device_seed(0)
         return seed
     
     def destroy_all_actors(self):

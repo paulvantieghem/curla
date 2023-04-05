@@ -30,7 +30,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     # environment
-    parser.add_argument('--carla_town', default='Town03')
+    parser.add_argument('--carla_town', default='Town04')
+    parser.add_argument('--max_npc_vehicles', default=50)
+    parser.add_argument('--npc_ignore_traffic_lights_prob', default=50)
     parser.add_argument('--pre_transform_image_size', default=100, type=int)
     parser.add_argument('--image_size', default=84, type=int)
     parser.add_argument('--action_repeat', default=1, type=int)
@@ -175,7 +177,7 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     # Carla environment
-    env = CarlaEnv(args.carla_town)
+    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob)
     env.seed(args.seed)
     env.reset()
     action_shape = env.action_space.shape
@@ -236,9 +238,8 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        # evaluate agent periodically
-        print('STEP: ', step)
 
+        # Evaluate agent periodically
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
@@ -265,14 +266,14 @@ def main():
             if step % args.log_interval == 0:
                 L.log('train/episode', episode, step)
 
-        # sample action for data collection
+        # Sample action for data collection
         if step < args.init_steps:
             action = env.action_space.sample()
         else:
             with utils.eval_mode(agent):
                 action = agent.sample_action(obs)
 
-        # run training update
+        # Run training update
         if step >= args.init_steps:
             num_updates = 1 
             for _ in range(num_updates):
@@ -281,16 +282,18 @@ def main():
         # Take the environment step
         next_obs, reward, done, _ = env.step(action)
 
-        # allow infinite bootstrap
-        done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
-            done
-        )
-        episode_reward += reward
-        print('Episode reward: ', episode_reward)
-        replay_buffer.add(obs, action, reward, next_obs, done_bool)
+        # Allow infinite bootstrap
+        done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(done)
 
+        # Administration
+        episode_reward += reward
+        replay_buffer.add(obs, action, reward, next_obs, done_bool)
         obs = next_obs
         episode_step += 1
+
+        # Console logging
+        if step%50  == 0:
+            print('------------Current step:', step, '| Current episode reward:', episode_reward)
 
     
     env.deactivate()

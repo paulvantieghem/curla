@@ -9,7 +9,7 @@ while True:
     # Try to create environment. If fails, try again
     try:
         print('Trying to set up Carla environment...')
-        env = CarlaEnv('Town04')
+        env = CarlaEnv('Town04', 50, 50)
         break
     except:
         time.sleep(1)

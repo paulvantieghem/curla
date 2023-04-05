@@ -1,13 +1,13 @@
 # Display camera sensor with OpenCV
 SHOW_PREVIEW = False
-SAVE_IMGS = False
+SAVE_IMGS = True
 
 # Synchronous mode FPS
 FPS = 30
 
 # RGB camera settings
-IM_WIDTH = 100
-IM_HEIGHT = 100
+IM_WIDTH = 200
+IM_HEIGHT = IM_WIDTH
 FOV = 110
 
 # RGB camera relative position

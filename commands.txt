@@ -7,13 +7,13 @@ pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --e
 
 # Bad parameters, do not use for real training
 python train.py ^
-    --carla_town Town03 ^
+    --carla_town Town04 ^
     --num_eval_episodes 1 ^
     --init_steps 1 ^
     --encoder_type pixel ^
     --action_repeat 8 ^
     --save_tb ^
-    --pre_transform_image_size 100 ^
+    --pre_transform_image_size 200 ^
     --image_size 84 ^
     --replay_buffer_capacity 1000 ^
     --work_dir .\tmp ^
