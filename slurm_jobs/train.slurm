@@ -1,13 +1,20 @@
 #!/bin/bash
 #SBATCH --cluster=wice
-#SBATCH --job-name="CURLA_train"
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --job-name=curla_train
+#SBATCH --output=curla_train.out
+#SBATCH --error=curla_train.err
 #SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gpus=1
+#SBATCH --cpus-per-gpu=1
 #SBATCH --mem-per-cpu=32G
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
+
+# Exit on error
+set -e
 
 # Base modules
 module --force purge
@@ -17,8 +24,17 @@ module load anaconda3/2022.10
 module load libpng
 module load libjpeg-turbo
 
-# Set the CONDA_ALWAYS_YES environment variable
-export CONDA_ALWAYS_YES="true"
+if [[ -z "$(which conda)" ]]; then
+  echo "No installation of conda found!"
+  exit 1
+fi
+
+# Clone the CURLA repository
+if [ -d "$VSC_DATA/lib/curla" ]; then
+  rm -rf $VSC_DATA/lib/curla
+fi
+cd $VSC_DATA/lib/
+git clone https://github.com/paulvantieghem/curla.git
 
 # Launch the CARLA simulator
 cd $VSC_DATA/lib/carla
