@@ -12,6 +12,7 @@ dependencies:
   - pip
   - pip:
     - termcolor
+    - gymnasium
     - tb-nightly
     - imageio
     - imageio-ffmpeg

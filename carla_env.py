@@ -21,6 +21,7 @@ import math
 import numpy as np
 import settings
 import cv2
+import gymnasium as gym
 
 class CarlaEnv:
 
@@ -39,6 +40,9 @@ class CarlaEnv:
 
     def __init__(self, carla_town):
 
+        # Set parameters
+        self.carla_town = carla_town
+
         # Client
         self.client = carla.Client('localhost', 2000)
         self.timeout = self.client.set_timeout(20.0)
@@ -47,6 +51,12 @@ class CarlaEnv:
         self.world = self.client.load_world(carla_town)
         self.world = self.client.get_world()
         print('loaded town %s' % carla_town)
+
+        # Administration
+        self.actor_list = []
+        self.collision_history = []
+        self.lane_invasion_history = []
+        self.lane_invasion_len = 0
 
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
@@ -70,12 +80,31 @@ class CarlaEnv:
         # Lane invasion sensor settings
         self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
-        # Action space shape
-        self.action_space = np.zeros((2,))
-        self.observation_space = np.zeros((self.im_width, self.im_height, 3))
-        self._max_episode_steps = 100  
+        # TO DO: change this
+        self._max_episode_steps = 100
+
+    
+    @property
+    def observation_space(self, *args, **kwargs):
+        """Returns the observation spec of the sensor."""
+        return gym.spaces.Box(low=0.0, high=255.0, shape=(self.im_height, self.im_width, 3), dtype=np.uint8)
+
+    @property
+    def action_space(self):
+        """Returns the expected action passed to the `step` method."""
+        return gym.spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
+
+    def seed(self, seed):
+        if not seed:
+            seed = 7
+        random.seed(seed)
+        self._np_random = np.random.RandomState(seed) 
+        return seed
 
     def reset(self):
+        
+        # Destroy all actors of the previous simulation
+        self.destroy_all_actors()
 
         # Administration
         self.actor_list = []
@@ -197,12 +226,15 @@ class CarlaEnv:
     
     def destroy_all_actors(self):
         print('destroying actors')
-        self.camera_sensor.destroy()
-        self.lane_invasion_sensor.destroy()
-        self.collision_sensor.destroy()
-        self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
-        print('done.')
-
-    def seed(self, seed):
-        random.seed(seed)
+        if len(self.actor_list) != 0:
+            try: 
+                self.camera_sensor.destroy()
+                self.lane_invasion_sensor.destroy()
+                self.collision_sensor.destroy()
+            except:
+                pass
+            self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
+            print('done.')
+            print()
+            print()
     

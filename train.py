@@ -99,8 +99,6 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
-            print('--> Resetting for evaluation')
-            env.destroy_all_actors()
             obs = env.reset()
             video.init(enabled=(i == 0))
             done = False
@@ -238,9 +236,11 @@ def main():
 
     for step in range(args.num_train_steps):
         # evaluate agent periodically
+        print('STEP: ', step)
 
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
+            print(step, args.eval_freq, 'biboboiisdfqs')
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
             if args.save_model:
                 agent.save_curl(model_dir, step)
@@ -248,7 +248,6 @@ def main():
                 replay_buffer.save(buffer_dir)
 
         if done:
-            print('DONE!!!')
             if step > 0:
                 if step % args.log_interval == 0:
                     L.log('train/duration', time.time() - start_time, step)
@@ -256,9 +255,6 @@ def main():
                 start_time = time.time()
             if step % args.log_interval == 0:
                 L.log('train/episode_reward', episode_reward, step)
-
-            # Destroy all actors in Carla simulator
-            env.destroy_all_actors()
 
             # Reset episode and environment
             obs = env.reset()
@@ -289,6 +285,7 @@ def main():
             done
         )
         episode_reward += reward
+        print('Episode reward: ', episode_reward)
         replay_buffer.add(obs, action, reward, next_obs, done_bool)
 
         obs = next_obs
