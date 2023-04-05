@@ -77,11 +77,11 @@ def preprocess_obs(obs, bits=5):
 
 class ReplayBuffer(Dataset):
     """Buffer to store environment transitions."""
-    def __init__(self, obs_shape, action_shape, capacity, batch_size, device,image_size=84,transform=None):
+    def __init__(self, obs_shape, action_shape, capacity, batch_size, device,image_shape=(84,84),transform=None):
         self.capacity = capacity
         self.batch_size = batch_size
         self.device = device
-        self.image_size = image_size
+        self.image_shape = image_shape
         self.transform = transform
         # the proprioceptive obs is stored as float32, pixels obs as uint8
         obs_dtype = np.float32 if len(obs_shape) == 1 else np.uint8
@@ -138,9 +138,9 @@ class ReplayBuffer(Dataset):
         next_obses = self.next_obses[idxs]
         pos = obses.copy()
 
-        obses = random_crop(obses, self.image_size)
-        next_obses = random_crop(next_obses, self.image_size)
-        pos = random_crop(pos, self.image_size)
+        obses = random_crop(obses, self.image_shape)
+        next_obses = random_crop(next_obses, self.image_shape)
+        pos = random_crop(pos, self.image_shape)
     
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(
@@ -235,7 +235,7 @@ class FrameStack(gym.Wrapper):
         return np.concatenate(list(self._frames), axis=0)
 
 
-def random_crop(imgs, output_size):
+def random_crop(imgs, output_shape):
     """
     Vectorized way to do random crop using sliding windows
     and picking out random ones
@@ -243,23 +243,27 @@ def random_crop(imgs, output_size):
     args:
         imgs, batch images with shape (B,C,H,W)
     """
-    # batch size
+    # Batch size
     n = imgs.shape[0]
-    img_size = imgs.shape[-1]
-    crop_max = img_size - output_size
+
+    # Determine cropping possibilities
+    img_shape = imgs.shape[2:4]
+    crop_max_h = img_shape[0] - output_shape[0]
+    crop_max_w = img_shape[1] - output_shape[1]
     imgs = np.transpose(imgs, (0, 2, 3, 1))
-    w1 = np.random.randint(0, crop_max, n)
-    h1 = np.random.randint(0, crop_max, n)
-    # creates all sliding windows combinations of size (output_size)
-    windows = view_as_windows(
-        imgs, (1, output_size, output_size, 1))[..., 0,:,:, 0]
-    # selects a random window for each batch element
-    cropped_imgs = windows[np.arange(n), w1, h1]
+    h1 = np.random.randint(0, crop_max_h, n)
+    w1 = np.random.randint(0, crop_max_w, n)
+
+    # Creates all sliding windows combinations of size (output_size)
+    windows = view_as_windows(imgs, (1, output_shape[0], output_shape[1], 1))[..., 0,:,:, 0] # @TODO: Check correctness!
+
+    # Selects a random window for each batch element
+    cropped_imgs = windows[np.arange(n), h1, w1]
     return cropped_imgs
 
 def center_crop_image(image, output_size):
     h, w = image.shape[1:]
-    new_h, new_w = output_size, output_size
+    new_h, new_w = output_size
 
     top = (h - new_h)//2
     left = (w - new_w)//2

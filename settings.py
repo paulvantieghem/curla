@@ -12,21 +12,25 @@ SAVE_IMGS = False
 INITIAL_SPEED = 5  # km/h
 DESIRED_SPEED = 90 # km/h
 
+# Maximum stall time
+MAX_STALL_TIME = 5
+STALL_SPEED = INITIAL_SPEED/2
+
 # Synchronous mode FPS
-FPS = 30
+FPS = 20
+
+# Episode settings
+SECONDS_PER_EPISODE = 1000/FPS
 
 # RGB camera settings
-IM_WIDTH = 112
-IM_HEIGHT = IM_WIDTH
+IM_HEIGHT = 90
+IM_WIDTH = 160
 FOV = 110
 
 # RGB camera relative position
 CAM_X = 1.5
 CAM_Y = 0.0
 CAM_Z = 1.75
-
-# Episode settings
-SECONDS_PER_EPISODE = 60
 
 # Carla map configuration
 map_config = {

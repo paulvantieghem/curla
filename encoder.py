@@ -14,16 +14,19 @@ def tie_weights(src, trg):
     trg.weight = src.weight
     trg.bias = src.bias
 
+# Calculate output dimensions for different input sizes: http://layer-calc.com/
 
 # for 84 x 84 inputs
 OUT_DIM = {2: 39, 4: 35, 6: 31}
 # for 64 x 64 inputs
 OUT_DIM_64 = {2: 29, 4: 25, 6: 21}
+# for 135 x 76 inputs
+OUT_DIM_RECT_135_76 = {4: [31, 61],}
 
 
 class PixelEncoder(nn.Module):
     """Convolutional encoder of pixels observations."""
-    def __init__(self, obs_shape, feature_dim, num_layers=2, num_filters=32,output_logits=False):
+    def __init__(self, obs_shape, feature_dim, num_layers=4, num_filters=32,output_logits=False):
         super().__init__()
 
         assert len(obs_shape) == 3
@@ -31,14 +34,19 @@ class PixelEncoder(nn.Module):
         self.feature_dim = feature_dim
         self.num_layers = num_layers
 
-        self.convs = nn.ModuleList(
-            [nn.Conv2d(obs_shape[0], num_filters, 3, stride=2)]
-        )
-        for i in range(num_layers - 1):
-            self.convs.append(nn.Conv2d(num_filters, num_filters, 3, stride=1))
+        self.convs = nn.ModuleList([nn.Conv2d(in_channels=obs_shape[0], 
+                                              out_channels=num_filters, 
+                                              kernel_size=3, 
+                                              stride=2)])
 
-        out_dim = OUT_DIM_64[num_layers] if obs_shape[-1] == 64 else OUT_DIM[num_layers] 
-        self.fc = nn.Linear(num_filters * out_dim * out_dim, self.feature_dim)
+        for _ in range(num_layers - 1):
+            self.convs.append(nn.Conv2d(in_channels=num_filters, 
+                                        out_channels=num_filters, 
+                                        kernel_size=3, 
+                                        stride=1))
+
+        out_dim = OUT_DIM_RECT_135_76[num_layers]
+        self.fc = nn.Linear(num_filters * out_dim[0] * out_dim[1], self.feature_dim)
         self.ln = nn.LayerNorm(self.feature_dim)
 
         self.outputs = dict()

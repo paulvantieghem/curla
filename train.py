@@ -30,11 +30,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     # environment
-    parser.add_argument('--carla_town', default='Town04')
-    parser.add_argument('--max_npc_vehicles', default=50)
-    parser.add_argument('--npc_ignore_traffic_lights_prob', default=10)
-    parser.add_argument('--pre_transform_image_size', default=100, type=int)
-    parser.add_argument('--image_size', default=84, type=int)
+    parser.add_argument('--carla_town', default='Town04', type=str)
+    parser.add_argument('--max_npc_vehicles', default=50, type=int)
+    parser.add_argument('--npc_ignore_traffic_lights_prob', default=10, type=int)
+    parser.add_argument('--pre_transform_image_height', default=100, type=int)
+    parser.add_argument('--pre_transform_image_width', default=100, type=int)
+    parser.add_argument('--image_height', default=84, type=int)
+    parser.add_argument('--image_width', default=84, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
 
     # replay buffer
@@ -107,7 +109,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
             while not done:
                 # center crop image
                 if args.encoder_type == 'pixel':
-                    obs = utils.center_crop_image(obs,args.image_size)
+                    obs = utils.center_crop_image(obs, (args.image_height, args.image_width))
                 with utils.eval_mode(agent):
                     if sample_stochastically:
                         action = agent.sample_action(obs)
@@ -189,7 +191,7 @@ def main():
     ts = time.gmtime() 
     ts = time.strftime("%m-%d-%H-%M-%S", ts)    
     env_name = args.carla_town
-    exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
+    exp_name = env_name + '-' + ts + '-im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
     args.work_dir = os.path.join(args.work_dir, exp_name)
     utils.make_dir(args.work_dir)
@@ -208,8 +210,8 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     if args.encoder_type == 'pixel':
-        obs_shape = (3*args.frame_stack, args.image_size, args.image_size)
-        pre_aug_obs_shape = (3*args.frame_stack,args.pre_transform_image_size,args.pre_transform_image_size)
+        obs_shape = (3*args.frame_stack, args.image_height, args.image_width)
+        pre_aug_obs_shape = (3*args.frame_stack,args.pre_transform_image_height, args.pre_transform_image_width)
     else:
         obs_shape = env.observation_space.shape
         pre_aug_obs_shape = obs_shape
@@ -220,7 +222,7 @@ def main():
         capacity=args.replay_buffer_capacity,
         batch_size=args.batch_size,
         device=device,
-        image_size=args.image_size,
+        image_shape=(args.image_height, args.image_width),
     )
 
     agent = make_agent(
@@ -248,6 +250,7 @@ def main():
 
         if done:
             if step > 0:
+                print("Episode {} finished in {} steps with final reward: {}".format(episode, episode_step, episode_reward))
                 if step % args.log_interval == 0:
                     L.log('train/duration', time.time() - start_time, step)
                     L.dump(step)
@@ -288,10 +291,6 @@ def main():
         replay_buffer.add(obs, action, reward, next_obs, done_bool)
         obs = next_obs
         episode_step += 1
-
-        # Console logging
-        # if step%50  == 0:
-        #     print('------------Current step:', step, '| Current episode reward:', episode_reward)
 
     
     env.deactivate()

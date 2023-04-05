@@ -48,6 +48,8 @@ class CarlaEnv:
     dt = 1.0/fps
     initial_speed = settings.INITIAL_SPEED
     desired_speed = settings.DESIRED_SPEED
+    max_stall_time = settings.MAX_STALL_TIME
+    stall_speed = settings.STALL_SPEED
 
     # Initial values
     front_camera = None
@@ -88,6 +90,10 @@ class CarlaEnv:
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
 
+        # Highway spawn points
+        map_config = settings.map_config
+        self.highway_spawn_idx = list(map_config[self.carla_town]['spawn_ids']['highway'])
+
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
 
@@ -108,13 +114,12 @@ class CarlaEnv:
         self.traffic_manager = self.client.get_trafficmanager()
 
         # Setup for NPC vehicles
-        self.npc_vehicle_spawn_points = self.world.get_map().get_spawn_points()
-        self.npc_vehicle_models = ['dodge', 'audi', 'model3', 'mini', 'mustang', 'lincoln', 'prius', 'nissan', 'crown', 'impala']
+        self.npc_vehicle_models = ['dodge', 'audi', 'mini', 'mustang', 'lincoln', 'prius', 'nissan', 'crown', 'impala']
         self.npc_vehicle_blueprints = []
         for vehicle in self.blueprint_library.filter('*vehicle*'):
             if any(model in vehicle.id for model in self.npc_vehicle_models):
                 self.npc_vehicle_blueprints.append(vehicle)
-        self.max_npc_vehicles = min([self.max_npc_vehicles, len(self.npc_vehicle_spawn_points)])
+        self.max_npc_vehicles = min([self.max_npc_vehicles, len(self.highway_spawn_idx)])
 
         # Spectator
         self.spectator = self.world.get_spectator()
@@ -146,9 +151,7 @@ class CarlaEnv:
         # Spawn ego vehicle
         while True:
             try:
-                map_config = settings.map_config
-                self.highway_spawn_points = list(map_config[self.carla_town]['spawn_ids']['highway'])
-                id = random.choice(self.highway_spawn_points)
+                id = random.choice(self.highway_spawn_idx)
                 self.ego_vehicle_transform = self.map.get_spawn_points()[id]
                 color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
                 self.ego_vehicle_bp.set_attribute('color', color)
@@ -169,10 +172,34 @@ class CarlaEnv:
             self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(x=dx, y=dy, z=5), 
                                                          carla.Rotation(yaw=self.ego_vehicle_transform.rotation.yaw, pitch=-25)))
 
+        # Spawn NPC vehicles on highway
+        npc_counter = 0
+        for _ in range(self.max_npc_vehicles):
+            id = random.choice(self.highway_spawn_idx)
+            spawn_point_transform = self.map.get_spawn_points()[id]
+            temp = self.world.try_spawn_actor(random.choice(self.npc_vehicle_blueprints), spawn_point_transform)
+            if temp is not None:
+                self.npc_vehicles_list.append(temp)
+                self.actor_list.append(temp)
+                npc_counter += 1
+        if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
+
+        # Parse the list of spawned NPC vehicles and give control to the TM through set_autopilot()
+        for vehicle in self.npc_vehicles_list:
+            vehicle.set_autopilot(True)
+            # Randomly set the probability that a vehicle will ignore traffic lights
+            self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
+
+        # Set the initial speed to desired speed of the ego vehicle
+        yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
+        vx = (self.initial_speed/3.6)*math.cos(yaw)
+        vy = (self.initial_speed/3.6)*math.sin(yaw)
+        self.ego_vehicle.set_target_velocity(carla.Vector3D(vx, vy, 0))
+        time.sleep(2*self.dt)
+
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
         self.actor_list.append(self.camera_sensor)
-        # self.camera_sensor.listen(lambda image: self.process_camera_data(image))
         self.camera_sensor_queue = queue.Queue()
         self.camera_sensor.listen(self.camera_sensor_queue.put)
         if self.verbose: print('created %s' % self.camera_sensor.type_id)
@@ -189,32 +216,13 @@ class CarlaEnv:
         self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
         if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
 
-        # Spawn NPC vehicles
-        for i, spawn_point in enumerate(random.sample(self.npc_vehicle_spawn_points, self.max_npc_vehicles)):
-            temp = self.world.try_spawn_actor(random.choice(self.npc_vehicle_blueprints), spawn_point)
-            if temp is not None:
-                self.npc_vehicles_list.append(temp)
-                self.actor_list.append(temp)
-
-        # Parse the list of spawned NPC vehicles and give control to the TM through set_autopilot()
-        for vehicle in self.npc_vehicles_list:
-            vehicle.set_autopilot(True)
-            # Randomly set the probability that a vehicle will ignore traffic lights
-            self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
-
-        # Set the initial speed to desired speed of the ego vehicle
-        yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
-        vx = (self.initial_speed/3.6)*math.cos(yaw)
-        vy = (self.initial_speed/3.6)*math.sin(yaw)
-        self.ego_vehicle.set_target_velocity(carla.Vector3D(vx, vy, 0))
-        time.sleep(2*self.dt)
-
         # Enable synchronous mode
         self.set_synchronous_mode(True)
 
         # Administration
         self.reset_step += 1
         self.episode_step = 0
+        self.stall_counter = 0
         if self.verbose: print('episode started')
 
         # Collect initial data
@@ -226,12 +234,32 @@ class CarlaEnv:
     def step(self, action):
 
         # Apply the action to the ego vehicle
-        if action[0]> 0:
+        if action[0] > 0:
             control_action = carla.VehicleControl(throttle=float(action[0]), steer=float(action[1]), brake=0)
         else:
             control_action = carla.VehicleControl(throttle=0, steer=float(action[1]), brake=-float(action[0]))
         # control_action = carla.VehicleControl(throttle=1.0, steer=0.0)
         self.ego_vehicle.apply_control(control_action)
+
+        # Calculate reward
+        reward, done, extra_information = self.reward_function_2(action)
+
+        # Maximum episode time check
+        if self.episode_step*self.dt + self.dt >= self.seconds_per_episode:
+            done = True
+            if self.verbose: print('episode done: episode time is up')
+
+        # Tick world
+        self.world.tick()
+        self.episode_step += 1
+        self.total_step += 1
+
+        # Collect sensor data
+        self.collect_sensor_data()
+
+        return self.front_camera, reward, done, extra_information
+    
+    def reward_function_1(self, action):
 
         # Velocity conversion from vector in m/s to absolute speed in km/h
         v = self.ego_vehicle.get_velocity()
@@ -244,15 +272,9 @@ class CarlaEnv:
         # Reward for collision event
         if len(self.collision_history) != 0:
             if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
-                if self.verbose: print('episode done: collision')
-                done = True
                 reward += -self._max_episode_steps
-
-        # Reward for speed
-        speed_delta = np.abs(abs_kmh - self.desired_speed)
-        reward += -speed_delta/self.desired_speed
-        if np.isclose(abs_kmh, self.desired_speed, atol=1e-1):
-            reward += 1
+                done = True
+                if self.verbose: print('episode done: collision')
         
         # Reward for lane invasion
         if self.lane_invasion_len < len(self.lane_invasion_history):
@@ -265,30 +287,90 @@ class CarlaEnv:
                         reward += -self._max_episode_steps/2
                     else:
                         reward += -self._max_episode_steps/20
+        
+        # Reward for speed
+        speed_delta = np.abs(abs_kmh - self.desired_speed)
+        reward += -speed_delta/self.desired_speed
+        if np.isclose(abs_kmh, self.desired_speed, atol=1e-1):
+            reward += 1
 
         # Reward for steering angle:
         reward += -np.abs(action[1])
 
+        # Reward for stalling too long
+        if abs_kmh < self.stall_speed:
+            self.stall_counter += 1
+        else:
+            self.stall_counter = 0
+        if self.stall_counter*self.dt >= self.max_stall_time:
+            reward += -self._max_episode_steps/2
+            done = True
+            if self.verbose: print('episode done: maximum stall time exceeded')
+
         # Normalize reward
         reward = reward/self._max_episode_steps
 
-        # Maximum episode time check
-        if self.episode_step*self.dt + self.dt >= self.seconds_per_episode:
-            if self.verbose: print('episode done: episode time is up')
-            done = True
+        return reward, done, None
 
-        # Extra information
-        extra_information = None
+    def reward_function_2(self, action):
 
-        # Tick world
-        self.world.tick()
-        self.episode_step += 1
-        self.total_step += 1
+        # Initialize return information
+        done = False
+        reward = 0
 
-        # Collect sensor data
-        self.collect_sensor_data()
+        # Initial waypoints
+        if self.episode_step == 0:
+            self.previous_waypoint = self.ego_vehicle.get_location()
+            self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
+        
+        # Update waypoints
+        new_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
+        if new_waypoint != self.current_waypoint:
+            self.previous_waypoint = self.current_waypoint
+            self.current_waypoint = new_waypoint
 
-        return self.front_camera, reward, done, extra_information
+        # [x,y] location of the previous and current waypoints
+        p_prev_wp = np.array([self.previous_waypoint.x, self.previous_waypoint.y])
+        p_cur_wp = np.array([self.current_waypoint.x, self.current_waypoint.y])
+
+        # Velocity vector of the ego vehicle
+        v_ego = self.ego_vehicle.get_velocity()
+        v_ego = np.array([v_ego.x, v_ego.y])
+
+        # Highway lane direction unit vector
+        u_highway = p_cur_wp - p_prev_wp
+        norm = np.linalg.norm(u_highway)
+        if np.isclose(norm, 0.0):
+            u_highway = np.array([0.0, 0.0])
+        else:
+            u_highway = u_highway/norm
+
+        # Highway progression in meters
+        r1 = np.dot(v_ego.T, u_highway)*self.dt
+
+        # Steering angle
+        lambda_s = 1.0
+        steer_angle = action[1]
+        r2 = -lambda_s*np.abs(steer_angle)
+
+        # Reward for collision event
+        lambda_i = 1e-4
+        r3 = 0
+        if len(self.collision_history) != 0:
+            if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
+                done = True
+                collision_event = self.collision_history[0]
+                impulse = collision_event.normal_impulse
+                impulse = np.array([impulse.x, impulse.y, impulse.z])
+                r3 = lambda_i*-np.linalg.norm(impulse)
+                if self.verbose: print('episode done: collision')
+
+        # Total reward 
+        if self.episode_step > 0:
+            reward += r1 + r2 + r3
+        
+        return reward, done, None
+
     
     def render(self, mode):
         return self.image

@@ -274,7 +274,7 @@ class CurlSacAgent(object):
         self.critic_target_update_freq = critic_target_update_freq
         self.cpc_update_freq = cpc_update_freq
         self.log_interval = log_interval
-        self.image_size = obs_shape[-1]
+        self.image_shape = obs_shape[-2:]
         self.curl_latent_dim = curl_latent_dim
         self.detach_encoder = detach_encoder
         self.encoder_type = encoder_type
@@ -357,8 +357,8 @@ class CurlSacAgent(object):
             return mu.cpu().data.numpy().flatten()
 
     def sample_action(self, obs):
-        if obs.shape[-1] != self.image_size:
-            obs = utils.center_crop_image(obs, self.image_size)
+        if obs.shape[-2:] != self.image_shape:
+            obs = utils.center_crop_image(obs, self.image_shape)
  
         with torch.no_grad():
             obs = torch.FloatTensor(obs).to(self.device)

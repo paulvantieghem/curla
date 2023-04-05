@@ -5,7 +5,7 @@ conda activate curla
 conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
 pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
 
-tensorboard --logdir log --port 6006
+tensorboard --logdir tmp --port 6006
 
 # Test command:
 python train.py ^
@@ -16,8 +16,10 @@ python train.py ^
     --encoder_type pixel ^
     --save_tb ^
     --save_video ^
-    --pre_transform_image_size 112 ^
-    --image_size 84 ^
+    --pre_transform_image_height 90 ^
+    --pre_transform_image_width 160 ^
+    --image_height 76 ^
+    --image_width 135 ^
     --replay_buffer_capacity 100000 ^
     --work_dir .\tmp ^
     --agent curl_sac ^
@@ -27,7 +29,7 @@ python train.py ^
     --actor_lr 1e-3 ^
     --eval_freq 100 ^
     --batch_size 128 ^
-    --num_train_steps 300
+    --num_train_steps 100
 
 # Train command
 python train.py ^
@@ -38,8 +40,10 @@ python train.py ^
     --encoder_type pixel ^
     --save_tb ^
     --save_video ^
-    --pre_transform_image_size 112 ^
-    --image_size 84 ^
+    --pre_transform_image_height 90 ^
+    --pre_transform_image_width 160 ^
+    --image_height 76 ^
+    --image_width 135 ^
     --replay_buffer_capacity 100000 ^
     --work_dir .\tmp ^
     --agent curl_sac ^
@@ -49,4 +53,4 @@ python train.py ^
     --actor_lr 1e-3 ^
     --eval_freq 5000 ^
     --batch_size 128 ^
-    --num_train_steps 100000
+    --num_train_steps 20000
