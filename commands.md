@@ -33,8 +33,6 @@ python train.py ^
     --agent curl_sac ^
     --frame_stack 3 ^
     --seed -1 ^
-    --critic_lr 1e-3 ^
-    --actor_lr 1e-3 ^
     --eval_freq 100 ^
     --batch_size 128 ^
     --log_interval 10 ^
@@ -60,8 +58,6 @@ python train.py ^
     --agent curl_sac ^
     --frame_stack 3 ^
     --seed -1 ^
-    --critic_lr 1e-3 ^
-    --actor_lr 1e-3 ^
     --eval_freq 5000 ^
     --batch_size 128 ^
     --num_train_steps 20000

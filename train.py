@@ -31,26 +31,26 @@ def parse_args():
     
     # environment
     parser.add_argument('--carla_town', default='Town04', type=str)
-    parser.add_argument('--max_npc_vehicles', default=50, type=int)
+    parser.add_argument('--max_npc_vehicles', default=75, type=int)
     parser.add_argument('--npc_ignore_traffic_lights_prob', default=10, type=int)
-    parser.add_argument('--pre_transform_image_height', default=100, type=int)
-    parser.add_argument('--pre_transform_image_width', default=100, type=int)
-    parser.add_argument('--image_height', default=84, type=int)
-    parser.add_argument('--image_width', default=84, type=int)
+    parser.add_argument('--pre_transform_image_height', default=90, type=int)
+    parser.add_argument('--pre_transform_image_width', default=160, type=int)
+    parser.add_argument('--image_height', default=76, type=int)
+    parser.add_argument('--image_width', default=135, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
 
     # replay buffer
-    parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
+    parser.add_argument('--replay_buffer_capacity', default=100_000, type=int)
 
     # train
     parser.add_argument('--agent', default='curl_sac', type=str)
     parser.add_argument('--init_steps', default=1000, type=int)
-    parser.add_argument('--num_train_steps', default=1000000, type=int)
-    parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--num_train_steps', default=100_000, type=int)
+    parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
 
     # eval
-    parser.add_argument('--eval_freq', default=1000, type=int)
+    parser.add_argument('--eval_freq', default=10_000, type=int)
     parser.add_argument('--num_eval_episodes', default=10, type=int)
 
     # critic
@@ -82,14 +82,13 @@ def parse_args():
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     
     # misc
-    parser.add_argument('--seed', default=1, type=int)
-    parser.add_argument('--work_dir', default='.', type=str)
-    parser.add_argument('--save_tb', default=False, action='store_true')
+    parser.add_argument('--seed', default=-1, type=int)
+    parser.add_argument('--work_dir', default='./tmp', type=str)
+    parser.add_argument('--save_tb', default=True, action='store_true')
     parser.add_argument('--save_buffer', default=False, action='store_true')
-    parser.add_argument('--save_video', default=False, action='store_true')
+    parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
-
     parser.add_argument('--log_interval', default=100, type=int)
     args = parser.parse_args()
     return args

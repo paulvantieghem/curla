@@ -1,8 +1,9 @@
-name: curla
+name: curla_2
 channels:
   - defaults
   - pytorch
   - nvidia
+  - conda-forge
 dependencies:
   - python=3.7.9
   - pip
@@ -14,8 +15,12 @@ dependencies:
   - torchaudio==0.13.1
   - pytorch==1.13.1
   - pytorch-cuda=11.7
+  - libpng
+  - libjpeg-turbo
   - pip:
     - numpy
+    - psutil
+    - pygame
     - gymnasium
     - imageio
     - imageio-ffmpeg
