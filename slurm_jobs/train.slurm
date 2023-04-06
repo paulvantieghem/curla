@@ -3,12 +3,10 @@
 #SBATCH --job-name=curla_train
 #SBATCH --output=curla_train.out
 #SBATCH --error=curla_train.err
-#SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --gpus=1
-#SBATCH --cpus-per-gpu=1
-#SBATCH --mem-per-cpu=32G
+#SBATCH --ntasks=18
+#SBATCH --gpus-per-node=1
+#SBATCH --partition=gpu
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be

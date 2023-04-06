@@ -3,12 +3,10 @@
 #SBATCH --job-name=curla_installs
 #SBATCH --output=curla_installs.out
 #SBATCH --error=curla_installs.err
-#SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --gpus=1
-#SBATCH --cpus-per-gpu=1
-#SBATCH --mem-per-cpu=32G
+#SBATCH --ntasks=18
+#SBATCH --gpus-per-node=1
+#SBATCH --partition=gpu
 #SBATCH --time=00:30:00
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
