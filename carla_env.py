@@ -50,6 +50,7 @@ class CarlaEnv:
     desired_speed = settings.DESIRED_SPEED
     max_stall_time = settings.MAX_STALL_TIME
     stall_speed = settings.STALL_SPEED
+    set_initial_speed = settings.SET_INITIAL_SPEED
 
     # Initial values
     front_camera = None
@@ -204,11 +205,12 @@ class CarlaEnv:
             self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
 
         # Set the initial speed to desired speed of the ego vehicle
-        yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
-        vx = (self.initial_speed/3.6)*math.cos(yaw)
-        vy = (self.initial_speed/3.6)*math.sin(yaw)
-        self.ego_vehicle.set_target_velocity(carla.Vector3D(vx, vy, 0))
-        time.sleep(2*self.dt)
+        if self.set_initial_speed:
+            yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
+            vx = (self.initial_speed/3.6)*math.cos(yaw)
+            vy = (self.initial_speed/3.6)*math.sin(yaw)
+            self.ego_vehicle.set_target_velocity(carla.Vector3D(vx, vy, 0))
+            time.sleep(2*self.dt)
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -247,11 +249,10 @@ class CarlaEnv:
     def step(self, action):
 
         # Apply the action to the ego vehicle
-        if action[0] > 0:
-            control_action = carla.VehicleControl(throttle=float(action[0]), steer=float(action[1]), brake=0)
+        if action[0] >= 0:
+            control_action = carla.VehicleControl(throttle=float(0.5+action[0]), steer=float(action[1]), brake=0.0)
         else:
-            control_action = carla.VehicleControl(throttle=0, steer=float(action[1]), brake=-float(action[0]))
-        # control_action = carla.VehicleControl(throttle=1.0, steer=0.0)
+            control_action = carla.VehicleControl(throttle=0.0, steer=float(action[1]), brake=-2*float(action[0]))
         self.ego_vehicle.apply_control(control_action)
 
         # Calculate reward
@@ -369,7 +370,7 @@ class CarlaEnv:
         r2 = -lambda_s*np.abs(steer_angle)
 
         # Reward for collision event
-        lambda_i = 1e-4
+        lambda_i = 1e-2
         r3 = 0
         if len(self.collision_history) != 0:
             if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
@@ -378,6 +379,7 @@ class CarlaEnv:
                 impulse = collision_event.normal_impulse
                 impulse = np.array([impulse.x, impulse.y, impulse.z])
                 r3 = lambda_i*-np.linalg.norm(impulse)
+                print('collision event: ', r3)
                 if self.verbose: print('episode done: collision')
 
         # Total reward 
@@ -407,7 +409,7 @@ class CarlaEnv:
     @property
     def action_space(self):
         """Returns the expected action passed to the `step` method."""
-        return gym.spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
+        return gym.spaces.Box(low=np.array([-0.5, -1.0], dtype=np.float32), high=np.array([0.5, 1.0], dtype=np.float32), dtype=np.float32)
     
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous

@@ -9,12 +9,13 @@ SHOW_PREVIEW = False
 SAVE_IMGS = False
 
 # Speeds in km/h
-INITIAL_SPEED = 5  # km/h
+SET_INITIAL_SPEED = False
+INITIAL_SPEED = 10  # km/h
 DESIRED_SPEED = 90 # km/h
 
 # Maximum stall time
 MAX_STALL_TIME = 5
-STALL_SPEED = INITIAL_SPEED/2
+STALL_SPEED = 1
 
 # Synchronous mode FPS
 FPS = 20

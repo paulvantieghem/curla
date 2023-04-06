@@ -16,6 +16,7 @@ import random
 import time
 import json
 import copy
+from tqdm import tqdm
 
 import utils
 from logger import Logger
@@ -100,7 +101,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
     def run_eval_loop(sample_stochastically=True):
         start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
-        for i in range(num_episodes):
+        for i in tqdm(range(num_episodes), desc='eval'):
             obs = env.reset()
             video.init(enabled=(i == 0))
             done = False
@@ -258,9 +259,7 @@ def main():
                 replay_buffer.save(buffer_dir)
 
         # Log training stats
-        if step % args.log_interval == 0 and step > 0:
-            L.log('train/duration', time.time() - start_time, step)
-            L.log('train/episode_reward', episode_reward, step)
+        if step % args.log_interval == 0 and step > 0 and info != None:
             if info != None:
                 L.log('train/episode_mean_r1', info['r1'], step)
                 L.log('train/episode_mean_r2', info['r2'], step)
@@ -269,6 +268,10 @@ def main():
 
         # Reset if done
         if done:
+
+            # Log episode stats
+            L.log('train/duration', time.time() - start_time, step)
+            L.log('train/episode_reward', episode_reward, step)
 
             # Dump log
             if step % args.log_interval == 0 and step > 0:
@@ -281,8 +284,9 @@ def main():
             episode_reward = 0
             episode_step = 0
             episode += 1
-            if step % args.log_interval == 0:
-                L.log('train/episode', episode, step)
+
+            # Log episode stats
+            L.log('train/episode', episode, step)
 
         # Sample action from the agent
         if step < args.init_steps:

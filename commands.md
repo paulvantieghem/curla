@@ -60,5 +60,5 @@ python train.py ^
     --seed -1 ^
     --eval_freq 5000 ^
     --batch_size 128 ^
-    --num_train_steps 20000
+    --num_train_steps 25000
 ``` 
