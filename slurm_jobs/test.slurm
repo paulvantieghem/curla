@@ -1,15 +1,19 @@
 #!/bin/bash
-#SBATCH --cluster=wice
-#SBATCH --job-name=curla_installs
-#SBATCH --output=curla_installs.out
-#SBATCH --error=curla_installs.err
+#SBATCH --cluster=genius
+#SBATCH --partition=gpu_v100
 #SBATCH --nodes=1
-#SBATCH --ntasks=18
+#SBATCH --ntasks=4
 #SBATCH --gpus-per-node=1
-#SBATCH --partition=gpu
+#SBATCH --mem-per-cpu=20G
+
 #SBATCH --time=00:30:00
+
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
+
+#SBATCH --job-name=curla_test
+#SBATCH --output=curla_test.out
+#SBATCH --error=curla_test.err
 
 # Load necessary modules
 module --force purge

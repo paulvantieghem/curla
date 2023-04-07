@@ -1,15 +1,19 @@
 #!/bin/bash
-#SBATCH --cluster=wice
-#SBATCH --job-name=curla_installs
-#SBATCH --output=curla_installs.out
-#SBATCH --error=curla_installs.err
+#SBATCH --cluster=genius
+#SBATCH --partition=gpu_v100
 #SBATCH --nodes=1
-#SBATCH --ntasks=18
+#SBATCH --ntasks=4
 #SBATCH --gpus-per-node=1
-#SBATCH --partition=gpu
+#SBATCH --mem-per-cpu=20G
+
 #SBATCH --time=00:30:00
+
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
+
+#SBATCH --job-name=curla_install
+#SBATCH --output=curla_install.out
+#SBATCH --error=curla_install.err
 
 # Load necessary modules
 module --force purge
@@ -51,8 +55,8 @@ cd $VSC_DATA/lib/carla
 wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.11.tar.gz
 tar -xzf CARLA_0.9.11.tar.gz
 rm CARLA_0.9.11.tar.gz
-conda activate curla
 export CONDA_ALWAYS_YES="true"
+conda activate curla
 conda install conda-build
 conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg
 

@@ -1,15 +1,19 @@
 #!/bin/bash
-#SBATCH --cluster=wice
+#SBATCH --cluster=genius
+#SBATCH --partition=gpu_v100
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
+#SBATCH --gpus-per-node=1
+#SBATCH --mem-per-cpu=20G
+
+#SBATCH --time=10:00:00
+
+#SBATCH --mail-type=FAIL,BEGIN,END
+#SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
+
 #SBATCH --job-name=curla_train
 #SBATCH --output=curla_train.out
 #SBATCH --error=curla_train.err
-#SBATCH --nodes=1
-#SBATCH --ntasks=18
-#SBATCH --gpus-per-node=1
-#SBATCH --partition=gpu
-#SBATCH --time=10:00:00
-#SBATCH --mail-type=FAIL,BEGIN,END
-#SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
 # Exit on error
 set -e
@@ -41,7 +45,7 @@ cd $VSC_DATA/lib/carla
 # Train CURL agent on CARLA simulator
 cd $VSC_DATA/lib/curla
 conda activate curla
-python train.py --num_train_steps 100000
+python train.py --num_train_steps 200000
 
 # Terminate session
 kill $CARLA
