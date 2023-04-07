@@ -1,10 +1,4 @@
 #!/bin/bash
-#SBATCH --cluster=genius
-#SBATCH --partition=gpu_v100
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --gpus-per-node=1
-#SBATCH --mem-per-cpu=20G
 
 #SBATCH --time=00:30:00
 
@@ -21,20 +15,23 @@ module use /apps/leuven/icelake/2021a/modules/all
 module load intel/2021a
 module load libpng
 module load libjpeg-turbo
-module load CUDA/10.1.105
+module load CUDA/11.7
 
-# Install Miniconda
+# CUDA version
+nvcc --version
+
+# Set environment variables
 if [[ -z "$(which conda)" ]]; then
-  echo "No installation of conda found, installing Miniconda"
-  mkdir -p $VSC_DATA/miniconda3
-  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $VSC_DATA/miniconda3/miniconda.sh
-  bash $VSC_DATA/miniconda3/miniconda.sh -b -u -p $VSC_DATA/miniconda3
-  rm -rf $VSC_DATA/miniconda3/miniconda.sh
+  echo "[MESSAGE] No installation of conda found, adding miniconda3 to PATH"
+  export PATH="$VSC_DATA/miniconda3/bin:$PATH"
   $VSC_DATA/miniconda3/bin/conda init bash
   $VSC_DATA/miniconda3/bin/conda init zsh
-  export CONDA_ALWAYS_YES="true" # Always answer yes to conda prompts
-else
-  echo "Found conda installation, skipping installation of Miniconda"
+fi
+
+# Check if conda is installed
+if [[ -z "$(which conda)" ]]; then
+  echo "[MESSAGE] No installation of conda found afte setting environment variables, exiting..."
+  exit 1
 fi
 
 # Make necessary directories
@@ -48,29 +45,17 @@ cd $VSC_DATA/lib/
 git clone https://github.com/paulvantieghem/curla.git
 cd $VSC_DATA/lib/curla
 conda env create -f conda_env.yml
-conda activate curla
+echo "[MESSAGE] Conda environment 'curla' created"
 
 # Install CARLA 0.9.11
 cd $VSC_DATA/lib/carla
 wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.11.tar.gz
 tar -xzf CARLA_0.9.11.tar.gz
 rm CARLA_0.9.11.tar.gz
+source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
 export CONDA_ALWAYS_YES="true"
 conda activate curla
 conda install conda-build
 conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg
-
-# Launch the CARLA simulator in the background
-cd $VSC_DATA/lib/carla
-./CarlaUE4.sh & CARLA=$!
-
-# Sleep for 30 seconds
-sleep 30
-
-# Run test script
-python $VSC_DATA/lib/curla/test.py
-
-# Terminate session
-kill $CARLA
-kill -9 $(pgrep -f CarlaUE4)
 conda deactivate
+echo "[MESSAGE] CARLA installed"

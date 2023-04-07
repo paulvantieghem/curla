@@ -1,10 +1,4 @@
 #!/bin/bash
-#SBATCH --cluster=genius
-#SBATCH --partition=gpu_v100
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --gpus-per-node=1
-#SBATCH --mem-per-cpu=20G
 
 #SBATCH --time=00:30:00
 
@@ -21,16 +15,36 @@ module use /apps/leuven/icelake/2021a/modules/all
 module load intel/2021a
 module load libpng
 module load libjpeg-turbo
-module load CUDA/10.1.105
+module load CUDA/11.7
+
+# CUDA version
+nvcc --version
+
+# Set environment variables
+if [[ -z "$(which conda)" ]]; then
+  echo "[MESSAGE] No installation of conda found, adding miniconda3 to PATH"
+  export PATH="$VSC_DATA/miniconda3/bin:$PATH"
+  $VSC_DATA/miniconda3/bin/conda init bash
+  $VSC_DATA/miniconda3/bin/conda init zsh
+fi
+
+# Check if conda is installed
+if [[ -z "$(which conda)" ]]; then
+  echo "[MESSAGE] No installation of conda found afte setting environment variables, exiting..."
+  exit 1
+fi
 
 # Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
-./CarlaUE4.sh & CARLA=$!
+DISPLAY=
+./CarlaUE4.sh -opengl -nosound & CARLA=$!
 
 # Sleep for 30 seconds
 sleep 30
 
 # Run test script
+source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
+conda activate curla
 python $VSC_DATA/lib/curla/test.py
 
 # Terminate session

@@ -1,10 +1,4 @@
 #!/bin/bash
-#SBATCH --cluster=genius
-#SBATCH --partition=gpu_v100
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --gpus-per-node=1
-#SBATCH --mem-per-cpu=20G
 
 #SBATCH --time=10:00:00
 
@@ -25,9 +19,22 @@ module load intel/2021a
 module load anaconda3/2022.10
 module load libpng
 module load libjpeg-turbo
+module load CUDA/11.7
 
+# CUDA version
+nvcc --version
+
+# Set environment variables
 if [[ -z "$(which conda)" ]]; then
-  echo "No installation of conda found!"
+  echo "[MESSAGE] No installation of conda found, adding miniconda3 to PATH"
+  export PATH="$VSC_DATA/miniconda3/bin:$PATH"
+  $VSC_DATA/miniconda3/bin/conda init bash
+  $VSC_DATA/miniconda3/bin/conda init zsh
+fi
+
+# Install Miniconda
+if [[ -z "$(which conda)" ]]; then
+  echo "[MESSAGE] No installation of conda found afte setting environment variables, exiting..."
   exit 1
 fi
 
