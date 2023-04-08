@@ -26,16 +26,10 @@ class VideoRecorder(object):
     def record(self, env):
         if self.enabled:
             try:
-                frame = env.render(
-                    mode='rgb_array',
-                    height=self.height,
-                    width=self.width,
-                    camera_id=self.camera_id
-                )
+                frame = env.render()
             except:
-                frame = env.render(
-                    mode='rgb_array',
-                )
+                print('Warning: failed to render environment, setting frame to None')
+                frame = None
     
             self.frames.append(frame)
 
@@ -43,4 +37,7 @@ class VideoRecorder(object):
         if self.enabled:
             path = os.path.join(self.dir_name, file_name)
             kargs = {'macro_block_size': None}
-            imageio.mimsave(path, self.frames, fps=self.fps, **kargs)
+            try:
+                imageio.mimsave(path, self.frames, fps=self.fps, **kargs)
+            except:
+                print('Warning: failed to save video')

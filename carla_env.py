@@ -398,7 +398,7 @@ class CarlaEnv:
         return reward, done, info
 
     
-    def render(self, mode):
+    def render(self):
         return self.image
     
     @property
