@@ -103,7 +103,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in tqdm(range(num_episodes), desc='eval'):
             obs = env.reset()
-            video.init(enabled=(i == 0))
+            video.init(enabled=(True))
             done = False
             episode_reward = 0
             while not done:
@@ -119,7 +119,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
                 video.record(env)
                 episode_reward += reward
 
-            video.save('%d.mp4' % step)
+            video.save(f'eval_at_step_{step}_ep_{i+1}.mp4')
             L.log('eval/' + prefix + 'episode_reward', episode_reward, step)
             all_ep_rewards.append(episode_reward)
         
@@ -271,6 +271,11 @@ def main():
 
             # Log episode stats
             if step > 0:
+                # Log training stats if episode ended before logging interval
+                if (info != None) and not(step % args.log_interval == 0):
+                    L.log('train/episode_mean_r1', info['r1'], step)
+                    L.log('train/episode_mean_r2', info['r2'], step)
+                    L.log('train/episode_mean_r3', info['r3'], step)
                 L.log('train/duration', time.time() - start_time, step)
                 L.log('train/episode_reward', episode_reward, step)
 
