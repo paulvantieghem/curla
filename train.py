@@ -10,7 +10,7 @@ import torch
 import argparse
 import os
 import math
-import gym
+import gymnasium as gym
 import sys
 import random
 import time
