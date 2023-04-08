@@ -11,14 +11,17 @@
 
 # Load necessary modules
 module --force purge
-module use /apps/leuven/icelake/2021a/modules/all
+module use /apps/leuven/${VSC_ARCH_LOCAL}/2021a/modules/all
 module load intel/2021a
 module load libpng
 module load libjpeg-turbo
-module load CUDA/11.7
+module load CUDA
 
 # CUDA version
 nvcc --version
+
+# GPU information 
+nvidia-smi
 
 # Set environment variables
 if [[ -z "$(which conda)" ]]; then
