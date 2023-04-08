@@ -270,8 +270,9 @@ def main():
         if done:
 
             # Log episode stats
-            L.log('train/duration', time.time() - start_time, step)
-            L.log('train/episode_reward', episode_reward, step)
+            if step > 0:
+                L.log('train/duration', time.time() - start_time, step)
+                L.log('train/episode_reward', episode_reward, step)
 
             # Dump log
             if step % args.log_interval == 0 and step > 0:
