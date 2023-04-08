@@ -259,12 +259,12 @@ def main():
                 replay_buffer.save(buffer_dir)
 
         # Log training stats
-        if step % args.log_interval == 0 and step > 0 and info != None:
+        if step % args.log_interval == 0 and step > 0:
             if info != None:
                 L.log('train/episode_mean_r1', info['r1'], step)
                 L.log('train/episode_mean_r2', info['r2'], step)
                 L.log('train/episode_mean_r3', info['r3'], step)
-                L.log('train/episode_mean_fps', fps, step)
+            L.log('train/episode_mean_fps', fps, step)
 
         # Reset if done
         if done:
