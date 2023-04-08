@@ -336,7 +336,7 @@ class CarlaEnv:
         if self.episode_step == 0:
             self.previous_waypoint = self.ego_vehicle.get_location()
             self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
-            self.reward_history = {'r1': [0,], 'r2': [0,], 'r3': [0,]}
+            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0}
 
         
         # Update waypoints
@@ -387,13 +387,10 @@ class CarlaEnv:
             reward += r1 + r2 + r3
 
         # Extra information
-        self.reward_history['r1'].append(r1)
-        self.reward_history['r2'].append(r2)
-        self.reward_history['r3'].append(r3)
-        r1_avg = np.mean(self.reward_history['r1'])
-        r2_avg = np.mean(self.reward_history['r2'])
-        r3_avg = np.mean(self.reward_history['r3'])
-        info = {'r1': r1_avg, 'r2': r2_avg, 'r3': r3_avg}
+        self.reward_history['r1'] += r1
+        self.reward_history['r2'] += r2
+        self.reward_history['r3'] += r3
+        info = {'r1': self.reward_history['r1'], 'r2': self.reward_history['r2'], 'r3': self.reward_history['r3']}
         
         return reward, done, info
 

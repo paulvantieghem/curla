@@ -258,26 +258,17 @@ def main():
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
 
-        # Log training stats
-        if step % args.log_interval == 0 and step > 0:
-            if info != None:
-                L.log('train/episode_mean_r1', info['r1'], step)
-                L.log('train/episode_mean_r2', info['r2'], step)
-                L.log('train/episode_mean_r3', info['r3'], step)
-            L.log('train/episode_mean_fps', fps, step)
-
         # Reset if done
         if done:
 
             # Log episode stats
             if step > 0:
-                # Log training stats if episode ended before logging interval
-                if (info != None) and not(step % args.log_interval == 0):
-                    L.log('train/episode_mean_r1', info['r1'], step)
-                    L.log('train/episode_mean_r2', info['r2'], step)
-                    L.log('train/episode_mean_r3', info['r3'], step)
                 L.log('train/duration', time.time() - start_time, step)
                 L.log('train/episode_reward', episode_reward, step)
+                if info != None:
+                    L.log('train/episode_r1_sum', info['r1'], step)
+                    L.log('train/episode_r2_sum', info['r2'], step)
+                    L.log('train/episode_r3_sum', info['r3'], step)
 
             # Dump log
             if step % args.log_interval == 0 and step > 0:
