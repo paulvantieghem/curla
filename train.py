@@ -205,7 +205,8 @@ def main():
         env = utils.FrameStack(env, k=args.frame_stack)
 
     # Video recorder
-    video = VideoRecorder(video_dir if args.save_video else None)
+    vid_path = video_dir if args.save_video else None
+    video = VideoRecorder(vid_path, env.fps)
 
     # Store used arguments for repeatability
     with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
@@ -244,7 +245,7 @@ def main():
     episode, episode_reward, done, info = 0, 0, True, None
     start_time = time.time()
     fps = 0
-    max_episode_reward = (env.desired_speed/3.6)*env.dt*env.max_episode_steps
+    max_episode_reward = (env.desired_speed/3.6)*env.dt*env._max_episode_steps
 
     for step in range(args.num_train_steps+1):
 
@@ -266,7 +267,7 @@ def main():
                 max_score_achieved = episode_reward/max_episode_reward
                 L.log('train/episode_steps', episode_step, step)
                 L.log('train/episode_reward', episode_reward, step)
-                L.log('train/episode_max_score_%_achieved', max_score_achieved, step)
+                L.log('train/episode_max_score_ratio', max_score_achieved, step)
                 L.log('train/episode_mean_fps', fps, step)
                 if info != None:
                     L.log('train/episode_r1_sum', info['r1'], step)

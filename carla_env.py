@@ -135,8 +135,8 @@ class CarlaEnv:
         # Spectator
         self.spectator = self.world.get_spectator()
 
-        # @TODO: investigate this
-        self._max_episode_steps = self.seconds_per_episode*self.fps
+        # Calculate max episode steps
+        self._max_episode_steps = int(self.seconds_per_episode*self.fps)
 
         # Save camera sensor images
         if self.save_imgs:

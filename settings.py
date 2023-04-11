@@ -10,18 +10,18 @@ SAVE_IMGS = False
 
 # Speeds in km/h
 SET_INITIAL_SPEED = False
-INITIAL_SPEED = 10  # km/h
+INITIAL_SPEED = 10 # km/h
 DESIRED_SPEED = 90 # km/h
 
 # Maximum stall time
-MAX_STALL_TIME = 5  # seconds
+MAX_STALL_TIME = 5 # seconds
 STALL_SPEED = 0.5 # km/h
 
 # Synchronous mode FPS
 FPS = 20
 
 # Episode settings
-SECONDS_PER_EPISODE = 1000/FPS
+SECONDS_PER_EPISODE = 100
 
 # RGB camera settings
 IM_HEIGHT = 90
