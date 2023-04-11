@@ -249,10 +249,11 @@ class CarlaEnv:
     def step(self, action):
 
         # Apply the action to the ego vehicle
-        if action[0] >= 0:
-            control_action = carla.VehicleControl(throttle=float(0.5+action[0]), steer=float(action[1]), brake=0.0)
-        else:
-            control_action = carla.VehicleControl(throttle=0.0, steer=float(action[1]), brake=-2*float(action[0]))
+        action = np.clip(action, -1, 1)
+        throttle = float(np.max([action[0], 0.0]))
+        brake = float(-np.min([action[0], 0.0]))
+        steer = float(action[1])
+        control_action = carla.VehicleControl(throttle=throttle, steer=steer, brake=brake, hand_brake=False, reverse=False, manual_gear_shift=False)
         self.ego_vehicle.apply_control(control_action)
 
         # Calculate reward
@@ -351,6 +352,7 @@ class CarlaEnv:
 
         # Velocity vector of the ego vehicle
         v_ego = self.ego_vehicle.get_velocity()
+        abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
         v_ego = np.array([v_ego.x, v_ego.y])
 
         # Highway lane direction unit vector
@@ -370,21 +372,35 @@ class CarlaEnv:
         r2 = -lambda_s*np.abs(steer_angle)
 
         # Reward for collision event
-        lambda_i = 1e-2
+        lambda_i = 1e-4
         r3 = 0
         if len(self.collision_history) != 0:
-            if self.episode_step + self.starting_frame == self.collision_history[0].frame: # Wait to be at the correct frame to apply penalty
-                done = True
-                collision_event = self.collision_history[0]
-                impulse = collision_event.normal_impulse
-                impulse = np.array([impulse.x, impulse.y, impulse.z])
-                r3 = lambda_i*-np.linalg.norm(impulse)
-                print('collision event: ', r3)
-                if self.verbose: print('episode done: collision')
+            intensities = []
+            for collision in self.collision_history:
+                if self.episode_step + self.starting_frame == collision.frame: # Wait to be at the correct frame to apply penalty
+                    impulse = collision.normal_impulse
+                    impulse = np.array([impulse.x, impulse.y, impulse.z])
+                    intensities.append(np.linalg.norm(impulse))
+            if len(intensities) > 0:
+                intensities = np.array(intensities)
+                r3 = lambda_i*-np.sum(intensities)
+                if self.verbose: print('collision event: ', r3)
 
         # Total reward 
         if self.episode_step > 0:
             reward += r1 + r2 + r3
+
+        # Update stalling counter
+        if self.episode_step >= 50:
+            if abs_kmh < self.stall_speed:
+                self.stall_counter += 1
+            else:
+                self.stall_counter = 0
+
+        # Terminate episode if stalling too long
+        if self.stall_counter*self.dt >= self.max_stall_time:
+            done = True
+            if self.verbose: print('episode done: maximum stall time exceeded')
 
         # Extra information
         self.total_rewards['r1'] += r1
@@ -406,7 +422,7 @@ class CarlaEnv:
     @property
     def action_space(self):
         """Returns the expected action passed to the `step` method."""
-        return gym.spaces.Box(low=np.array([-0.5, -1.0], dtype=np.float32), high=np.array([0.5, 1.0], dtype=np.float32), dtype=np.float32)
+        return gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
     
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous

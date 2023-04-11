@@ -18,12 +18,19 @@ from termcolor import colored
 FORMAT_CONFIG = {
     'rl': {
         'train': [
-            ('episode', 'E', 'int'), ('step', 'S', 'int'),
-            ('duration', 'D', 'time'), ('episode_reward', 'R', 'float'),
-            ('batch_reward', 'BR', 'float'), ('actor_loss', 'A_LOSS', 'float'),
-            ('critic_loss', 'CR_LOSS', 'float'), ('curl_loss', 'CU_LOSS', 'float')
+            ('episode', 'E', 'int'), 
+            ('step', 'S', 'int'),
+            ('episode_reward', 'ER', 'float'),
+            ('batch_reward', 'BR', 'float'), 
+            ('actor_loss', 'A_LOSS', 'float'),
+            ('critic_loss', 'CR_LOSS', 'float'), 
+            ('curl_loss', 'CU_LOSS', 'float')
         ],
-        'eval': [('step', 'S', 'int'), ('episode_reward', 'ER', 'float')]
+        'eval': [
+            ('step', 'S', 'int'), 
+            ('mean_episode_reward', 'MER', 'float'),
+            ('best_episode_reward', 'BER', 'float')
+        ]
     }
 }
 

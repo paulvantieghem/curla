@@ -39,6 +39,15 @@ python train.py ^
     --num_train_steps 200
 ```   
 
+Test command 2
+```
+python train.py ^
+    --num_eval_episodes 1 ^
+    --init_steps 1 ^
+    --eval_freq 100 ^
+    --num_train_steps 600
+```
+
 Train command
 ``` 
 python train.py ^
@@ -53,12 +62,12 @@ python train.py ^
     --pre_transform_image_width 160 ^
     --image_height 76 ^
     --image_width 135 ^
-    --replay_buffer_capacity 100000 ^
+    --replay_buffer_capacity 100_000 ^
     --work_dir .\tmp ^
     --agent curl_sac ^
     --frame_stack 3 ^
     --seed -1 ^
-    --eval_freq 5000 ^
+    --eval_freq 2_000 ^
     --batch_size 128 ^
-    --num_train_steps 25000
+    --num_train_steps 10_000
 ``` 

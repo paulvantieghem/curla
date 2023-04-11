@@ -14,8 +14,8 @@ INITIAL_SPEED = 10  # km/h
 DESIRED_SPEED = 90 # km/h
 
 # Maximum stall time
-MAX_STALL_TIME = 5
-STALL_SPEED = 1
+MAX_STALL_TIME = 5  # seconds
+STALL_SPEED = 0.5 # km/h
 
 # Synchronous mode FPS
 FPS = 20

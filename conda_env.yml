@@ -24,7 +24,6 @@ dependencies:
     - gymnasium
     - imageio
     - imageio-ffmpeg
-    - tqdm
     - opencv-python
     - tensorboard
     - termcolor

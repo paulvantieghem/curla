@@ -16,7 +16,6 @@ import random
 import time
 import json
 import copy
-from tqdm import tqdm
 
 import utils
 from logger import Logger
@@ -94,14 +93,11 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-def evaluate(env, agent, video, num_episodes, L, step, args):
-    all_ep_rewards = []
-    all_ep_steps = []
-
-    def run_eval_loop(sample_stochastically=True):
+def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochastically=False):
+        all_ep_rewards = []
+        all_ep_steps = []
         prefix = 'stochastic_' if sample_stochastically else ''
-        for i in tqdm(range(num_episodes), desc='eval'):
+        for i in range(num_episodes):
             obs = env.reset()
             video.init(enabled=(True))
             done = False
@@ -128,13 +124,13 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         # Log evaluation metrics
         L.log_histogram('eval/' + prefix + 'episode_reward', np.array(all_ep_rewards), step)
         L.log_histogram('eval/' + prefix + 'episode_steps', np.array(all_ep_steps), step)
-        best_ep_reward = np.max(all_ep_rewards)
-        mean_ep_reward = np.mean(all_ep_rewards)
+        best_ep_reward = float(np.max(all_ep_rewards))
+        mean_ep_reward = float(np.mean(all_ep_rewards))
         L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
         L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
 
-    run_eval_loop(sample_stochastically=False)
-    L.dump(step)
+        return L
+
 
 
 def make_agent(obs_shape, action_shape, args, device):
@@ -254,28 +250,28 @@ def main():
         # Evaluate agent periodically
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
-            evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
+            L = run_eval_loop(env, agent, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
                 agent.save_curl(model_dir, step)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
-            start_time = time.time()
+            done = True
 
         # Reset if done
         if done:
 
             # Log episode stats
             if step > 0:
-                L.log('train/duration', time.time() - start_time, step)
+                L.log('train/episode_steps', episode_step, step)
                 L.log('train/episode_reward', episode_reward, step)
+                L.log('train/episode_mean_fps', fps, step)
                 if info != None:
                     L.log('train/episode_r1_sum', info['r1'], step)
                     L.log('train/episode_r2_sum', info['r2'], step)
                     L.log('train/episode_r3_sum', info['r3'], step)
 
             # Dump log
-            if step % args.log_interval == 0 and step > 0:
-                L.dump(step)
+            L.dump(step)
 
             # Reset episode and environment
             start_time = time.time()

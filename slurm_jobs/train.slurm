@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
@@ -56,7 +56,7 @@ sleep 30
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
 conda activate curla
 cd $VSC_DATA/lib/curla
-python train.py --num_train_steps 200000
+python train.py --num_train_steps 400000
 
 # Terminate session
 kill $CARLA
