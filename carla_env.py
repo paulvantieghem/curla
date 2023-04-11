@@ -387,10 +387,10 @@ class CarlaEnv:
             reward += r1 + r2 + r3
 
         # Extra information
-        self.reward_history['r1'] += r1
-        self.reward_history['r2'] += r2
-        self.reward_history['r3'] += r3
-        info = {'r1': self.reward_history['r1'], 'r2': self.reward_history['r2'], 'r3': self.reward_history['r3']}
+        self.total_rewards['r1'] += r1
+        self.total_rewards['r2'] += r2
+        self.total_rewards['r3'] += r3
+        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3']}
         
         return reward, done, info
 

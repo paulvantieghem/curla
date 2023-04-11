@@ -97,15 +97,16 @@ def parse_args():
 
 def evaluate(env, agent, video, num_episodes, L, step, args):
     all_ep_rewards = []
+    all_ep_steps = []
 
     def run_eval_loop(sample_stochastically=True):
-        start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in tqdm(range(num_episodes), desc='eval'):
             obs = env.reset()
             video.init(enabled=(True))
             done = False
             episode_reward = 0
+            episode_steps = 0
             while not done:
                 # center crop image
                 if args.encoder_type == 'pixel':
@@ -118,18 +119,19 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
                 obs, reward, done, _ = env.step(action)
                 video.record(env)
                 episode_reward += reward
+                episode_steps += 1
 
             video.save(f'eval_at_step_{step}_ep_{i+1}.mp4')
-            L.log('eval/' + prefix + 'episode_reward', episode_reward, step)
             all_ep_rewards.append(episode_reward)
+            all_ep_steps.append(episode_steps)
         
-        L.log('eval/' + prefix + 'eval_time', time.time()-start_time , step)
+        # Log evaluation metrics
+        L.log_histogram('eval/' + prefix + 'episode_reward', np.array(all_ep_rewards), step)
+        L.log_histogram('eval/' + prefix + 'episode_steps', np.array(all_ep_steps), step)
         best_ep_reward = np.max(all_ep_rewards)
         mean_ep_reward = np.mean(all_ep_rewards)
-        std_ep_reward = np.std(all_ep_rewards)
         L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
         L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
-        L.log('eval/' + prefix + 'std_episode_reward', std_ep_reward, step)
 
     run_eval_loop(sample_stochastically=False)
     L.dump(step)
@@ -257,6 +259,7 @@ def main():
                 agent.save_curl(model_dir, step)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
+            start_time = time.time()
 
         # Reset if done
         if done:
