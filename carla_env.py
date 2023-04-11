@@ -337,7 +337,7 @@ class CarlaEnv:
         if self.episode_step == 0:
             self.previous_waypoint = self.ego_vehicle.get_location()
             self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
-            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0}
+            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0}
 
         
         # Update waypoints
@@ -363,21 +363,22 @@ class CarlaEnv:
         else:
             u_highway = u_highway/norm
 
-        # Highway progression in meters
+        # Reward for the highway progression [in meters] during the current time step
         r1 = np.dot(v_ego.T, u_highway)*self.dt
 
-        # Steering angle
+        # Reward for the current steering angle
         lambda_s = 1.0
         steer_angle = action[1]
         r2 = -lambda_s*np.abs(steer_angle)
 
-        # Reward for collision event
+        # Reward for collision intensities during the current time step
         lambda_i = 1e-4
-        r3 = 0
+        r3 = 0.0
         if len(self.collision_history) != 0:
             intensities = []
             for collision in self.collision_history:
-                if self.episode_step + self.starting_frame == collision.frame: # Wait to be at the correct frame to apply penalty
+                # Wait to be at the correct frame to apply penalty
+                if self.episode_step + self.starting_frame == collision.frame:
                     impulse = collision.normal_impulse
                     impulse = np.array([impulse.x, impulse.y, impulse.z])
                     intensities.append(np.linalg.norm(impulse))
@@ -386,9 +387,17 @@ class CarlaEnv:
                 r3 = lambda_i*-np.sum(intensities)
                 if self.verbose: print('collision event: ', r3)
 
+        # Reward for speeding during the current time step
+        r4 = 0.0
+        if abs_kmh > self.desired_speed:
+            velocity_delta = np.abs(abs_kmh - self.desired_speed)/3.6 # [m/s]
+            # This ensures that the r4 punishment for speeding is greater than
+            # the potential r1 reward for speeding (in straight line, see r1)
+            r4 = -self.dt*velocity_delta + self.dt
+
         # Total reward 
         if self.episode_step > 0:
-            reward += r1 + r2 + r3
+            reward += r1 + r2 + r3 + r4
 
         # Update stalling counter
         if self.episode_step >= 50:
@@ -406,7 +415,8 @@ class CarlaEnv:
         self.total_rewards['r1'] += r1
         self.total_rewards['r2'] += r2
         self.total_rewards['r3'] += r3
-        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3']}
+        self.total_rewards['r4'] += r4
+        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3'], 'r4': self.total_rewards['r4']}
         
         return reward, done, info
 

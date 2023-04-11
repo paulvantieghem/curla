@@ -269,6 +269,7 @@ def main():
                     L.log('train/episode_r1_sum', info['r1'], step)
                     L.log('train/episode_r2_sum', info['r2'], step)
                     L.log('train/episode_r3_sum', info['r3'], step)
+                    L.log('train/episode_r4_sum', info['r4'], step)
 
             # Dump log
             L.dump(step)

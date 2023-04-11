@@ -43,14 +43,17 @@ if [ -d "$VSC_DATA/lib/curla" ]; then
 fi
 cd $VSC_DATA/lib/
 git clone https://github.com/paulvantieghem/curla.git
+echo "[MESSAGE] Refreshed curla repository"
 
 # Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
 DISPLAY=
 SDL_VIDEODRIVER=offscreen ./CarlaUE4.sh -opengl & CARLA=$!
+echo "[MESSAGE] Launched CARLA simulator"
 
 # Sleep for 30 seconds
 sleep 30
+echo "[MESSAGE] 30 second sleep over, launching training..."
 
 # Train CURL agent on CARLA simulator
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
