@@ -33,7 +33,7 @@ fi
 
 # Check if conda is installed
 if [[ -z "$(which conda)" ]]; then
-  echo "[MESSAGE] No installation of conda found afte setting environment variables, exiting..."
+  echo "[MESSAGE] No installation of conda found after setting environment variables, exiting..."
   exit 1
 fi
 

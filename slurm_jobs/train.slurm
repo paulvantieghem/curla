@@ -33,17 +33,20 @@ fi
 
 # Check if conda is installed
 if [[ -z "$(which conda)" ]]; then
-  echo "[MESSAGE] No installation of conda found afte setting environment variables, exiting..."
+  echo "[MESSAGE] No installation of conda found after setting environment variables, exiting..."
   exit 1
 fi
 
 # Refresh the curla repository
 if [ -d "$VSC_DATA/lib/curla" ]; then
-  rm -rf $VSC_DATA/lib/curla
+  cd $VSC_DATA/lib/curla
+  git pull
+  echo "[MESSAGE] curla repository found, pulled new changes"
+else
+  cd $VSC_DATA/lib/
+  git clone git@github.com:paulvantieghem/curla.git
+  echo "[MESSAGE] curla repository not found, cloned repository"
 fi
-cd $VSC_DATA/lib/
-git clone https://github.com/paulvantieghem/curla.git
-echo "[MESSAGE] Refreshed curla repository"
 
 # Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
