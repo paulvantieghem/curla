@@ -96,6 +96,7 @@ def parse_args():
 def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochastically=False):
         all_ep_rewards = []
         all_ep_steps = []
+        best_episode = {'reward': -math.inf, 'ep': -1}
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
             obs = env.reset()
@@ -117,9 +118,18 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
                 episode_reward += reward
                 episode_steps += 1
 
+            if episode_reward > best_episode['reward']:
+                best_episode['reward'] = episode_reward
+                best_episode['ep'] = i
+
             video.save(f'eval_at_step_{step}_ep_{i+1}.mp4')
             all_ep_rewards.append(episode_reward)
             all_ep_steps.append(episode_steps)
+
+        bad_idx = list(range(num_episodes))
+        bad_idx.remove(best_episode['ep'])
+        for ep in bad_idx:
+            os.remove(os.path.join(video_dir, f'eval_at_step_{step}_ep_{ep+1}.mp4'))
         
         # Log evaluation metrics
         L.log_histogram('eval/' + prefix + 'episode_reward', np.array(all_ep_rewards), step)
@@ -187,7 +197,7 @@ def main():
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
     args.work_dir = os.path.join(args.work_dir, exp_name)
     utils.make_dir(args.work_dir)
-    video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
+    global video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
     model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
     buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
 
