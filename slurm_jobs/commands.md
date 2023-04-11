@@ -28,8 +28,11 @@ tensorboard --logdir="tmp" --port=6006
 http://127.0.0.1:16006
 ```
 
-#### Copying files from VSC server to local machine
+#### Copying files VSC server <--> local machine
 ```
-# On your local machine
+# On your local machine: from VSC to local
 scp -r vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla/tmp/ /Users/PaulVT/Desktop/tmp
+
+# On your local machine: from local to VSC
+scp -r /Users/PaulVT/Desktop/tmp vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla
 ```
