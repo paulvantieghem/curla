@@ -38,6 +38,7 @@ if [[ -z "$(which conda)" ]]; then
 fi
 
 # Refresh the curla repository
+ssh-add ~/.ssh/id_ed25519
 if [ -d "$VSC_DATA/lib/curla" ]; then
   cd $VSC_DATA/lib/curla
   git pull
