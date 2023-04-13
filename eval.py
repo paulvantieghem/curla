@@ -21,8 +21,6 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
 
         # Run evaluation loop
         for i in range(num_episodes):
-            # Wait on user to press enter to continue
-            input('Press enter to continue')
             obs = env.reset()
             video.init(enabled=record_video)
             done = False
@@ -35,18 +33,18 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                    action = np.array([0.5, 0.0])
                 obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
                 episode_step += 1
-                if info is not None:
+                if info is not None and episode_step % 20 == 0:
                     print('-' * 100)
                     print('Step: %d' % episode_step)
                     print('Highway progression (r1): %f' % info['r1'])
                     print('Lane deviation (r2): %f' % info['r2'])
-                    print('Collision (r3): %f' % info['r3'])
-                    print('Speeding (r4): %f' % info['r4'])
+                    print('Steering (r3): %f' % info['r3'])
+                    print('Collision (r4): %f' % info['r4'])
+                    print('Speeding (r5): %f' % info['r5'])
                     print('Mean kmh: %f' % info['mean_kmh'])
                     print('Max kmh: %f' % info['max_kmh'])
             end_time = time.time()
@@ -91,6 +89,7 @@ def main():
     ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
 
     # Print results
+    print()
     print('Average reward: %f' % np.mean(ep_rewards))
     print('Max reward: %f' % np.max(ep_rewards))
     print('Min reward: %f' % np.min(ep_rewards))

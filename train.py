@@ -285,6 +285,7 @@ def main():
                     L.log('train/episode_r2_sum', info['r2'], step)
                     L.log('train/episode_r3_sum', info['r3'], step)
                     L.log('train/episode_r4_sum', info['r4'], step)
+                    L.log('train/episode_r5_sum', info['r5'], step)
                     L.log('train/mean_kmh', info['mean_kmh'], step)
                     L.log('train/max_kmh', info['max_kmh'], step)
 

@@ -231,6 +231,13 @@ class CarlaEnv:
         self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
         if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
 
+        p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
+        dist = self._distance_from_center_lane(self.ego_vehicle, p_prev_wp, p_next_wp)
+        if dist >= 1e-2:
+            if self.verbose: print('Ego vehicle not spawned in center of the lane, resetting again...')
+            time.sleep(1.0)
+            self.reset()
+
         # Enable synchronous mode
         self.set_synchronous_mode(True)
 
@@ -333,23 +340,14 @@ class CarlaEnv:
         done = False
         reward = 0
 
-        # Initial waypoints
+        # Initializations
         if self.episode_step == 0:
-            self.previous_waypoint = self.ego_vehicle.get_location()
-            self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
-            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0}
+            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0}
             self.kmh_tracker = [0.0,]
 
         
         # Update waypoints
-        new_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
-        if new_waypoint != self.current_waypoint:
-            self.previous_waypoint = self.current_waypoint
-            self.current_waypoint = new_waypoint
-
-        # [x,y] location of the previous and current waypoints
-        p_prev_wp = np.array([self.previous_waypoint.x, self.previous_waypoint.y])
-        p_cur_wp = np.array([self.current_waypoint.x, self.current_waypoint.y])
+        p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
 
         # Velocity vector of the ego vehicle
         v_ego = self.ego_vehicle.get_velocity()
@@ -357,24 +355,33 @@ class CarlaEnv:
         v_ego = np.array([v_ego.x, v_ego.y])
 
         # Highway lane direction unit vector
-        u_highway = p_cur_wp - p_prev_wp
+        u_highway = p_next_wp - p_prev_wp
         norm = np.linalg.norm(u_highway)
         if np.isclose(norm, 0.0):
             u_highway = np.array([0.0, 0.0])
         else:
             u_highway = u_highway/norm
 
+        # Precision of the reward values
+        precision = 4
+
         # Reward for the highway progression [in meters] during the current time step
-        r1 = np.dot(v_ego.T, u_highway)*self.dt
+        r1 = np.round(np.dot(v_ego.T, u_highway)*self.dt, 5)
+
+        # Reward for perpendicular distance to the center of the lane [in meters] during the current time step,
+        # smoothed to penalize small distances less and rounded to neglect really small distances
+        lambda_d = 1.0
+        distance = self._distance_from_center_lane(self.ego_vehicle, p_prev_wp, p_next_wp)
+        r2 = -lambda_d*np.round(np.minimum(distance, distance**3), 2)
 
         # Reward for the current steering angle
-        lambda_s = 1.0
+        lambda_s = 1e-1
         steer_angle = action[1]
-        r2 = -lambda_s*np.abs(steer_angle)
+        r3 = np.round(-lambda_s*np.abs(steer_angle), precision)
 
         # Reward for collision intensities during the current time step
         lambda_i = 1e-2
-        r3 = 0.0
+        r4 = 0.0
         if len(self.collision_history) != 0:
             intensities = []
             for collision in self.collision_history:
@@ -385,21 +392,23 @@ class CarlaEnv:
                     intensities.append(np.linalg.norm(impulse))
             if len(intensities) > 0:
                 intensities = np.array(intensities)
-                r3 = lambda_i*-np.sum(intensities)
+                print('Sum of collision intensities: ', np.sum(intensities))
+                r4 = np.round(-lambda_i*np.sum(intensities), precision)
+                print('collision event: ', r4)
                 done = True
-                if self.verbose: print('collision event: ', r3)
+                if self.verbose: print('collision event: ', r4)
 
         # Reward for speeding during the current time step
-        r4 = 0.0
+        r5 = 0.0
         if abs_kmh > self.desired_speed + 1.0:
             velocity_delta = np.abs(abs_kmh - self.desired_speed)/3.6 # [m/s]
             # This ensures that the r4 punishment for speeding is greater than
             # the potential r1 reward for speeding (in straight line, see r1)
-            r4 = -(self.dt*velocity_delta + self.dt)
+            r5 = np.round(-(self.dt*velocity_delta + self.dt), precision)
 
         # Total reward 
         if self.episode_step > 0:
-            reward += r1 + r2 + r3 + r4
+            reward += r1 + r2 + r3 + r4 + r5
 
         # Update stalling counter
         if self.episode_step >= 50:
@@ -418,8 +427,15 @@ class CarlaEnv:
         self.total_rewards['r2'] += r2
         self.total_rewards['r3'] += r3
         self.total_rewards['r4'] += r4
+        self.total_rewards['r5'] += r5
         self.kmh_tracker.append(abs_kmh)
-        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3'], 'r4': self.total_rewards['r4'], 'mean_kmh': np.mean(self.kmh_tracker), 'max_kmh': np.max(self.kmh_tracker)}
+        info = {'r1': self.total_rewards['r1'], 
+                'r2': self.total_rewards['r2'], 
+                'r3': self.total_rewards['r3'], 
+                'r4': self.total_rewards['r4'], 
+                'r5': self.total_rewards['r5'], 
+                'mean_kmh': np.mean(self.kmh_tracker), 
+                'max_kmh': np.max(self.kmh_tracker)}
         
         return reward, done, info
 
@@ -437,6 +453,21 @@ class CarlaEnv:
         """Returns the expected action passed to the `step` method."""
         return gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
     
+    def _get_waypoints(self, distance):
+        """Returns the previous and next waypoints at a given distance from the ego vehicle"""
+        waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving)
+        previous_waypoint = waypoint.previous(distance)[0].transform.location
+        next_waypoint = waypoint.next(distance)[0].transform.location
+        p_prev_wp = np.array([previous_waypoint.x, previous_waypoint.y])
+        p_next_wp = np.array([next_waypoint.x, next_waypoint.y])
+        return p_prev_wp, p_next_wp
+    
+    def _distance_from_center_lane(self, vehicle, p_prev_wp, p_next_wp): 
+        """Returns the perpendicular distance from the center of the lane"""
+        p_ego = np.array([vehicle.get_location().x, vehicle.get_location().y])
+        distance = np.linalg.norm(np.cross(p_next_wp - p_prev_wp, p_prev_wp - p_ego))/np.linalg.norm(p_next_wp - p_prev_wp)
+        return distance
+
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous
         self.world.apply_settings(self.settings)
