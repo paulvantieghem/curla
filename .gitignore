@@ -2,6 +2,7 @@
 _out/
 tmp*/
 models/
+eval_*/
 
 # macOS files
 .DS_Store
