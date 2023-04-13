@@ -32,7 +32,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                obs, reward, done, _ = env.step(action)
+                obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
             end_time = time.time()
@@ -41,6 +41,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
             ep_times.append(duration)
             ep_rewards.append(episode_reward)
             print('Episode %d/%d, Reward: %f, Time: %f' % (i + 1, num_episodes, episode_reward, duration))
+            print(info)
         return ep_rewards, ep_times
 
 def main():

@@ -11,7 +11,7 @@ SAVE_IMGS = False
 # Speeds in km/h
 SET_INITIAL_SPEED = False
 INITIAL_SPEED = 10 # km/h
-DESIRED_SPEED = 90 # km/h
+DESIRED_SPEED = 60 # km/h
 
 # Maximum stall time
 MAX_STALL_TIME = 5 # seconds

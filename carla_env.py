@@ -338,6 +338,7 @@ class CarlaEnv:
             self.previous_waypoint = self.ego_vehicle.get_location()
             self.current_waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving).transform.location
             self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0}
+            self.kmh_tracker = [0.0,]
 
         
         # Update waypoints
@@ -385,15 +386,16 @@ class CarlaEnv:
             if len(intensities) > 0:
                 intensities = np.array(intensities)
                 r3 = lambda_i*-np.sum(intensities)
+                done = True
                 if self.verbose: print('collision event: ', r3)
 
         # Reward for speeding during the current time step
         r4 = 0.0
-        if abs_kmh > self.desired_speed:
+        if abs_kmh > self.desired_speed + 1.0:
             velocity_delta = np.abs(abs_kmh - self.desired_speed)/3.6 # [m/s]
             # This ensures that the r4 punishment for speeding is greater than
             # the potential r1 reward for speeding (in straight line, see r1)
-            r4 = -self.dt*velocity_delta + self.dt
+            r4 = -(self.dt*velocity_delta + self.dt)
 
         # Total reward 
         if self.episode_step > 0:
@@ -416,7 +418,8 @@ class CarlaEnv:
         self.total_rewards['r2'] += r2
         self.total_rewards['r3'] += r3
         self.total_rewards['r4'] += r4
-        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3'], 'r4': self.total_rewards['r4']}
+        self.kmh_tracker.append(abs_kmh)
+        info = {'r1': self.total_rewards['r1'], 'r2': self.total_rewards['r2'], 'r3': self.total_rewards['r3'], 'r4': self.total_rewards['r4'], 'mean_kmh': np.mean(self.kmh_tracker), 'max_kmh': np.max(self.kmh_tracker)}
         
         return reward, done, info
 
