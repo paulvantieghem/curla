@@ -1,6 +1,7 @@
 # Data
 _out/
 tmp*/
+models/
 
 # macOS files
 .DS_Store

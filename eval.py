@@ -21,10 +21,13 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
 
         # Run evaluation loop
         for i in range(num_episodes):
+            # Wait on user to press enter to continue
+            input('Press enter to continue')
             obs = env.reset()
             video.init(enabled=record_video)
             done = False
             episode_reward = 0
+            episode_step = 0
             start_time = time.time()
             while not done:
                 # center crop image
@@ -32,23 +35,33 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
+                    action = np.array([0.5, 0.0])
                 obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
+                episode_step += 1
+                if info is not None:
+                    print('-' * 100)
+                    print('Step: %d' % episode_step)
+                    print('Highway progression (r1): %f' % info['r1'])
+                    print('Lane deviation (r2): %f' % info['r2'])
+                    print('Collision (r3): %f' % info['r3'])
+                    print('Speeding (r4): %f' % info['r4'])
+                    print('Mean kmh: %f' % info['mean_kmh'])
+                    print('Max kmh: %f' % info['max_kmh'])
             end_time = time.time()
             duration = end_time - start_time
-            video.save('%d_%d.mp4' % step, i)
+            video.save(f'{step}_{i}.mp4')
             ep_times.append(duration)
             ep_rewards.append(episode_reward)
             print('Episode %d/%d, Reward: %f, Time: %f' % (i + 1, num_episodes, episode_reward, duration))
-            print(info)
         return ep_rewards, ep_times
 
 def main():
 
     # Model checkpoint to load
-    model_dir = './tmp/Town04-04-06-19-06-12-im76x135-b128-s312061-pixel/model'
-    step = 20_000
+    model_dir = './models'
+    step = 400_000
 
     # Set up environment
     env = CarlaEnv('Town04', 75, 10)
@@ -71,6 +84,7 @@ def main():
     agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, encoder_type='pixel')
 
     # Load model
+    print('Loading model %s' % os.path.join(model_dir, 'curl_%d.pt' % step))
     agent.load_curl(model_dir, step)
 
     # Run evaluation loop

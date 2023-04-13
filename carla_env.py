@@ -373,7 +373,7 @@ class CarlaEnv:
         r2 = -lambda_s*np.abs(steer_angle)
 
         # Reward for collision intensities during the current time step
-        lambda_i = 1e-4
+        lambda_i = 1e-2
         r3 = 0.0
         if len(self.collision_history) != 0:
             intensities = []
