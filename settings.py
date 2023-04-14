@@ -1,16 +1,21 @@
+import os
+
 # Verbosity
 VERBOSE = False
 
 # Move spectator to ego vehicle spawn location
-SPECTATOR = True
+if os.name == "nt":
+    SPECTATOR = True
+else:
+    SPECTATOR = False
 
 # Display camera sensor with OpenCV
 SHOW_PREVIEW = False
 SAVE_IMGS = False
 
 # Speeds in km/h
-SET_INITIAL_SPEED = False
-INITIAL_SPEED = 10 # km/h
+SET_INITIAL_SPEED = True
+INITIAL_SPEED = 5 # km/h
 DESIRED_SPEED = 60 # km/h
 
 # Maximum stall time
@@ -26,10 +31,10 @@ SECONDS_PER_EPISODE = 100
 # RGB camera settings
 IM_HEIGHT = 90
 IM_WIDTH = 160
-FOV = 110
+FOV = 120
 
 # RGB camera relative position
-CAM_X = 1.5
+CAM_X = 1.3
 CAM_Y = 0.0
 CAM_Z = 1.75
 

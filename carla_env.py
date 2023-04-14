@@ -113,7 +113,9 @@ class CarlaEnv:
         self.camera_sensor_bp.set_attribute('image_size_x', f'{self.im_width}')
         self.camera_sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
-        self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z))
+        self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
+        self.camera_sensor_bp.set_attribute('enable_postprocess_effects', str(True))
+        self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z), carla.Rotation(pitch=-15))
 
         # Collision sensor settings
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
@@ -338,14 +340,23 @@ class CarlaEnv:
 
         # Initialize return information
         done = False
-        reward = 0
+        reward = 0.0
 
         # Initializations
         if self.episode_step == 0:
             self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0}
             self.kmh_tracker = [0.0,]
 
-        
+        # Precision of the reward values
+        precision = 4
+
+        # Reward weights
+        lambda_r1 = 1.0     # Highway progression
+        lambda_r2 = 1.0     # Center of lane deviation
+        lambda_r3 = 1.0     # Steering angle
+        lambda_r4 = 1e-2    # Collision
+        lambda_r5 = 2.0     # Speeding
+
         # Update waypoints
         p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
 
@@ -362,25 +373,22 @@ class CarlaEnv:
         else:
             u_highway = u_highway/norm
 
-        # Precision of the reward values
-        precision = 4
-
         # Reward for the highway progression [in meters] during the current time step
-        r1 = np.round(np.dot(v_ego.T, u_highway)*self.dt, 5)
+        r1 = lambda_r1*(np.dot(v_ego.T, u_highway)*self.dt)
+        r1 = np.round(r1, precision)
 
         # Reward for perpendicular distance to the center of the lane [in meters] during the current time step,
         # smoothed to penalize small distances less and rounded to neglect really small distances
-        lambda_d = 1.0
         distance = self._distance_from_center_lane(self.ego_vehicle, p_prev_wp, p_next_wp)
-        r2 = -lambda_d*np.round(np.minimum(distance, distance**3), 2)
+        r2 = (-1.0)*lambda_r2*np.round(np.minimum(1.0, distance**3), 2)
+        r2 = np.round(r2, precision)
 
         # Reward for the current steering angle
-        lambda_s = 1e-1
         steer_angle = action[1]
-        r3 = np.round(-lambda_s*np.abs(steer_angle), precision)
+        r3 = (-1.0)*lambda_r3*np.abs(steer_angle)
+        r3 = np.round(r3, precision)
 
         # Reward for collision intensities during the current time step
-        lambda_i = 1e-2
         r4 = 0.0
         if len(self.collision_history) != 0:
             intensities = []
@@ -392,9 +400,8 @@ class CarlaEnv:
                     intensities.append(np.linalg.norm(impulse))
             if len(intensities) > 0:
                 intensities = np.array(intensities)
-                print('Sum of collision intensities: ', np.sum(intensities))
-                r4 = np.round(-lambda_i*np.sum(intensities), precision)
-                print('collision event: ', r4)
+                r4 = (-1.0)*lambda_r4*np.sum(intensities)
+                r4 = np.round(r4, precision)
                 done = True
                 if self.verbose: print('collision event: ', r4)
 
@@ -402,13 +409,15 @@ class CarlaEnv:
         r5 = 0.0
         if abs_kmh > self.desired_speed + 1.0:
             velocity_delta = np.abs(abs_kmh - self.desired_speed)/3.6 # [m/s]
-            # This ensures that the r4 punishment for speeding is greater than
+            # This ensures that the r5 punishment for speeding is greater than
             # the potential r1 reward for speeding (in straight line, see r1)
-            r5 = np.round(-(self.dt*velocity_delta + self.dt), precision)
+            r5 = self.dt*velocity_delta + self.dt
+            r5 = (-1.0)*lambda_r5*r5
+            r5 = np.round(r5, precision)
 
         # Total reward 
         if self.episode_step > 0:
-            reward += r1 + r2 + r3 + r4 + r5
+            reward = r1 + r2 + r3 + r4 + r5
 
         # Update stalling counter
         if self.episode_step >= 50:
@@ -478,11 +487,14 @@ class CarlaEnv:
         # Extract image data
         self.image = np.array(carla_im_data.raw_data)
 
-        # Reshape image data to (H, W, X) format (X = channels + alpha)
+        # Reshape image data to (H, W, X) format (X = BGRA)
         self.image = self.image.reshape((self.im_height, self.im_width, -1))
 
-        # Remove alpha to obtain (H, W, C) image
+        # Remove alpha to obtain (H, W, C) image wit C = BGR
         self.image = self.image[:, :, :3]
+
+        # Convert image from BGR to RGB
+        self.image = self.image[:, :, ::-1]
 
         # Display/record if requested
         if self.show_preview:

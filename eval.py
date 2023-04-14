@@ -21,6 +21,8 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
 
         # Run evaluation loop
         for i in range(num_episodes):
+            # Wait for input of user to continue
+            input('Press enter to start episode %d/%d' % (i + 1, num_episodes))
             obs = env.reset()
             video.init(enabled=record_video)
             done = False
@@ -33,11 +35,12 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
+                    action = np.array([1.0, 0.0])
                 obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
                 episode_step += 1
-                if info is not None and episode_step % 20 == 0:
+                if info is not None and (episode_step % 20 == 0 or done):
                     print('-' * 100)
                     print('Step: %d' % episode_step)
                     print('Highway progression (r1): %f' % info['r1'])
