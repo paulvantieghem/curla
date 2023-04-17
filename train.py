@@ -29,44 +29,53 @@ from carla_env import CarlaEnv
 def parse_args():
     parser = argparse.ArgumentParser()
     
-    # environment
+    # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
-    parser.add_argument('--max_npc_vehicles', default=75, type=int)
-    parser.add_argument('--npc_ignore_traffic_lights_prob', default=10, type=int)
+    parser.add_argument('--max_npc_vehicles', default=100, type=int)
+    parser.add_argument('--npc_ignore_traffic_lights_prob', default=0, type=int)
+    parser.add_argument('--desired_speed', default=90, type=int) # km/h
+    parser.add_argument('--max_stall_time', default=5, type=int) # seconds
+    parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
+    parser.add_argument('--seconds_per_episode', default=100, type=int) # seconds
+    parser.add_argument('--fps', default=20, type=int) # Hz
+
+    # Carla camera settings
     parser.add_argument('--pre_transform_image_height', default=90, type=int)
     parser.add_argument('--pre_transform_image_width', default=160, type=int)
+    parser.add_argument('--fov', default=120, type=int) # degrees
+    parser.add_argument('--cam_x', default=1.3, type=float) # meters
+    parser.add_argument('--cam_y', default=0.0, type=float) # meters
+    parser.add_argument('--cam_z', default=1.75, type=float) # meters
+    parser.add_argument('--cam_pitch', default=-15, type=int) # degrees
+
+    # Carla reward function settings
+    parser.add_argument('--lambda_r1', default=1.0, type=float) # Highway progression
+    parser.add_argument('--lambda_r2', default=1.0, type=float) # Center of lane deviation
+    parser.add_argument('--lambda_r3', default=1.0, type=float) # Steering angle
+    parser.add_argument('--lambda_r4', default=1e-2, type=float) # Collision
+    parser.add_argument('--lambda_r5', default=2.0, type=float) # Speeding
+    parser.add_argument('--lambda_r6', default=1e2, type=float) # Solid lane marking crossing
+
+    # Image augmentation settings
     parser.add_argument('--image_height', default=76, type=int)
     parser.add_argument('--image_width', default=135, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
 
-    # replay buffer
+    # Replay buffer
     parser.add_argument('--replay_buffer_capacity', default=100_000, type=int)
 
-    # train
+    # Train
     parser.add_argument('--agent', default='curl_sac', type=str)
     parser.add_argument('--init_steps', default=1000, type=int)
     parser.add_argument('--num_train_steps', default=100_000, type=int)
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
 
-    # eval
+    # Eval
     parser.add_argument('--eval_freq', default=10_000, type=int)
     parser.add_argument('--num_eval_episodes', default=10, type=int)
 
-    # critic
-    parser.add_argument('--critic_lr', default=1e-3, type=float)
-    parser.add_argument('--critic_beta', default=0.9, type=float)
-    parser.add_argument('--critic_tau', default=0.01, type=float) # try 0.05 or 0.1
-    parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
-
-    # actor
-    parser.add_argument('--actor_lr', default=1e-3, type=float)
-    parser.add_argument('--actor_beta', default=0.9, type=float)
-    parser.add_argument('--actor_log_std_min', default=-10, type=float)
-    parser.add_argument('--actor_log_std_max', default=2, type=float)
-    parser.add_argument('--actor_update_freq', default=2, type=int)
-
-    # encoder
+    # Encoder
     parser.add_argument('--encoder_type', default='pixel', type=str)
     parser.add_argument('--encoder_feature_dim', default=50, type=int)
     parser.add_argument('--encoder_lr', default=1e-3, type=float)
@@ -75,13 +84,26 @@ def parse_args():
     parser.add_argument('--num_filters', default=32, type=int)
     parser.add_argument('--curl_latent_dim', default=128, type=int)
 
-    # sac
+    # Actor
+    parser.add_argument('--actor_lr', default=1e-3, type=float)
+    parser.add_argument('--actor_beta', default=0.9, type=float)
+    parser.add_argument('--actor_log_std_min', default=-10, type=float)
+    parser.add_argument('--actor_log_std_max', default=2, type=float)
+    parser.add_argument('--actor_update_freq', default=2, type=int)
+
+    # Critic
+    parser.add_argument('--critic_lr', default=1e-3, type=float)
+    parser.add_argument('--critic_beta', default=0.9, type=float)
+    parser.add_argument('--critic_tau', default=0.01, type=float) # try 0.05 or 0.1
+    parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
+
+    # SAC
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
     parser.add_argument('--alpha_lr', default=1e-4, type=float)
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     
-    # misc
+    # Misc
     parser.add_argument('--seed', default=-1, type=int)
     parser.add_argument('--work_dir', default='./tmp', type=str)
     parser.add_argument('--save_tb', default=True, action='store_true')
@@ -206,7 +228,11 @@ def main():
     L = Logger(args.work_dir, use_tb=args.save_tb)
 
     # Carla environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob)
+    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
+                   args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
+                   args.fps, args.pre_transform_image_height, args.pre_transform_image_width, args.fov,
+                   args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5, args.lambda_r6)
     env.seed(args.seed)
     env.reset()
     action_shape = env.action_space.shape

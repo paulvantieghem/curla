@@ -3,40 +3,15 @@ import os
 # Verbosity
 VERBOSE = False
 
+# Display camera sensor with OpenCV
+SHOW_PREVIEW = False
+SAVE_IMGS = False
+
 # Move spectator to ego vehicle spawn location
 if os.name == "nt":
     SPECTATOR = True
 else:
     SPECTATOR = False
-
-# Display camera sensor with OpenCV
-SHOW_PREVIEW = False
-SAVE_IMGS = False
-
-# Speeds in km/h
-SET_INITIAL_SPEED = True
-INITIAL_SPEED = 5 # km/h
-DESIRED_SPEED = 60 # km/h
-
-# Maximum stall time
-MAX_STALL_TIME = 5 # seconds
-STALL_SPEED = 0.5 # km/h
-
-# Synchronous mode FPS
-FPS = 20
-
-# Episode settings
-SECONDS_PER_EPISODE = 100
-
-# RGB camera settings
-IM_HEIGHT = 90
-IM_WIDTH = 160
-FOV = 120
-
-# RGB camera relative position
-CAM_X = 1.3
-CAM_Y = 0.0
-CAM_Z = 1.75
 
 # Carla map configuration
 map_config = {
