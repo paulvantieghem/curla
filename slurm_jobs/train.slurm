@@ -63,7 +63,7 @@ echo "[MESSAGE] 30 second sleep over, launching training..."
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
 conda activate curla
 cd $VSC_DATA/lib/curla
-python train.py --num_train_steps 400000
+python train.py
 
 # Terminate session
 kill $CARLA

@@ -142,7 +142,11 @@ class CarlaEnv:
 
         # Setup for NPC vehicles
         self.npc_vehicle_blueprints = []
-        self.npc_vehicle_models = ['audi', 'bmw', 'chevrolet', 'citroen', 'dodge', 'ford', 'jeep', 'lincoln', 'mercedes-benz', 'mini', 'nissan', 'seat', 'tesla', 'toyota', 'volkswagen']
+        self.npc_vehicle_models = ['audi.a2', 'audi.etron', 'audi.tt', 'bmw.grandtourer', 'charger2020.charger2020', 
+                                   'chargercop2020.chargercop2020', 'chevrolet.impala', 'citroen.c3', 
+                                   'dodge_charger.police', 'jeep.wrangler_rubicon', 'lincoln.mkz2017', 'lincoln2020.mkz2020', 
+                                   'mercedes-benz.coupe', 'mercedesccc.mercedesccc', 'mini.cooperst', 'mustang.mustang', 
+                                   'nissan.micra', 'nissan.patrol', 'seat.leon', 'tesla.model3', 'toyota.prius']
         for vehicle in self.blueprint_library.filter('*vehicle*'):
             if any(model in vehicle.id for model in self.npc_vehicle_models):
                 self.npc_vehicle_blueprints.append(vehicle)
@@ -378,20 +382,16 @@ class CarlaEnv:
 
         # Reward for solid lane marking invasion
         r6 = 0.0
-        if self.lane_invasion_len < len(self.lane_invasion_history):
-            delta = len(self.lane_invasion_history) - self.lane_invasion_len
-            lane_invasion_events = self.lane_invasion_history[-delta:]
-            for lane_invasion_event in lane_invasion_events:
+        if len(self.lane_invasion_history) != 0:
+            for lane_invasion_event in self.lane_invasion_history:
                 if self.episode_step + self.starting_frame_number == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
-                    self.lane_invasion_len += 1
                     lane_markings = lane_invasion_event.crossed_lane_markings
                     for marking in lane_markings:
-                        if str(marking.type) == 'Solid':
+                        if str(marking.lane_change) == 'NONE':
                             r6 = (-1.0)*self.lambda_r6
                             r6 = np.round(r6, precision)
                             done = True
-                        elif str(marking.type) == 'Broken':
-                            self.lane_crossing_counter += 1
+                        # Other types of carla.LaneChange: 'Right', 'Left', 'Both'
 
         # Total reward 
         if self.episode_step > 0:

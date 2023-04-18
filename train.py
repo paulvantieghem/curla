@@ -67,12 +67,12 @@ def parse_args():
     # Train
     parser.add_argument('--agent', default='curl_sac', type=str)
     parser.add_argument('--init_steps', default=1000, type=int)
-    parser.add_argument('--num_train_steps', default=100_000, type=int)
+    parser.add_argument('--num_train_steps', default=1_000_000, type=int)
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
 
     # Eval
-    parser.add_argument('--eval_freq', default=10_000, type=int)
+    parser.add_argument('--eval_freq', default=25_000, type=int)
     parser.add_argument('--num_eval_episodes', default=10, type=int)
 
     # Encoder

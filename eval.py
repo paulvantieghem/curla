@@ -77,7 +77,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                 episode_reward += reward
                 episode_step += 1
                 if info is not None and (episode_step % 20 == 0 or done):
-                    print('-' * 100)
+                    print('-' * 50)
                     print('Step: %d' % episode_step)
                     print('Highway progression (r1): %f' % info['r1'])
                     print('Lane deviation (r2): %f' % info['r2'])
@@ -140,7 +140,10 @@ def main():
     agent.load_curl(model_dir, step)
 
     # Run evaluation loop
-    ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
+    ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=1, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
+
+    # Deactivate the environment
+    env.deactivate()
 
     # Print results
     print()
