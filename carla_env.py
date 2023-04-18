@@ -173,6 +173,7 @@ class CarlaEnv:
         self.collision_history = []
         self.lane_invasion_history = []
         self.lane_invasion_len = 0
+        self.starting_frame_number = None
 
         # Disable synchronous mode
         self.set_synchronous_mode(False)
@@ -258,8 +259,8 @@ class CarlaEnv:
         self.stall_counter = 0
         if self.verbose: print('episode started')
 
-        # Collect initial data
-        self.starting_frame = self.collect_sensor_data()
+        # Collect the initial sensor data and return the first frame number
+        self.starting_frame_number = self.collect_sensor_data()
 
         return self.front_camera
 
@@ -287,8 +288,12 @@ class CarlaEnv:
         self.episode_step += 1
         self.total_step += 1
 
-        # Collect sensor data
-        self.collect_sensor_data()
+        # Collect sensor data and 
+        current_frame_number = self.collect_sensor_data()
+
+        # This fixes a frame skip when the environment is reset
+        if self.episode_step == 1:
+            self.starting_frame_number = current_frame_number - 1
 
         return self.front_camera, reward, done, info
 
@@ -350,7 +355,7 @@ class CarlaEnv:
             intensities = []
             for collision in self.collision_history:
                 # Wait to be at the correct frame to apply penalty
-                if self.episode_step + self.starting_frame == collision.frame:
+                if self.episode_step + self.starting_frame_number == collision.frame:
                     impulse = collision.normal_impulse
                     impulse = np.array([impulse.x, impulse.y, impulse.z])
                     intensities.append(np.linalg.norm(impulse))
@@ -377,7 +382,7 @@ class CarlaEnv:
             delta = len(self.lane_invasion_history) - self.lane_invasion_len
             lane_invasion_events = self.lane_invasion_history[-delta:]
             for lane_invasion_event in lane_invasion_events:
-                if self.episode_step + self.starting_frame == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
+                if self.episode_step + self.starting_frame_number == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
                     self.lane_invasion_len += 1
                     lane_markings = lane_invasion_event.crossed_lane_markings
                     for marking in lane_markings:
@@ -405,12 +410,12 @@ class CarlaEnv:
             if self.verbose: print('episode done: maximum stall time exceeded')
 
         # Extra information
-        self.total_rewards['r1'] += r1
-        self.total_rewards['r2'] += r2
-        self.total_rewards['r3'] += r3
-        self.total_rewards['r4'] += r4
-        self.total_rewards['r5'] += r5
-        self.total_rewards['r6'] += r6
+        self.total_rewards['r1'] += r1 # Reward for highway progression
+        self.total_rewards['r2'] += r2 # Penalty for center of lane deviation (--u-- shaped)
+        self.total_rewards['r3'] += r3 # Penalty for the norm (absolute value) of the steering angle
+        self.total_rewards['r4'] += r4 # Penalty for collision intensities
+        self.total_rewards['r5'] += r5 # Penalty for speeding
+        self.total_rewards['r6'] += r6 # Penalty for crossing solid lane markings
         self.kmh_tracker.append(abs_kmh)
         info = {'r1': self.total_rewards['r1'], 
                 'r2': self.total_rewards['r2'], 
@@ -462,24 +467,23 @@ class CarlaEnv:
     def process_camera_data(self, carla_im_data):
 
         # Extract image data
-        self.image = np.array(carla_im_data.raw_data)
+        raw_image = np.array(carla_im_data.raw_data)
 
         # Reshape image data to (H, W, X) format (X = BGRA)
-        self.image = self.image.reshape((self.im_height, self.im_width, -1))
+        bgra_image = raw_image.reshape((self.im_height, self.im_width, -1))
 
-        # Remove alpha to obtain (H, W, C) image wit C = BGR
-        self.image = self.image[:, :, :3]
+        # Remove alpha to obtain (H, W, C) image with C = BGR
+        bgr_image = bgra_image[:, :, :3]
 
         # Convert image from BGR to RGB
-        self.image = self.image[:, :, ::-1]
+        self.image = bgr_image[:, :, ::-1]
 
         # Display/record if requested
         if self.show_preview:
-            cv2.imshow('', self.image)
+            cv2.imshow('', bgr_image)
             cv2.waitKey(1)
-            time.sleep(0.2)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.image)
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), bgr_image)
 
         # Reshape image to (C, H, W) format required by the CURL model
         self.front_camera = np.transpose(self.image, (2, 0, 1))
@@ -493,7 +497,7 @@ class CarlaEnv:
     def collect_sensor_data(self):
         camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
         self.process_camera_data(camera_sensor_data)
-        return camera_sensor_data.frame
+        return camera_sensor_data.frame # Return frame number
 
     def seed(self, seed):
         random.seed(seed)
