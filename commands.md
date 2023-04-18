@@ -42,11 +42,10 @@ python train.py ^
 Test command 2
 ```
 python train.py ^
-    --num_eval_episodes 5 ^
-    --init_steps 100 ^
+    --num_eval_episodes 1 ^
+    --init_steps 1 ^
     --eval_freq 1000 ^
-    --num_train_steps 5000 ^
-    --load_model True
+    --num_train_steps 600
 ```
 
 Train command
@@ -72,3 +71,8 @@ python train.py ^
     --batch_size 128 ^
     --num_train_steps 10_000
 ``` 
+
+
+```
+conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-win-amd64.egg
+```

@@ -127,7 +127,8 @@ class CarlaEnv:
         self.camera_sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
-        self.camera_sensor_bp.set_attribute('enable_postprocess_effects', str(True))
+        # self.camera_sensor_bp.set_attribute('enable_postprocess_effects', str(True))
+        self.camera_sensor_bp.set_attribute('exposure_compensation', str(-0.5))
         self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z), carla.Rotation(pitch=self.cam_pitch))
 
         # Collision sensor settings
@@ -140,7 +141,8 @@ class CarlaEnv:
         self.traffic_manager = self.client.get_trafficmanager()
 
         # Setup for NPC vehicles
-        self.npc_vehicle_blueprints = ['audi', 'bmw', 'chevrolet', 'citroen', 'dodge', 'ford', 'jeep', 'lincoln', 'mercedes-benz', 'mini', 'nissan', 'seat', 'tesla', 'toyota', 'volkswagen']
+        self.npc_vehicle_blueprints = []
+        self.npc_vehicle_models = ['audi', 'bmw', 'chevrolet', 'citroen', 'dodge', 'ford', 'jeep', 'lincoln', 'mercedes-benz', 'mini', 'nissan', 'seat', 'tesla', 'toyota', 'volkswagen']
         for vehicle in self.blueprint_library.filter('*vehicle*'):
             if any(model in vehicle.id for model in self.npc_vehicle_models):
                 self.npc_vehicle_blueprints.append(vehicle)
