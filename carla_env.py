@@ -304,6 +304,11 @@ class CarlaEnv:
             self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0, 'r6': 0.0}
             self.kmh_tracker = [0.0,]
             self.lane_crossing_counter = 0
+            self.brake_sum = 0.0
+
+        # Brake logging
+        if action[0] < 0.0:
+            self.brake_sum += -action[0]
 
         # Precision of the reward values
         precision = 4
@@ -415,7 +420,8 @@ class CarlaEnv:
                 'r6': self.total_rewards['r6'],
                 'mean_kmh': np.mean(self.kmh_tracker), 
                 'max_kmh': np.max(self.kmh_tracker), 
-                'lane_crossing_counter': self.lane_crossing_counter}
+                'lane_crossing_counter': self.lane_crossing_counter,
+                'brake_sum': self.brake_sum}
         
         return reward, done, info
 

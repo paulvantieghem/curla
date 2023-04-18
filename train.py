@@ -118,12 +118,15 @@ def parse_args():
 def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochastically=False):
         all_ep_rewards = []
         all_ep_steps = []
+        all_ep_infos = {'r1': [], 'r2': [], 'r3': [], 'r4': [], 'r5': [], 'r6': [],
+                            'mean_kmh': [], 'max_kmh': [], 'lane_crossing_counter': [], 'brake_sum': []}
         best_episode = {'reward': -math.inf, 'ep': -1}
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
             obs = env.reset()
             video.init(enabled=(True))
             done = False
+            info = None
             episode_reward = 0
             episode_steps = 0
             while not done:
@@ -135,7 +138,7 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
                         action = agent.sample_action(obs)
                     else:
                         action = agent.select_action(obs)
-                obs, reward, done, _ = env.step(action)
+                obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
                 episode_steps += 1
@@ -147,6 +150,8 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
             video.save(f'eval_at_step_{step}_ep_{i+1}.mp4')
             all_ep_rewards.append(episode_reward)
             all_ep_steps.append(episode_steps)
+            for k, v in info.items():
+                all_ep_infos[k].append(v)
 
         bad_idx = list(range(num_episodes))
         bad_idx.remove(best_episode['ep'])
@@ -154,16 +159,16 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
             os.remove(os.path.join(video_dir, f'eval_at_step_{step}_ep_{ep+1}.mp4'))
         
         # Log evaluation metrics
-        L.log_histogram('eval/' + prefix + 'episode_reward', np.array(all_ep_rewards), step)
-        L.log_histogram('eval/' + prefix + 'episode_steps', np.array(all_ep_steps), step)
-        best_ep_reward = float(np.max(all_ep_rewards))
-        mean_ep_reward = float(np.mean(all_ep_rewards))
-        L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
-        L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
+        L.log('eval/' + prefix + 'best_episode_reward', float(np.max(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'mean_episode_reward', float(np.mean(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'std_episode_reward', float(np.std(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'best_episode_step', float(np.max(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'mean_episode_steps', float(np.mean(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'std_episode_steps', float(np.std(all_ep_steps)), step)
+        for k, v in all_ep_infos.items():
+            L.log('eval/' + prefix + 'mean_episode_' + k, float(np.mean(v)), step)
 
         return L
-
-
 
 def make_agent(obs_shape, action_shape, args, device):
     if args.agent == 'curl_sac':
@@ -312,8 +317,11 @@ def main():
                     L.log('train/episode_r3_sum', info['r3'], step)
                     L.log('train/episode_r4_sum', info['r4'], step)
                     L.log('train/episode_r5_sum', info['r5'], step)
-                    L.log('train/mean_kmh', info['mean_kmh'], step)
-                    L.log('train/max_kmh', info['max_kmh'], step)
+                    L.log('train/episode_r6_sum', info['r6'], step)
+                    L.log('train/episode_mean_kmh', info['mean_kmh'], step)
+                    L.log('train/episode_max_kmh', info['max_kmh'], step)
+                    L.log('train/episode_lane_crossing_counter', info['lane_crossing_counter'], step)
+                    L.log('train/episode_brake_sum', info['brake_sum'], step)
 
             # Dump log
             L.dump(step)
