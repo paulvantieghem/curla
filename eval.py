@@ -3,6 +3,7 @@ import time
 import argparse
 import torch
 import numpy as np
+import math
 
 import utils
 from curl_sac import CurlSacAgent
@@ -14,12 +15,12 @@ def parse_args():
     
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
-    parser.add_argument('--max_npc_vehicles', default=100, type=int)
+    parser.add_argument('--max_npc_vehicles', default=10, type=int)
     parser.add_argument('--npc_ignore_traffic_lights_prob', default=0, type=int)
-    parser.add_argument('--desired_speed', default=90, type=int) # km/h
+    parser.add_argument('--desired_speed', default=65, type=int) # km/h | NPCs drive at 70% of the speed limit (90), which is 63 km/h
     parser.add_argument('--max_stall_time', default=5, type=int) # seconds
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
-    parser.add_argument('--seconds_per_episode', default=100, type=int) # seconds
+    parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
     parser.add_argument('--fps', default=20, type=int) # Hz
 
     # Carla camera settings
@@ -37,7 +38,7 @@ def parse_args():
     parser.add_argument('--lambda_r3', default=1.0, type=float) # Steering angle
     parser.add_argument('--lambda_r4', default=1e-2, type=float) # Collision
     parser.add_argument('--lambda_r5', default=2.0, type=float) # Speeding
-    parser.add_argument('--lambda_r6', default=1e2, type=float) # Solid lane marking crossing
+    parser.add_argument('--lambda_r6', default=0.0, type=float) # Solid lane marking crossing
 
     # Random seed
     parser.add_argument('--seed', default=-1, type=int)
@@ -72,6 +73,12 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
+                # action = np.array([1.0, 0.0])
+                # v_ego = env.ego_vehicle.get_velocity()
+                # abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
+                # if abs_kmh > 65:
+                #     action = np.array([-0.5, 0.0])
+                #     print('Speeding')
                 obs, reward, done, info = env.step(action)
                 video.record(env)
                 episode_reward += reward
@@ -116,7 +123,7 @@ def main():
                    args.fps, args.pre_transform_image_height, args.pre_transform_image_width, args.fov,
                    args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
                    args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5, args.lambda_r6)
-    env.seed(args.seed)
+    env.seed(args.seed) # Important not to remove !
     env.reset()
     cam_obs_shape = env.observation_space.shape
     action_shape = env.action_space.shape

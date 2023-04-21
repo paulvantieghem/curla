@@ -78,8 +78,9 @@ class CarlaEnv:
         self.timeout = self.client.set_timeout(30.0)
 
         # World
-        self.world = self.client.load_world(carla_town)
         self.world = self.client.get_world()
+        if self.world.get_map().name != carla_town:
+            self.world = self.client.load_world(carla_town)
         self.map = self.world.get_map()
         if self.verbose: print('loaded town %s' % self.map)
 
@@ -111,12 +112,11 @@ class CarlaEnv:
         self.blueprint_library = self.world.get_blueprint_library()
 
         # Highway spawn points
-        if self.carla_town == 'Town04':
-            map_config = settings.map_config
-            self.highway_spawn_idx = list(map_config[self.carla_town]['spawn_ids']['highway'])
-        else:
-            print(f'[WARNING] No highway spawn points defined for {self.carla_town} in `settings.py`. Using all possible spawn points instead.')
-            self.highway_spawn_idx = list(range(len(self.map.get_spawn_points())))
+        map_config = settings.map_config
+        highway_spawn_info = map_config[self.carla_town]
+        self.road_id = highway_spawn_info['road_id']
+        self.start_s = highway_spawn_info['start_s']
+        self.start_lanes = highway_spawn_info['start_lanes']
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
@@ -150,7 +150,6 @@ class CarlaEnv:
         for vehicle in self.blueprint_library.filter('*vehicle*'):
             if any(model in vehicle.id for model in self.npc_vehicle_models):
                 self.npc_vehicle_blueprints.append(vehicle)
-        self.max_npc_vehicles = min([self.max_npc_vehicles, len(self.highway_spawn_idx)])
 
         # Spectator
         self.spectator = self.world.get_spectator()
@@ -188,8 +187,9 @@ class CarlaEnv:
         # Spawn ego vehicle
         while True:
             try:
-                id = random.choice(self.highway_spawn_idx)
-                self.ego_vehicle_transform = self.map.get_spawn_points()[id]
+                start_lane = random.choice(self.start_lanes)
+                self.ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=self.start_s).transform
+                self.ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
                 color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
                 self.ego_vehicle_bp.set_attribute('color', color)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
@@ -211,9 +211,10 @@ class CarlaEnv:
 
         # Spawn NPC vehicles on highway
         npc_counter = 0
-        for _ in range(self.max_npc_vehicles):
-            id = random.choice(self.highway_spawn_idx)
-            spawn_point_transform = self.map.get_spawn_points()[id]
+        while npc_counter < self.max_npc_vehicles:
+            start_lane = random.choice(self.start_lanes)
+            npc_s = np.random.uniform(0.0, self.start_s + 200)
+            spawn_point_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
             temp = self.world.try_spawn_actor(random.choice(self.npc_vehicle_blueprints), spawn_point_transform)
             if temp is not None:
                 self.npc_vehicles_list.append(temp)
@@ -270,6 +271,13 @@ class CarlaEnv:
 
 
     def step(self, action):
+
+        # Set traffic lights ahead of ego vehicle to green
+        if self.ego_vehicle.is_at_traffic_light():
+            traffic_light = self.ego_vehicle.get_traffic_light()
+            traffic_light.set_state(carla.TrafficLightState.Green)
+            traffic_light.set_green_time(5.0)
+            if self.verbose: print('traffic light ahead of ego vehicle set to green')
 
         # Apply the action to the ego vehicle
         action = np.clip(action, -1, 1)
@@ -382,16 +390,16 @@ class CarlaEnv:
 
         # Reward for solid lane marking invasion
         r6 = 0.0
-        if len(self.lane_invasion_history) != 0:
-            for lane_invasion_event in self.lane_invasion_history:
-                if self.episode_step + self.starting_frame_number == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
-                    lane_markings = lane_invasion_event.crossed_lane_markings
-                    for marking in lane_markings:
-                        if str(marking.lane_change) == 'NONE':
-                            r6 = (-1.0)*self.lambda_r6
-                            r6 = np.round(r6, precision)
-                            done = True
-                        # Other types of carla.LaneChange: 'Right', 'Left', 'Both'
+        # if len(self.lane_invasion_history) != 0:
+        #     for lane_invasion_event in self.lane_invasion_history:
+        #         if self.episode_step + self.starting_frame_number == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
+        #             lane_markings = lane_invasion_event.crossed_lane_markings
+        #             for marking in lane_markings:
+        #                 if str(marking.lane_change) == 'NONE':
+        #                     r6 = (-1.0)*self.lambda_r6
+        #                     r6 = np.round(r6, precision)
+        #                     done = True
+        #                 # Other types of carla.LaneChange: 'Right', 'Left', 'Both'
 
         # Total reward 
         if self.episode_step > 0:
@@ -461,8 +469,8 @@ class CarlaEnv:
 
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous
-        self.world.apply_settings(self.settings)
         self.traffic_manager.set_synchronous_mode(synchronous)
+        self.world.apply_settings(self.settings)
 
     def process_camera_data(self, carla_im_data):
 

@@ -31,12 +31,12 @@ def parse_args():
     
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
-    parser.add_argument('--max_npc_vehicles', default=100, type=int)
+    parser.add_argument('--max_npc_vehicles', default=10, type=int)
     parser.add_argument('--npc_ignore_traffic_lights_prob', default=0, type=int)
-    parser.add_argument('--desired_speed', default=90, type=int) # km/h
+    parser.add_argument('--desired_speed', default=65, type=int) # km/h | NPCs drive at 70% of the speed limit (90), which is 63 km/h
     parser.add_argument('--max_stall_time', default=5, type=int) # seconds
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
-    parser.add_argument('--seconds_per_episode', default=100, type=int) # seconds
+    parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
     parser.add_argument('--fps', default=20, type=int) # Hz
 
     # Carla camera settings
@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument('--lambda_r3', default=1.0, type=float) # Steering angle
     parser.add_argument('--lambda_r4', default=1e-2, type=float) # Collision
     parser.add_argument('--lambda_r5', default=2.0, type=float) # Speeding
-    parser.add_argument('--lambda_r6', default=1e2, type=float) # Solid lane marking crossing
+    parser.add_argument('--lambda_r6', default=0.0, type=float) # Solid lane marking crossing
 
     # Image augmentation settings
     parser.add_argument('--image_height', default=76, type=int)
