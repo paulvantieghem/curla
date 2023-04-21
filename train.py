@@ -16,6 +16,7 @@ import random
 import time
 import json
 import copy
+from datetime import datetime
 
 import utils
 from logger import Logger
@@ -49,12 +50,11 @@ def parse_args():
     parser.add_argument('--cam_pitch', default=-15, type=int) # degrees
 
     # Carla reward function settings
-    parser.add_argument('--lambda_r1', default=1.0, type=float) # Highway progression
-    parser.add_argument('--lambda_r2', default=1.0, type=float) # Center of lane deviation
-    parser.add_argument('--lambda_r3', default=1.0, type=float) # Steering angle
-    parser.add_argument('--lambda_r4', default=1e-2, type=float) # Collision
-    parser.add_argument('--lambda_r5', default=2.0, type=float) # Speeding
-    parser.add_argument('--lambda_r6', default=0.0, type=float) # Solid lane marking crossing
+    parser.add_argument('--lambda_r1', default=1.0, type=float)     # Highway progression
+    parser.add_argument('--lambda_r2', default=0.3, type=float)     # Center of lane deviation
+    parser.add_argument('--lambda_r3', default=1.0, type=float)     # Steering angle
+    parser.add_argument('--lambda_r4', default=0.005, type=float)   # Collision
+    parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding
 
     # Image augmentation settings
     parser.add_argument('--image_height', default=76, type=int)
@@ -118,8 +118,8 @@ def parse_args():
 def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochastically=False):
         all_ep_rewards = []
         all_ep_steps = []
-        all_ep_infos = {'r1': [], 'r2': [], 'r3': [], 'r4': [], 'r5': [], 'r6': [],
-                            'mean_kmh': [], 'max_kmh': [], 'lane_crossing_counter': [], 'brake_sum': []}
+        all_ep_infos = {'r1': [], 'r2': [], 'r3': [], 'r4': [], 'r5': [],
+                        'mean_kmh': [], 'max_kmh': [], 'brake_sum': []}
         best_episode = {'reward': -math.inf, 'ep': -1}
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
@@ -147,7 +147,7 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
                 best_episode['reward'] = episode_reward
                 best_episode['ep'] = i
 
-            video.save(f'eval_at_step_{step}_ep_{i+1}.mp4')
+            video.save(f'eval_step_{step}_ep_{i+1}.mp4')
             all_ep_rewards.append(episode_reward)
             all_ep_steps.append(episode_steps)
             for k, v in info.items():
@@ -156,18 +156,17 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
         bad_idx = list(range(num_episodes))
         bad_idx.remove(best_episode['ep'])
         for ep in bad_idx:
-            os.remove(os.path.join(video_dir, f'eval_at_step_{step}_ep_{ep+1}.mp4'))
+            os.remove(os.path.join(video_dir, f'eval_step_{step}_ep_{ep+1}.mp4'))
         
         # Log evaluation metrics
-        L.log('eval/' + prefix + 'best_episode_reward', float(np.max(all_ep_rewards)), step)
-        L.log('eval/' + prefix + 'mean_episode_reward', float(np.mean(all_ep_rewards)), step)
-        L.log('eval/' + prefix + 'std_episode_reward', float(np.std(all_ep_rewards)), step)
-        L.log('eval/' + prefix + 'best_episode_step', float(np.max(all_ep_steps)), step)
-        L.log('eval/' + prefix + 'mean_episode_steps', float(np.mean(all_ep_steps)), step)
-        L.log('eval/' + prefix + 'std_episode_steps', float(np.std(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'max_ep_reward', float(np.max(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'mean_ep_reward', float(np.mean(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'min_ep_reward', float(np.min(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'max_ep_steps', float(np.max(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'mean_ep_steps', float(np.mean(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'min_ep_steps', float(np.min(all_ep_steps)), step)
         for k, v in all_ep_infos.items():
-            L.log('eval/' + prefix + 'mean_episode_' + k, float(np.mean(v)), step)
-
+            L.log('eval/' + prefix + 'z_mean_ep_' + k, float(np.mean(v)), step)
         return L
 
 def make_agent(obs_shape, action_shape, args, device):
@@ -217,10 +216,10 @@ def main():
     # Make necessary directories
     if not os.path.exists(args.work_dir):
         os.makedirs(args.work_dir)
-    ts = time.gmtime() 
-    ts = time.strftime("%m-%d-%H-%M-%S", ts)    
+    ts = datetime.now()
+    ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
-    exp_name = env_name + '-' + ts + '-im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
+    exp_name = env_name + '--' + ts + '--im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
     args.work_dir = os.path.join(args.work_dir, exp_name)
     utils.make_dir(args.work_dir)
@@ -237,7 +236,7 @@ def main():
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, args.pre_transform_image_height, args.pre_transform_image_width, args.fov,
                    args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5, args.lambda_r6)
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     env.seed(args.seed)
     env.reset()
     action_shape = env.action_space.shape
@@ -307,21 +306,19 @@ def main():
             # Log episode stats
             if step > 0:
                 max_score_achieved = episode_reward/max_episode_reward
-                L.log('train/episode_steps', episode_step, step)
-                L.log('train/episode_reward', episode_reward, step)
-                L.log('train/episode_max_score_ratio', max_score_achieved, step)
-                L.log('train/episode_mean_fps', fps, step)
+                L.log('train/ep_steps', episode_step, step)
+                L.log('train/ep_reward', episode_reward, step)
+                L.log('train/ep_max_score_ratio', max_score_achieved, step)
+                L.log('train/ep_mean_fps', fps, step)
                 if info != None:
-                    L.log('train/episode_r1_sum', info['r1'], step)
-                    L.log('train/episode_r2_sum', info['r2'], step)
-                    L.log('train/episode_r3_sum', info['r3'], step)
-                    L.log('train/episode_r4_sum', info['r4'], step)
-                    L.log('train/episode_r5_sum', info['r5'], step)
-                    L.log('train/episode_r6_sum', info['r6'], step)
-                    L.log('train/episode_mean_kmh', info['mean_kmh'], step)
-                    L.log('train/episode_max_kmh', info['max_kmh'], step)
-                    L.log('train/episode_lane_crossing_counter', info['lane_crossing_counter'], step)
-                    L.log('train/episode_brake_sum', info['brake_sum'], step)
+                    L.log('train/z_ep_r1_sum', info['r1'], step)
+                    L.log('train/z_ep_r2_sum', info['r2'], step)
+                    L.log('train/z_ep_r3_sum', info['r3'], step)
+                    L.log('train/z_ep_r4_sum', info['r4'], step)
+                    L.log('train/z_ep_r5_sum', info['r5'], step)
+                    L.log('train/z_ep_mean_kmh', info['mean_kmh'], step)
+                    L.log('train/z_ep_max_kmh', info['max_kmh'], step)
+                    L.log('train/z_ep_brake_sum', info['brake_sum'], step)
 
             # Dump log
             L.dump(step)

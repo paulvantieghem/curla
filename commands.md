@@ -42,10 +42,10 @@ python train.py ^
 Test command 2
 ```
 python train.py ^
-    --num_eval_episodes 10 ^
+    --num_eval_episodes 1 ^
     --init_steps 1 ^
     --eval_freq 1000 ^
-    --num_train_steps 200
+    --num_train_steps 500
 ```
 
 Train command

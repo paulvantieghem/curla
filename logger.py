@@ -20,7 +20,7 @@ FORMAT_CONFIG = {
         'train': [
             ('episode', 'E', 'int'), 
             ('step', 'S', 'int'),
-            ('episode_reward', 'ER', 'float'),
+            ('ep_reward', 'ER', 'float'),
             ('batch_reward', 'BR', 'float'), 
             ('actor_loss', 'A_LOSS', 'float'),
             ('critic_loss', 'CR_LOSS', 'float'), 
@@ -28,8 +28,8 @@ FORMAT_CONFIG = {
         ],
         'eval': [
             ('step', 'S', 'int'), 
-            ('mean_episode_reward', 'MER', 'float'),
-            ('best_episode_reward', 'BER', 'float')
+            ('mean_ep_reward', 'MER', 'float'),
+            ('max_ep_reward', 'BER', 'float')
         ]
     }
 }

@@ -33,12 +33,11 @@ def parse_args():
     parser.add_argument('--cam_pitch', default=-15, type=int) # degrees
 
     # Carla reward function settings
-    parser.add_argument('--lambda_r1', default=1.0, type=float) # Highway progression
-    parser.add_argument('--lambda_r2', default=1.0, type=float) # Center of lane deviation
-    parser.add_argument('--lambda_r3', default=1.0, type=float) # Steering angle
-    parser.add_argument('--lambda_r4', default=1e-2, type=float) # Collision
-    parser.add_argument('--lambda_r5', default=2.0, type=float) # Speeding
-    parser.add_argument('--lambda_r6', default=0.0, type=float) # Solid lane marking crossing
+    parser.add_argument('--lambda_r1', default=1.0, type=float)     # Highway progression
+    parser.add_argument('--lambda_r2', default=0.3, type=float)     # Center of lane deviation
+    parser.add_argument('--lambda_r3', default=1.0, type=float)     # Steering angle
+    parser.add_argument('--lambda_r4', default=0.005, type=float)   # Collision
+    parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding
 
     # Random seed
     parser.add_argument('--seed', default=-1, type=int)
@@ -59,8 +58,6 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
 
         # Run evaluation loop
         for i in range(num_episodes):
-            # Wait for input of user to continue
-            input('Press enter to start episode %d/%d' % (i + 1, num_episodes))
             obs = env.reset()
             video.init(enabled=record_video)
             done = False
@@ -73,7 +70,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                # action = np.array([1.0, 0.0])
+                # action = np.array([0.8, -1e-3])
                 # v_ego = env.ego_vehicle.get_velocity()
                 # abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
                 # if abs_kmh > 65:
@@ -91,7 +88,6 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     print('Steering (r3): %f' % info['r3'])
                     print('Collision (r4): %f' % info['r4'])
                     print('Speeding (r5): %f' % info['r5'])
-                    print('Solid lane marking crossing (r6): %f' % info['r6'])
                     print('Mean kmh: %f' % info['mean_kmh'])
                     print('Max kmh: %f' % info['max_kmh'])
             end_time = time.time()
@@ -122,7 +118,7 @@ def main():
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, args.pre_transform_image_height, args.pre_transform_image_width, args.fov,
                    args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5, args.lambda_r6)
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     env.seed(args.seed) # Important not to remove !
     env.reset()
     cam_obs_shape = env.observation_space.shape
@@ -147,7 +143,7 @@ def main():
     agent.load_curl(model_dir, step)
 
     # Run evaluation loop
-    ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=1, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
+    ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=2, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
 
     # Deactivate the environment
     env.deactivate()

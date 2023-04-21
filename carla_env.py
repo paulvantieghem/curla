@@ -44,7 +44,7 @@ class CarlaEnv:
                    desired_speed, max_stall_time, stall_speed, seconds_per_episode,
                    fps, pre_transform_image_height, pre_transform_image_width, fov,
                    cam_x, cam_y, cam_z, cam_pitch, lambda_r1, lambda_r2, lambda_r3, 
-                   lambda_r4, lambda_r5, lambda_r6):
+                   lambda_r4, lambda_r5):
 
         # Set parameters
         self.carla_town = carla_town
@@ -68,7 +68,6 @@ class CarlaEnv:
         self.lambda_r3 = lambda_r3
         self.lambda_r4 = lambda_r4
         self.lambda_r5 = lambda_r5
-        self.lambda_r6 = lambda_r6
 
         # Initial values
         self.front_camera = None
@@ -78,9 +77,8 @@ class CarlaEnv:
         self.timeout = self.client.set_timeout(30.0)
 
         # World
+        self.world = self.client.load_world(carla_town)
         self.world = self.client.get_world()
-        if self.world.get_map().name != carla_town:
-            self.world = self.client.load_world(carla_town)
         self.map = self.world.get_map()
         if self.verbose: print('loaded town %s' % self.map)
 
@@ -318,9 +316,8 @@ class CarlaEnv:
         # Initializations
         if self.episode_step == 0:
             self.lane_invasion_len = 0
-            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0, 'r6': 0.0}
+            self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0}
             self.kmh_tracker = [0.0,]
-            self.lane_crossing_counter = 0
             self.brake_sum = 0.0
 
         # Brake logging
@@ -375,6 +372,7 @@ class CarlaEnv:
                 intensities = np.array(intensities)
                 r4 = (-1.0)*self.lambda_r4*np.sum(intensities)
                 r4 = np.round(r4, precision)
+                r4 = np.minimum(-25.0, r4)
                 done = True
                 if self.verbose: print('collision event: ', r4)
 
@@ -388,22 +386,9 @@ class CarlaEnv:
             r5 = (-1.0)*self.lambda_r5*r5
             r5 = np.round(r5, precision)
 
-        # Reward for solid lane marking invasion
-        r6 = 0.0
-        # if len(self.lane_invasion_history) != 0:
-        #     for lane_invasion_event in self.lane_invasion_history:
-        #         if self.episode_step + self.starting_frame_number == lane_invasion_event.frame: # Wait to be at the correct frame to apply penalty
-        #             lane_markings = lane_invasion_event.crossed_lane_markings
-        #             for marking in lane_markings:
-        #                 if str(marking.lane_change) == 'NONE':
-        #                     r6 = (-1.0)*self.lambda_r6
-        #                     r6 = np.round(r6, precision)
-        #                     done = True
-        #                 # Other types of carla.LaneChange: 'Right', 'Left', 'Both'
-
         # Total reward 
         if self.episode_step > 0:
-            reward = r1 + r2 + r3 + r4 + r5 + r6
+            reward = r1 + r2 + r3 + r4 + r5
 
         # Update stalling counter
         if self.episode_step >= 50:
@@ -423,17 +408,14 @@ class CarlaEnv:
         self.total_rewards['r3'] += r3 # Penalty for the norm (absolute value) of the steering angle
         self.total_rewards['r4'] += r4 # Penalty for collision intensities
         self.total_rewards['r5'] += r5 # Penalty for speeding
-        self.total_rewards['r6'] += r6 # Penalty for crossing solid lane markings
         self.kmh_tracker.append(abs_kmh)
         info = {'r1': self.total_rewards['r1'], 
                 'r2': self.total_rewards['r2'], 
                 'r3': self.total_rewards['r3'], 
                 'r4': self.total_rewards['r4'], 
                 'r5': self.total_rewards['r5'], 
-                'r6': self.total_rewards['r6'],
                 'mean_kmh': np.mean(self.kmh_tracker), 
                 'max_kmh': np.max(self.kmh_tracker), 
-                'lane_crossing_counter': self.lane_crossing_counter,
                 'brake_sum': self.brake_sum}
         
         return reward, done, info
