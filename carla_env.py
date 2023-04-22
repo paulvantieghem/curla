@@ -194,7 +194,7 @@ class CarlaEnv:
                 break
             except:
                 if self.verbose: print('Spawn failed because of collision at spawn position, trying again')
-                time.sleep(0.01)
+                time.sleep(0.05)
         self.actor_list.append(self.ego_vehicle)
         if self.verbose: print('created %s' % self.ego_vehicle.type_id)
 
@@ -209,7 +209,8 @@ class CarlaEnv:
 
         # Spawn NPC vehicles on highway
         npc_counter = 0
-        while npc_counter < self.max_npc_vehicles:
+        start_time = time.time()
+        while npc_counter < self.max_npc_vehicles or time.time() - start_time < 5.0:
             start_lane = random.choice(self.start_lanes)
             npc_s = np.random.uniform(0.0, self.start_s + 200)
             spawn_point_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
@@ -451,8 +452,8 @@ class CarlaEnv:
 
     def set_synchronous_mode(self, synchronous):
         self.settings.synchronous_mode = synchronous
-        self.traffic_manager.set_synchronous_mode(synchronous)
         self.world.apply_settings(self.settings)
+        self.traffic_manager.set_synchronous_mode(synchronous)
 
     def process_camera_data(self, carla_im_data):
 
