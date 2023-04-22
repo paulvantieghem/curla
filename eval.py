@@ -140,7 +140,7 @@ def main():
     agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, encoder_type=args.encoder_type)
 
     # Load model
-    print('Loading model %s' % os.path.join(args.model_dir_path, 'curl_%d.pt' % str(args.model_step)))
+    print('Loading model %s' % os.path.join(args.model_dir_path, 'curl_%d.pt' % args.model_step))
     agent.load_curl(args.model_dir_path, str(args.model_step))
 
     # Run evaluation loop
