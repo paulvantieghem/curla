@@ -76,3 +76,8 @@ python train.py ^
 ```
 conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-win-amd64.egg
 ```
+
+Eval command
+```
+python eval.py --model_dir_path ./models --model_step 400000 
+```
