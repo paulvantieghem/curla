@@ -21,6 +21,7 @@ sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -
 ssh -L 16006:127.0.0.1:6006 vsc35202@login-genius.hpc.kuleuven.be
 
 # On the server
+conda activate curla
 cd $VSC_DATA/lib/curla
 tensorboard --logdir="tmp" --port=6006
 
