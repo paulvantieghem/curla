@@ -210,7 +210,7 @@ class CarlaEnv:
         # Spawn NPC vehicles on highway
         npc_counter = 0
         start_time = time.time()
-        while npc_counter < self.max_npc_vehicles or time.time() - start_time < 5.0:
+        while npc_counter < self.max_npc_vehicles and time.time() - start_time < 5.0:
             start_lane = random.choice(self.start_lanes)
             npc_s = np.random.uniform(0.0, self.start_s + 200)
             spawn_point_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
@@ -219,13 +219,12 @@ class CarlaEnv:
                 self.npc_vehicles_list.append(temp)
                 self.actor_list.append(temp)
                 npc_counter += 1
+            time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Parse the list of spawned NPC vehicles and give control to the TM through set_autopilot()
         for vehicle in self.npc_vehicles_list:
             vehicle.set_autopilot(True)
-            # Randomly set the probability that a vehicle will ignore traffic lights
-            self.traffic_manager.ignore_lights_percentage(vehicle, random.randint(0,self.npc_ignore_traffic_lights_prob))
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)

@@ -51,12 +51,11 @@ fi
 
 # Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
-DISPLAY=
-SDL_VIDEODRIVER=offscreen ./CarlaUE4.sh -opengl & CARLA=$!
+DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
 echo "[MESSAGE] Launched CARLA simulator"
 
 # Sleep for 30 seconds
-sleep 30
+sleep 60
 echo "[MESSAGE] 30 second sleep over, launching training..."
 
 # Train CURL agent on CARLA simulator

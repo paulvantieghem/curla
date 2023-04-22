@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --time=00:30:00
+#SBATCH --time=20:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=curla_test
-#SBATCH --output=curla_test.out
-#SBATCH --error=curla_test.err
+#SBATCH --job-name=curla_train
+#SBATCH --output=curla_train.out
+#SBATCH --error=curla_train.err
 
 # Load necessary modules
 module --force purge
@@ -37,18 +37,32 @@ if [[ -z "$(which conda)" ]]; then
   exit 1
 fi
 
+# Refresh the curla repository
+ssh-add ~/.ssh/id_ed25519
+if [ -d "$VSC_DATA/lib/curla" ]; then
+  cd $VSC_DATA/lib/curla
+  git pull
+  echo "[MESSAGE] curla repository found, pulled new changes"
+else
+  cd $VSC_DATA/lib/
+  git clone git@github.com:paulvantieghem/curla.git
+  echo "[MESSAGE] curla repository not found, cloned repository"
+fi
+
 # Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
-DISPLAY=
-SDL_VIDEODRIVER=offscreen ./CarlaUE4.sh -opengl & CARLA=$!
+DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
+echo "[MESSAGE] Launched CARLA simulator"
 
 # Sleep for 30 seconds
-sleep 30
+sleep 60
+echo "[MESSAGE] 30 second sleep over, launching training..."
 
-# Run test script
+# Train CURL agent on CARLA simulator
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
 conda activate curla
-python $VSC_DATA/lib/curla/test.py
+cd $VSC_DATA/lib/curla
+python train.py --num_eval_episodes 1 --init_steps 1 --eval_freq 500 --num_train_steps 1000
 
 # Terminate session
 kill $CARLA
