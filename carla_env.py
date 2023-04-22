@@ -103,8 +103,8 @@ class CarlaEnv:
         self.total_step = 0     # Counts the total amount of time steps
         self.actor_list = []
         self.collision_history = []
-        self.lane_invasion_history = []
-        self.lane_invasion_len = 0
+        # self.lane_invasion_history = []
+        # self.lane_invasion_len = 0
 
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
@@ -133,7 +133,7 @@ class CarlaEnv:
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
 
         # Lane invasion sensor settings
-        self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
+        # self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
         # Traffic manager
         self.traffic_manager = self.client.get_trafficmanager()
@@ -172,8 +172,8 @@ class CarlaEnv:
         self.actor_list = []
         self.npc_vehicles_list = []
         self.collision_history = []
-        self.lane_invasion_history = []
-        self.lane_invasion_len = 0
+        # self.lane_invasion_history = []
+        # self.lane_invasion_len = 0
         self.starting_frame_number = None
 
         # Disable synchronous mode
@@ -240,10 +240,10 @@ class CarlaEnv:
         if self.verbose: print('created %s' % self.collision_sensor.type_id)
 
         # Spawn lane invasion sensor
-        self.lane_invasion_sensor = self.world.spawn_actor(self.lane_invasion_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
-        self.actor_list.append(self.lane_invasion_sensor)
-        self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
-        if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
+        # self.lane_invasion_sensor = self.world.spawn_actor(self.lane_invasion_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
+        # self.actor_list.append(self.lane_invasion_sensor)
+        # self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
+        # if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
 
         # Make sure the ego vehicle is spawned in the center of the lane
         p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
@@ -315,7 +315,7 @@ class CarlaEnv:
 
         # Initializations
         if self.episode_step == 0:
-            self.lane_invasion_len = 0
+            # self.lane_invasion_len = 0
             self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0}
             self.kmh_tracker = [0.0,]
             self.brake_sum = 0.0
@@ -481,8 +481,8 @@ class CarlaEnv:
     def process_collision_data(self, event):
         self.collision_history.append(event)
 
-    def process_lane_invasion_data(self, event):
-        self.lane_invasion_history.append(event)
+    # def process_lane_invasion_data(self, event):
+    #     self.lane_invasion_history.append(event)
 
     def collect_sensor_data(self):
         camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
@@ -499,14 +499,12 @@ class CarlaEnv:
         if len(self.actor_list) != 0:
             try: 
                 self.camera_sensor.destroy()
-                self.lane_invasion_sensor.destroy()
+                # self.lane_invasion_sensor.destroy()
                 self.collision_sensor.destroy()
             except:
-                pass
+                print('[WARNING] Error destroying sensors!')
             self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
-        if self.verbose: print('done.')
-        if self.verbose: print()
-        if self.verbose: print()
+        if self.verbose: print('done.\n\n')
 
     def deactivate(self):
         self.set_synchronous_mode(False)

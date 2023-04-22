@@ -54,9 +54,9 @@ cd $VSC_DATA/lib/carla
 DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
 echo "[MESSAGE] Launched CARLA simulator"
 
-# Sleep for 30 seconds
+# Sleep for 60 seconds
 sleep 60
-echo "[MESSAGE] 30 second sleep over, launching training..."
+echo "[MESSAGE] 60 second sleep over, launching training..."
 
 # Train CURL agent on CARLA simulator
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
