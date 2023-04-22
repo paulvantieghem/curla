@@ -49,7 +49,7 @@ def parse_args():
     parser.add_argument('--cam_z', default=1.75, type=float) # meters
     parser.add_argument('--cam_pitch', default=-15, type=int) # degrees
 
-    # Carla reward function settings
+    # Carla reward function parameters/weights
     parser.add_argument('--lambda_r1', default=1.0, type=float)     # Highway progression
     parser.add_argument('--lambda_r2', default=0.3, type=float)     # Center of lane deviation
     parser.add_argument('--lambda_r3', default=1.0, type=float)     # Steering angle

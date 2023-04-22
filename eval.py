@@ -12,7 +12,12 @@ from video import VideoRecorder
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    
+
+    # Model specifications
+    parser.add_argument('--model_dir_path', default='', type=str)
+    parser.add_argument('--model_step', default=0, type=int)
+    parser.add_argument('--encoder_type', default='pixel', type=str)
+
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
     parser.add_argument('--max_npc_vehicles', default=10, type=int)
@@ -109,10 +114,6 @@ def main():
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
-    # Model checkpoint to load
-    model_dir = './models'
-    step = 400_000
-
     # Set up environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
@@ -136,14 +137,14 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Set up agent
-    agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, encoder_type='pixel')
+    agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, encoder_type=args.encoder_type)
 
     # Load model
-    print('Loading model %s' % os.path.join(model_dir, 'curl_%d.pt' % step))
-    agent.load_curl(model_dir, step)
+    print('Loading model %s' % os.path.join(args.model_dir_path, 'curl_%d.pt' % str(args.model_step)))
+    agent.load_curl(args.model_dir_path, str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_times = run_eval_loop(env, agent, step, num_episodes=2, encoder_type='pixel', img_shape=cropped_shape, record_video=True)
+    ep_rewards, ep_times = run_eval_loop(env, agent, args.model_step, num_episodes=2, encoder_type=args.encoder_type, img_shape=cropped_shape, record_video=True)
 
     # Deactivate the environment
     env.deactivate()
