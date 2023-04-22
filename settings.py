@@ -1,3 +1,5 @@
+import os
+
 # Verbosity of the CARLA environment
 VERBOSE = False
 
