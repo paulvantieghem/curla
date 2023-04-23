@@ -118,15 +118,21 @@ class CarlaEnv:
         self.ego_vehicle_possible_transforms = []
         for i in range(len(start_lanes)):
             ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
-            ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
+            ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
         self.npc_vehicle_possible_transforms = []
-        for i in range(10*self.max_npc_vehicles):
-            start_lane = random.choice(start_lanes)
-            npc_s = np.random.uniform(0.0, start_s + 200)
-            npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
-            ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
-            self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
+        spacing = 5.0
+        horizon = 200.0
+        distances = list(range(int(horizon/spacing+1)))
+        distances = [x*spacing for x in distances]
+        assert len(distances)*len(start_lanes) > self.max_npc_vehicles
+        for i in range(len(distances)):
+            for j in range(len(start_lanes)):
+                start_lane = start_lanes[j]
+                npc_s = random.choice(distances)
+                npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
+                ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
+                self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
 
 
         # Ego vehicle settings
@@ -234,7 +240,8 @@ class CarlaEnv:
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Set autopilot for all NPC vehicles
-        self.client.apply_batch(batch)
+        self.client.apply_batch_sync(batch)
+
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -307,6 +314,7 @@ class CarlaEnv:
         self.world.tick()
         self.episode_step += 1
         self.total_step += 1
+        print(self.episode_step)
 
         # Collect sensor data and 
         current_frame_number = self.collect_sensor_data()

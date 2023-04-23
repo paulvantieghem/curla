@@ -373,13 +373,13 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # GPU information
-    print('-'*100)
+    print('-'*50)
     print('PyTorch version:', torch.__version__)
     print('CUDA availability:', torch.cuda.is_available())
     print('CUDA device count:', torch.cuda.device_count())
     print('CUDA current device:', torch.cuda.current_device())
     print('CUDA device name (0):', torch.cuda.get_device_name(0))
-    print('-'*100)
+    print('-'*50)
 
     # Main loop
     main()
