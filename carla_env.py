@@ -314,7 +314,6 @@ class CarlaEnv:
         self.world.tick()
         self.episode_step += 1
         self.total_step += 1
-        print(self.episode_step)
 
         # Collect sensor data and 
         current_frame_number = self.collect_sensor_data()
