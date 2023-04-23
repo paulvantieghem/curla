@@ -293,6 +293,7 @@ def main():
         # Evaluate agent periodically
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
+            if env.verbose: print('episode done: evaluation starts')
             L = run_eval_loop(env, agent, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
                 agent.save_curl(model_dir, step)

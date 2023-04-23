@@ -112,9 +112,22 @@ class CarlaEnv:
         # Highway spawn points
         map_config = settings.map_config
         highway_spawn_info = map_config[self.carla_town]
-        self.road_id = highway_spawn_info['road_id']
-        self.start_s = highway_spawn_info['start_s']
-        self.start_lanes = highway_spawn_info['start_lanes']
+        road_id = highway_spawn_info['road_id']
+        start_s = highway_spawn_info['start_s']
+        start_lanes = highway_spawn_info['start_lanes']
+        self.ego_vehicle_possible_transforms = []
+        for i in range(len(start_lanes)):
+            ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
+            ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
+            self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
+        self.npc_vehicle_possible_transforms = []
+        for i in range(10*self.max_npc_vehicles):
+            start_lane = random.choice(start_lanes)
+            npc_s = np.random.uniform(0.0, start_s + 200)
+            npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
+            ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
+            self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
+
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
@@ -185,15 +198,11 @@ class CarlaEnv:
         # Spawn ego vehicle
         while True:
             try:
-                start_lane = random.choice(self.start_lanes)
-                self.ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=self.start_s).transform
-                self.ego_vehicle_transform.location.z += 2 # To avoid collision with road when spawning
-                color = random.choice(self.ego_vehicle_bp.get_attribute('color').recommended_values)
-                self.ego_vehicle_bp.set_attribute('color', color)
+                self.ego_vehicle_transform = random.choice(self.ego_vehicle_possible_transforms)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
                 break
             except:
-                if self.verbose: print('Spawn failed because of collision at spawn position, trying again')
+                if self.verbose: print('Spawn of ego vehicle failed, trying again')
                 time.sleep(0.05)
         self.actor_list.append(self.ego_vehicle)
         if self.verbose: print('created %s' % self.ego_vehicle.type_id)
@@ -210,21 +219,22 @@ class CarlaEnv:
         # Spawn NPC vehicles on highway
         npc_counter = 0
         start_time = time.time()
+        batch = []
         while npc_counter < self.max_npc_vehicles and time.time() - start_time < 5.0:
-            start_lane = random.choice(self.start_lanes)
-            npc_s = np.random.uniform(0.0, self.start_s + 200)
-            spawn_point_transform = self.map.get_waypoint_xodr(road_id=self.road_id, lane_id=start_lane, s=npc_s).transform
+            spawn_point_transform = random.choice(self.npc_vehicle_possible_transforms)
             temp = self.world.try_spawn_actor(random.choice(self.npc_vehicle_blueprints), spawn_point_transform)
             if temp is not None:
                 self.npc_vehicles_list.append(temp)
                 self.actor_list.append(temp)
+                batch.append(carla.command.SetAutopilot(temp, True))
                 npc_counter += 1
+            else:
+                if self.verbose: print('Spawn of npc vehicle failed, trying again')
             time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
-        # Parse the list of spawned NPC vehicles and give control to the TM through set_autopilot()
-        for vehicle in self.npc_vehicles_list:
-            vehicle.set_autopilot(True)
+        # Set autopilot for all NPC vehicles
+        self.client.apply_batch(batch)
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -248,7 +258,7 @@ class CarlaEnv:
         # Make sure the ego vehicle is spawned in the center of the lane
         p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
         dist = self._distance_from_center_lane(self.ego_vehicle, p_prev_wp, p_next_wp)
-        if dist >= 1e-2:
+        if dist >= 0.5:
             if self.verbose: print('Ego vehicle not spawned in center of the lane, resetting again...')
             time.sleep(1.0)
             self.reset()
