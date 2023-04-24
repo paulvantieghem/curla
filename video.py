@@ -11,7 +11,7 @@ import numpy as np
 
 
 class VideoRecorder(object):
-    def __init__(self, dir_name, fps=30):
+    def __init__(self, dir_name, fps=20):
         self.dir_name = dir_name
         self.fps = fps
         self.frames = []

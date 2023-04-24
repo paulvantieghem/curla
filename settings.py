@@ -4,7 +4,7 @@ import os
 SHOW_PREVIEW = False
 
 # Save the rgb camera images to the _out folder
-SAVE_IMGS = True
+SAVE_IMGS = False
 
 # Move spectator to ego vehicle spawn location
 if os.name == "nt":

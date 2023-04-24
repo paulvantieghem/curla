@@ -120,7 +120,7 @@ class CarlaEnv:
         self.ego_vehicle_possible_transforms = []
         for i in range(len(start_lanes)):
             ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
-            ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
+            ego_vehicle_transform.location.z = 0.5 # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
 
         # NPC vehicle spawn points
@@ -135,7 +135,7 @@ class CarlaEnv:
             for j in range(len(start_lanes)):
                 start_lane = start_lanes[j]
                 npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
-                ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
+                ego_vehicle_transform.location.z = 0.5 # To avoid collision with road when spawning
                 self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
 
         # Ego vehicle settings
