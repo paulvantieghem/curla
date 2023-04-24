@@ -1,8 +1,5 @@
 import os
 
-# Verbosity of the CARLA environment
-VERBOSE = False
-
 # Display the rgb camera images with OpenCV
 SHOW_PREVIEW = False
 

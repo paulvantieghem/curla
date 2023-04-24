@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
     parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
     parser.add_argument('--fps', default=20, type=int) # Hz
+    parser.add_argument('--env_verbose', default=False, action='store_true') # Verbosity of the CARLA environment 'CarlaEnv' class
 
     # Carla camera settings
     parser.add_argument('--pre_transform_image_height', default=90, type=int)
@@ -117,8 +118,8 @@ def main():
     # Set up environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.pre_transform_image_height, args.pre_transform_image_width, args.fov,
-                   args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
+                   args.fps, args.env_verbose, args.pre_transform_image_height, args.pre_transform_image_width, 
+                   args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
                    args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     env.seed(args.seed) # Important not to remove !
     env.reset()
