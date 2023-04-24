@@ -82,7 +82,7 @@ class CarlaEnv:
         self.map = self.world.get_map()
         if self.verbose: print('loaded town %s' % self.map)
 
-        # Weather
+        # Weather presets
         self.weather_presets = [carla.WeatherParameters.ClearNoon, 
                                 carla.WeatherParameters.ClearSunset, 
                                 carla.WeatherParameters.CloudyNoon, 
@@ -109,17 +109,21 @@ class CarlaEnv:
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
 
-        # Highway spawn points
+        # Route settings
         map_config = settings.map_config
-        highway_spawn_info = map_config[self.carla_town]
-        road_id = highway_spawn_info['road_id']
-        start_s = highway_spawn_info['start_s']
-        start_lanes = highway_spawn_info['start_lanes']
+        spawn_point_info = map_config[self.carla_town]
+        road_id = spawn_point_info['road_id']
+        start_s = spawn_point_info['start_s']
+        start_lanes = spawn_point_info['start_lanes']
+
+        # Ego vehicle spawn points
         self.ego_vehicle_possible_transforms = []
         for i in range(len(start_lanes)):
             ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
             ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
+
+        # NPC vehicle spawn points
         self.npc_vehicle_possible_transforms = []
         spacing = 5.0
         horizon = 200.0
@@ -127,13 +131,12 @@ class CarlaEnv:
         distances = [x*spacing for x in distances]
         assert len(distances)*len(start_lanes) > self.max_npc_vehicles
         for i in range(len(distances)):
+            npc_s = distances[i]
             for j in range(len(start_lanes)):
                 start_lane = start_lanes[j]
-                npc_s = random.choice(distances)
                 npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
                 ego_vehicle_transform.location.z = 2 # To avoid collision with road when spawning
                 self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
-
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
@@ -213,7 +216,7 @@ class CarlaEnv:
         self.actor_list.append(self.ego_vehicle)
         if self.verbose: print('created %s' % self.ego_vehicle.type_id)
 
-        # Place spectator
+        # Place spectator if required
         if self.enable_spectator:
             yaw = self.ego_vehicle_transform.rotation.yaw*(math.pi/180)
             dist = -7.5
@@ -222,7 +225,7 @@ class CarlaEnv:
             self.spectator.set_transform(carla.Transform(self.ego_vehicle_transform.location + carla.Location(x=dx, y=dy, z=5), 
                                                          carla.Rotation(yaw=self.ego_vehicle_transform.rotation.yaw, pitch=-25)))
 
-        # Spawn NPC vehicles on highway
+        # Spawn NPC vehicles
         npc_counter = 0
         start_time = time.time()
         batch = []
@@ -241,7 +244,6 @@ class CarlaEnv:
 
         # Set autopilot for all NPC vehicles
         self.client.apply_batch_sync(batch)
-
 
         # Spawn RGB camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_sensor_bp, self.camera_sensor_transform, attach_to=self.ego_vehicle)
@@ -452,7 +454,7 @@ class CarlaEnv:
         return gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
     
     def _get_waypoints(self, distance):
-        """Returns the previous and next waypoints at a given distance from the ego vehicle"""
+        """Returns the previous and next waypoints at a given distance from the ego vehicle."""
         waypoint = self.map.get_waypoint(self.ego_vehicle.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving)
         previous_waypoint = waypoint.previous(distance)[0].transform.location
         next_waypoint = waypoint.next(distance)[0].transform.location
@@ -461,17 +463,19 @@ class CarlaEnv:
         return p_prev_wp, p_next_wp
     
     def _distance_from_center_lane(self, vehicle, p_prev_wp, p_next_wp): 
-        """Returns the perpendicular distance from the center of the lane"""
+        """Returns the perpendicular distance from the center of the lane."""
         p_ego = np.array([vehicle.get_location().x, vehicle.get_location().y])
         distance = np.linalg.norm(np.cross(p_next_wp - p_prev_wp, p_prev_wp - p_ego))/np.linalg.norm(p_next_wp - p_prev_wp)
         return distance
 
     def set_synchronous_mode(self, synchronous):
+        '''Set the simulation to synchronous or asynchronous mode.'''
         self.settings.synchronous_mode = synchronous
         self.world.apply_settings(self.settings)
         self.traffic_manager.set_synchronous_mode(synchronous)
 
     def process_camera_data(self, carla_im_data):
+        '''Process the raw image data from the camera sensor.'''
 
         # Extract image data
         raw_image = np.array(carla_im_data.raw_data)
@@ -496,22 +500,27 @@ class CarlaEnv:
         self.front_camera = np.transpose(self.image, (2, 0, 1))
     
     def process_collision_data(self, event):
+        '''Process the collision data from the collision sensor.'''
         self.collision_history.append(event)
 
     # def process_lane_invasion_data(self, event):
+    #     '''Process the lane invasion data from the lane invasion sensor.'''
     #     self.lane_invasion_history.append(event)
 
     def collect_sensor_data(self):
+        '''Collect the data from the camera sensor.'''
         camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
         self.process_camera_data(camera_sensor_data)
         return camera_sensor_data.frame # Return frame number
 
     def seed(self, seed):
+        '''Set the seed for the random number generators.'''
         random.seed(seed)
         self._np_random = np.random.RandomState(seed) 
         self.traffic_manager.set_random_device_seed(seed)
     
     def destroy_all_actors(self):
+        '''Destroy all actors in the environment.'''
         if self.verbose: print('destroying actors')
         if len(self.actor_list) != 0:
             try: 
@@ -524,6 +533,7 @@ class CarlaEnv:
         if self.verbose: print('done.\n\n')
 
     def deactivate(self):
+        '''Clean up the environment before closing it.'''
         self.set_synchronous_mode(False)
         self.destroy_all_actors()
     
