@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=conda_install
-#SBATCH --output=conda_install.out
-#SBATCH --error=conda_install.err
+#SBATCH --job-name=conda_install_conda
+#SBATCH --output=conda_install_conda.out
+#SBATCH --error=conda_install_conda.err
 
 # Load necessary modules
 module --force purge

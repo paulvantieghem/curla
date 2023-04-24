@@ -143,8 +143,8 @@ class CarlaEnv:
 
         # Camera sensor settings
         self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
-        self.camera_sensor_bp.set_attribute('image_size_x', f'{self.im_width}')
-        self.camera_sensor_bp.set_attribute('image_size_y', f'{self.im_height}')
+        self.camera_sensor_bp.set_attribute('image_size_x', f'{1152}')
+        self.camera_sensor_bp.set_attribute('image_size_y', f'{640}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
         # self.camera_sensor_bp.set_attribute('enable_postprocess_effects', str(True))
@@ -481,7 +481,7 @@ class CarlaEnv:
         raw_image = np.array(carla_im_data.raw_data)
 
         # Reshape image data to (H, W, X) format (X = BGRA)
-        bgra_image = raw_image.reshape((self.im_height, self.im_width, -1))
+        bgra_image = raw_image.reshape((640, 1152, -1))
 
         # Remove alpha to obtain (H, W, C) image with C = BGR
         bgr_image = bgra_image[:, :, :3]
@@ -489,12 +489,15 @@ class CarlaEnv:
         # Convert image from BGR to RGB
         self.image = bgr_image[:, :, ::-1]
 
+        # Downscale image to requested size
+        self.front_camera = cv2.resize(self.image, (self.im_width, self.im_height), interpolation=cv2.INTER_AREA)
+
         # Display/record if requested
         if self.show_preview:
-            cv2.imshow('', bgr_image)
+            cv2.imshow('', self.front_camera[:, :, ::-1])
             cv2.waitKey(1)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), bgr_image)
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.front_camera[:, :, ::-1])
 
         # Reshape image to (C, H, W) format required by the CURL model
         self.front_camera = np.transpose(self.image, (2, 0, 1))

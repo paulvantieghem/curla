@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --time=72:00:00
+#SBATCH --time=01:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=curla_train
-#SBATCH --output=curla_train.out
-#SBATCH --error=curla_train.err
+#SBATCH --job-name=curla_install_carla_0_9_11
+#SBATCH --output=curla_install_carla_0_9_11.out
+#SBATCH --error=curla_install_carla_0_9_11.err
 
 # Load necessary modules
 module --force purge
@@ -37,34 +37,23 @@ if [[ -z "$(which conda)" ]]; then
   exit 1
 fi
 
-# Refresh the curla repository
-ssh-add ~/.ssh/id_ed25519
-if [ -d "$VSC_DATA/lib/curla" ]; then
-  cd $VSC_DATA/lib/curla
-  git pull
-  echo "[MESSAGE] curla repository found, pulled new changes"
-else
-  cd $VSC_DATA/lib/
-  git clone git@github.com:paulvantieghem/curla.git
-  echo "[MESSAGE] curla repository not found, cloned repository"
+# Delete old installations of CARLA
+if [ -d "$VSC_DATA/lib/carla_0_9_11" ]; then
+  rm -rf $VSC_DATA/lib/carla_0_9_11
 fi
 
-# Launch the CARLA simulator in the background
-cd $VSC_DATA/lib/carla
-DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
-echo "[MESSAGE] Launched CARLA simulator"
+# Make necessary directory
+mkdir -p $VSC_DATA/lib/carla_0_9_11
 
-# Sleep for 60 seconds
-sleep 60
-echo "[MESSAGE] 60 second sleep over, launching training..."
-
-# Train CURL agent on CARLA simulator
+# Install CARLA 0.9.11
+cd $VSC_DATA/lib/carla_0_9_11
+wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.11.tar.gz
+tar -xzf CARLA_0.9.11.tar.gz
+rm CARLA_0.9.11.tar.gz
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
+export CONDA_ALWAYS_YES="true"
 conda activate curla
-cd $VSC_DATA/lib/curla
-python train.py
-
-# Terminate session
-kill $CARLA
-kill -9 $(pgrep -f CarlaUE4)
+conda install conda-build
+conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg
 conda deactivate
+echo "[MESSAGE] CARLA installed"

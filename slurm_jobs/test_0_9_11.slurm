@@ -50,7 +50,7 @@ else
 fi
 
 # Launch the CARLA simulator in the background
-cd $VSC_DATA/lib/carla
+cd $VSC_DATA/lib/carla_0_9_11
 DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
 echo "[MESSAGE] Launched CARLA simulator"
 

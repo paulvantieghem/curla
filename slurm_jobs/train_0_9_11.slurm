@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --time=00:30:00
+#SBATCH --time=72:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=curla_install_curla
-#SBATCH --output=curla_install_curla.out
-#SBATCH --error=curla_install_curla.err
+#SBATCH --job-name=curla_train
+#SBATCH --output=curla_train.out
+#SBATCH --error=curla_train.err
 
 # Load necessary modules
 module --force purge
@@ -37,7 +37,7 @@ if [[ -z "$(which conda)" ]]; then
   exit 1
 fi
 
-# Get the latest version of the curla repository
+# Refresh the curla repository
 ssh-add ~/.ssh/id_ed25519
 if [ -d "$VSC_DATA/lib/curla" ]; then
   cd $VSC_DATA/lib/curla
@@ -49,7 +49,22 @@ else
   echo "[MESSAGE] curla repository not found, cloned repository"
 fi
 
-# Create the curla conda virtual environment
+# Launch the CARLA simulator in the background
+cd $VSC_DATA/lib/carla_0_9_11
+DISPLAY= ./CarlaUE4.sh -opengl -nosound & CARLA=$!
+echo "[MESSAGE] Launched CARLA simulator"
+
+# Sleep for 60 seconds
+sleep 60
+echo "[MESSAGE] 60 second sleep over, launching training..."
+
+# Train CURL agent on CARLA simulator
+source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
+conda activate curla
 cd $VSC_DATA/lib/curla
-conda env create -f conda_env.yml
-echo "[MESSAGE] Conda environment 'curla' created"
+python train.py
+
+# Terminate session
+kill $CARLA
+kill -9 $(pgrep -f CarlaUE4)
+conda deactivate
