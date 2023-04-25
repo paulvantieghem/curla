@@ -47,6 +47,13 @@ python train.py ^
     --init_steps 1 ^
     --eval_freq 1000 ^
     --num_train_steps 500
+
+
+python train.py ^
+    --num_eval_episodes 1 ^
+    --init_steps 1 ^
+    --eval_freq 1000 ^
+    --num_train_steps 500
 ```
 
 Train command
@@ -80,5 +87,5 @@ conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-win-amd64.egg
 
 Eval command
 ```
-python eval.py --model_dir_path ./models --model_step 400000 
+python eval.py --model_dir_path ./models --model_step 400000
 ```
