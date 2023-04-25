@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --time=02:00:00
+#SBATCH --time=00:40:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=curla_install_carla_0_9_14
-#SBATCH --output=curla_install_carla_0_9_14.out
-#SBATCH --error=curla_install_carla_0_9_14.err
+#SBATCH --job-name=curla_test_0_9_14
+#SBATCH --output=curla_test_0_9_14.out
+#SBATCH --error=curla_test_0_9_14.err
 
 # Load necessary modules
 module --force purge
@@ -37,28 +37,38 @@ if [[ -z "$(which conda)" ]]; then
   exit 1
 fi
 
-# Delete old installations of CARLA
-if [ -d "$VSC_DATA/lib/carla" ]; then
-  rm -rf $VSC_DATA/lib/carla
+# Refresh the curla repository
+ssh-add ~/.ssh/id_ed25519
+if [ -d "$VSC_DATA/lib/curla" ]; then
+  cd $VSC_DATA/lib/curla
+  git pull
+  echo "[MESSAGE] curla repository found, pulled new changes"
+else
+  cd $VSC_DATA/lib/
+  git clone git@github.com:paulvantieghem/curla.git
+  echo "[MESSAGE] curla repository not found, cloned repository"
 fi
 
-# Make necessary directory
-mkdir -p $VSC_DATA/lib/carla
-
-# Configure apptainer
+# Add apptainer info to environment variables
 export APPTAINER_TMPDIR=$VSC_SCRATCH/apptainer/tmp
 export APPTAINER_CACHEDIR=$VSC_SCRATCH/apptainer/cache
-mkdir -p $APPTAINER_TMPDIR
-mkdir -p $APPTAINER_CACHEDIR
 
-# Install carla 0.9.14
+# Launch the CARLA simulator in the background
 cd $VSC_DATA/lib/carla
-apptainer build carla_0.9.14.sif docker://carlasim/carla:0.9.14
-apptainer exec -B $VSC_DATA carla_0.9.14.sif cp /home/carla/PythonAPI/carla/dist/carla-0.9.14-py3.7-linux-x86_64.egg $VSC_DATA/lib/carla
+./CarlaUE4.sh -RenderOffScreen -nosound & CARLA=$!
+echo "[MESSAGE] Launched CARLA simulator"
 
-# Develop the carla 0.9.14 python .egg file
+# Sleep for 60 seconds
+sleep 60
+echo "[MESSAGE] 60 second sleep over, launching training..."
+
+# Train CURL agent on CARLA simulator
 source $VSC_DATA/miniconda3/etc/profile.d/conda.sh
-export CONDA_ALWAYS_YES="true"
 conda activate curla
-conda develop ./carla-0.9.14-py3.7-linux-x86_64.egg
+cd $VSC_DATA/lib/curla
+python train.py --num_eval_episodes 1 --init_steps 1 --eval_freq 500 --num_train_steps 1000
+
+# Terminate session
+kill $CARLA
+kill -9 $(pgrep -f CarlaUE4)
 conda deactivate

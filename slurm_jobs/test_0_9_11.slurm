@@ -5,9 +5,9 @@
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=curla_test
-#SBATCH --output=curla_test.out
-#SBATCH --error=curla_test.err
+#SBATCH --job-name=curla_test_0_9_11
+#SBATCH --output=curla_test_0_9_11.out
+#SBATCH --error=curla_test_0_9_11.err
 
 # Load necessary modules
 module --force purge
