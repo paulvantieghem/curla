@@ -70,7 +70,7 @@ class CarlaEnv:
         self.lambda_r5 = lambda_r5
 
         # Initial values
-        self.front_camera = None
+        self.obs = None
 
         # Client
         self.client = carla.Client('localhost', 2000)
@@ -286,7 +286,7 @@ class CarlaEnv:
         # Collect the initial sensor data and return the first frame number
         self.starting_frame_number = self.collect_sensor_data()
 
-        return self.front_camera
+        return self.obs
 
 
     def step(self, action):
@@ -300,10 +300,10 @@ class CarlaEnv:
 
         # Apply the action to the ego vehicle
         action = np.clip(action, -1, 1)
-        throttle = float(np.max([action[0], 0.0]))
-        brake = float(-np.min([action[0], 0.0]))
-        steer = float(action[1])
-        control_action = carla.VehicleControl(throttle=throttle, steer=steer, brake=brake, hand_brake=False, reverse=False, manual_gear_shift=False)
+        self.throttle = float(np.max([action[0], 0.0]))
+        self.brake = float(-np.min([action[0], 0.0]))
+        self.steer = float(action[1])
+        control_action = carla.VehicleControl(throttle=self.throttle, steer=self.steer, brake=self.brake, hand_brake=False, reverse=False, manual_gear_shift=False)
         self.ego_vehicle.apply_control(control_action)
 
         # Calculate reward
@@ -326,7 +326,7 @@ class CarlaEnv:
         if self.episode_step == 1:
             self.starting_frame_number = current_frame_number - 1
 
-        return self.front_camera, reward, done, info
+        return self.obs, reward, done, info
 
     def reward_function(self, action):
 
@@ -375,8 +375,7 @@ class CarlaEnv:
         r2 = np.round(r2, precision)
 
         # Reward for the current steering angle
-        steer_angle = action[1]
-        r3 = (-1.0)*self.lambda_r3*np.abs(steer_angle)
+        r3 = (-1.0)*self.lambda_r3*np.abs(self.steer)
         r3 = np.round(r3, precision)
 
         # Reward for collision intensities during the current time step
@@ -443,7 +442,43 @@ class CarlaEnv:
 
     
     def render(self):
-        return self.image
+        """Renders the current state of the environment."""
+
+        frame = self.rgb_image.copy()
+
+        # Define the dimensions and position of the bar charts
+        bar_width = 200
+        bar_height = 20
+        bar_x = 10
+        throttle_y = 30
+        brake_y = 60
+        steering_y = 90
+        bar_color = (49, 61, 92)
+
+        # Calculate the width of the bars based on the driving information
+        throttle_width = int(bar_width * self.throttle)
+        brake_width = int(bar_width * self.brake)
+        steering_width = int(bar_width * (self.steer) / 2)
+
+        # Draw the throttle bar
+        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + throttle_width, throttle_y + bar_height), bar_color, -1)
+
+        # Draw the brake bar
+        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + brake_width, brake_y + bar_height), bar_color, -1)
+
+        # Draw the steering bar
+        if self.steer > 0:
+            cv2.rectangle(frame, (bar_x + int(bar_width/2), steering_y), (bar_x + int(bar_width/2) + steering_width, steering_y + bar_height), bar_color, -1)
+        else:
+            cv2.rectangle(frame, (bar_x + int(bar_width/2) + steering_width, steering_y), (bar_x + int(bar_width/2), steering_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x + int(bar_width/2) - 1, steering_y - 1), (bar_x + int(bar_width/2) + 1, steering_y + bar_height + 1), (0, 0, 0), -1)
+
+        # Add the driving information to the frame as text
+        cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height),    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+        return frame
     
     @property
     def observation_space(self, *args, **kwargs):
@@ -477,7 +512,11 @@ class CarlaEnv:
         self.traffic_manager.set_synchronous_mode(synchronous)
 
     def process_camera_data(self, carla_im_data):
-        '''Process the raw image data from the camera sensor.'''
+        '''
+        Process the raw image data from the camera sensor.
+        -- self.image: HD image used for rendering (saving video)
+        -- self.obs: downscaled image used as input to the model
+        '''
 
         # Extract image data
         raw_image = np.array(carla_im_data.raw_data)
@@ -489,20 +528,20 @@ class CarlaEnv:
         bgr_image = bgra_image[:, :, :3]
 
         # Convert image from BGR to RGB
-        self.image = bgr_image[:, :, ::-1]
+        self.rgb_image = bgr_image[:, :, ::-1]
 
         # Downscale image to requested size
-        self.front_camera = cv2.resize(self.image, (self.im_width, self.im_height), interpolation=cv2.INTER_AREA)
+        self.obs = cv2.resize(self.rgb_image, (self.im_width, self.im_height), interpolation=cv2.INTER_AREA)
 
         # Display/record if requested
         if self.show_preview:
-            cv2.imshow('', self.front_camera[:, :, ::-1])
+            cv2.imshow('', self.obs[:, :, ::-1])
             cv2.waitKey(1)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.front_camera[:, :, ::-1])
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.obs[:, :, ::-1])
 
         # Reshape image to (C, H, W) format required by the CURL model
-        self.front_camera = np.transpose(self.front_camera, (2, 0, 1))
+        self.obs = np.transpose(self.obs, (2, 0, 1))
     
     def process_collision_data(self, event):
         '''Process the collision data from the collision sensor.'''

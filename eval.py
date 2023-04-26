@@ -3,6 +3,7 @@ import time
 import argparse
 import torch
 import numpy as np
+import random
 import math
 
 import utils
@@ -76,6 +77,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
+                # action = random.choice([np.array([0.4, 0.4]), np.array([-0.4, -0.4])])
                 # action = np.array([0.4, 0.0])
                 # v_ego = env.ego_vehicle.get_velocity()
                 # abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
