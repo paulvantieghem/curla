@@ -482,6 +482,7 @@ class CarlaEnv:
         cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height - 3),    *text_settings)
         cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height - 3), *text_settings)
 
+        # Add episode information to the frame as text
         if self.info is not None:
             x = frame.shape[1] - 170
             r1 = self.info['r1']
@@ -494,7 +495,7 @@ class CarlaEnv:
             cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 130), *text_settings)
             r5 = self.info['r5']
             cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 160), *text_settings)
-            cv2.putText(frame, '--------------', (x, 190), *text_settings)
+            cv2.putText(frame, '-------------', (x, 190), *text_settings)
             r = r1 + r2 + r3 + r4 + r5
             cv2.putText(frame, f'Reward: {r:.1f}', (x, 220), *text_settings)
             mean_kmh = self.info['mean_kmh']
