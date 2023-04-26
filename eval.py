@@ -77,8 +77,7 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
                     obs = utils.center_crop_image(obs, (img_shape[0], img_shape[1]))
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                # action = random.choice([np.array([0.4, 0.4]), np.array([-0.4, -0.4])])
-                # action = np.array([0.4, 0.0])
+                # action = np.array([0.7, 0.0])
                 # v_ego = env.ego_vehicle.get_velocity()
                 # abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
                 # if abs_kmh > 65:
@@ -147,7 +146,7 @@ def main():
     agent.load_curl(args.model_dir_path, str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_times = run_eval_loop(env, agent, args.model_step, num_episodes=2, encoder_type=args.encoder_type, img_shape=cropped_shape, record_video=True)
+    ep_rewards, ep_times = run_eval_loop(env, agent, args.model_step, num_episodes=1, encoder_type=args.encoder_type, img_shape=cropped_shape, record_video=True)
 
     # Deactivate the environment
     env.deactivate()

@@ -429,7 +429,7 @@ class CarlaEnv:
         self.total_rewards['r4'] += r4 # Penalty for collision intensities
         self.total_rewards['r5'] += r5 # Penalty for speeding
         self.kmh_tracker.append(abs_kmh)
-        info = {'r1': self.total_rewards['r1'], 
+        self.info = {'r1': self.total_rewards['r1'], 
                 'r2': self.total_rewards['r2'], 
                 'r3': self.total_rewards['r3'], 
                 'r4': self.total_rewards['r4'], 
@@ -438,7 +438,7 @@ class CarlaEnv:
                 'max_kmh': np.max(self.kmh_tracker), 
                 'brake_sum': self.brake_sum}
         
-        return reward, done, info
+        return reward, done, self.info
 
     
     def render(self):
@@ -454,6 +454,7 @@ class CarlaEnv:
         brake_y = 60
         steering_y = 90
         bar_color = (49, 61, 92)
+        text_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255), 1, cv2.LINE_AA)
 
         # Calculate the width of the bars based on the driving information
         throttle_width = int(bar_width * self.throttle)
@@ -462,21 +463,44 @@ class CarlaEnv:
 
         # Draw the throttle bar
         cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + throttle_width, throttle_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + bar_width, throttle_y + bar_height), bar_color, 2)
 
         # Draw the brake bar
         cv2.rectangle(frame, (bar_x, brake_y), (bar_x + brake_width, brake_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + bar_width, brake_y + bar_height), bar_color, 2)
 
         # Draw the steering bar
         if self.steer > 0:
             cv2.rectangle(frame, (bar_x + int(bar_width/2), steering_y), (bar_x + int(bar_width/2) + steering_width, steering_y + bar_height), bar_color, -1)
         else:
             cv2.rectangle(frame, (bar_x + int(bar_width/2) + steering_width, steering_y), (bar_x + int(bar_width/2), steering_y + bar_height), bar_color, -1)
-        cv2.rectangle(frame, (bar_x + int(bar_width/2) - 1, steering_y - 1), (bar_x + int(bar_width/2) + 1, steering_y + bar_height + 1), (0, 0, 0), -1)
+        cv2.rectangle(frame, (bar_x, steering_y), (bar_x + bar_width, steering_y + bar_height), bar_color, 2)
+        cv2.rectangle(frame, (bar_x + int(bar_width/2) - 1, steering_y - 1), (bar_x + int(bar_width/2) + 1, steering_y + bar_height + 1), (255, 255, 255), -1)
 
         # Add the driving information to the frame as text
-        cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height),    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height - 3), *text_settings)
+        cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height - 3),    *text_settings)
+        cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height - 3), *text_settings)
+
+        if self.info is not None:
+            x = frame.shape[1] - 170
+            r1 = self.info['r1']
+            cv2.putText(frame, f'r1: +{np.abs(r1):.4f}', (x, 40), *text_settings)
+            r2 = self.info['r2']
+            cv2.putText(frame, f'r2: -{np.abs(r2):.4f}', (x, 70), *text_settings)
+            r3 = self.info['r3']
+            cv2.putText(frame, f'r3: -{np.abs(r3):.4f}', (x, 100), *text_settings)
+            r4 = self.info['r4']
+            cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 130), *text_settings)
+            r5 = self.info['r5']
+            cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 160), *text_settings)
+            cv2.putText(frame, '--------------', (x, 190), *text_settings)
+            r = r1 + r2 + r3 + r4 + r5
+            cv2.putText(frame, f'Reward: {r:.1f}', (x, 220), *text_settings)
+            mean_kmh = self.info['mean_kmh']
+            cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 250), *text_settings)
+            max_kmh = self.info['max_kmh']
+            cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 280), *text_settings)
 
         return frame
     
