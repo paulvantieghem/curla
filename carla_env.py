@@ -352,20 +352,20 @@ class CarlaEnv:
         p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
 
         # Velocity vector of the ego vehicle
-        v_ego = self.ego_vehicle.get_velocity()
-        abs_kmh = float(3.6*math.sqrt(v_ego.x**2 + v_ego.y**2))
-        v_ego = np.array([v_ego.x, v_ego.y])
+        self.v_ego = self.ego_vehicle.get_velocity()
+        abs_kmh = float(3.6*math.sqrt(self.v_ego.x**2 + self.v_ego.y**2))
+        self.v_ego = np.array([self.v_ego.x, self.v_ego.y])
 
         # Highway lane direction unit vector
-        u_highway = p_next_wp - p_prev_wp
-        norm = np.linalg.norm(u_highway)
+        self.u_highway = p_next_wp - p_prev_wp
+        norm = np.linalg.norm(self.u_highway)
         if np.isclose(norm, 0.0):
-            u_highway = np.array([0.0, 0.0])
+            self.u_highway = np.array([0.0, 0.0])
         else:
-            u_highway = u_highway/norm
+            self.u_highway = self.u_highway/norm
 
         # Reward for the highway progression [in meters] during the current time step
-        r1 = self.lambda_r1*(np.dot(v_ego.T, u_highway)*self.dt)
+        r1 = self.lambda_r1*(np.dot(self.v_ego.T, self.u_highway)*self.dt)
         r1 = np.round(r1, precision)
 
         # Reward for perpendicular distance to the center of the lane [in meters] during the current time step,
@@ -481,6 +481,19 @@ class CarlaEnv:
         cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height - 3), *text_settings)
         cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height - 3),    *text_settings)
         cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height - 3), *text_settings)
+
+        # Add highway and ego vehicle direction vectors to the frame
+        if self.u_highway is not None and self.v_ego is not None:
+            x = bar_x + int(bar_width/2)
+            y = 300
+            factor = 75
+            dx1 = int(self.u_highway[1]*factor)
+            dy1 = int(self.u_highway[0]*factor)
+            v_ego = self.v_ego/(self.desired_speed/3.6)
+            dx2 = int(v_ego[1]*factor)
+            dy2 = int(v_ego[0]*factor)
+            cv2.arrowedLine(frame, (x, y), (x - dx1, y + dy1), bar_color, 2, cv2.LINE_AA)
+            cv2.arrowedLine(frame, (x, y), (x - dx2, y + dy2), (255, 255, 255), 1, cv2.LINE_AA)
 
         # Add episode information to the frame as text
         if self.info is not None:
