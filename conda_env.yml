@@ -28,4 +28,4 @@ dependencies:
     - tensorboard
     - termcolor
     - scikit-image
-    - carla==0.9.14
+    - scikit-learn

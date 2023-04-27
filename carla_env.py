@@ -514,6 +514,9 @@ class CarlaEnv:
 
         # Reshape image to (C, H, W) format required by the CURL model
         self.obs = np.transpose(self.obs, (2, 0, 1))
+
+        if self.save_imgs:
+            np.save(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.npy'), self.obs)
     
     def process_collision_data(self, event):
         '''Process the collision data from the collision sensor.'''

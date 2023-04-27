@@ -46,6 +46,11 @@ def parse_args():
     parser.add_argument('--lambda_r4', default=0.005, type=float)   # Collision
     parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding
 
+    # Image augmentation settings
+    parser.add_argument('--image_height', default=76, type=int)
+    parser.add_argument('--image_width', default=135, type=int)
+    parser.add_argument('--frame_stack', default=3, type=int)
+
     # Random seed
     parser.add_argument('--seed', default=-1, type=int)
 
@@ -107,7 +112,6 @@ def run_eval_loop(env, agent, step, num_episodes=10, encoder_type='pixel', img_s
 
 def main():
 
-    args = parse_args()
     # Parse arguments
     args = parse_args()
     if args.seed == -1: 
@@ -128,7 +132,7 @@ def main():
     action_shape = env.action_space.shape
 
     # Parameters
-    frame_stack = 3
+    frame_stack = args.frame_stack
     cropped_shape = (int(np.ceil(0.84*cam_obs_shape[0])), int(np.ceil(0.84*cam_obs_shape[1])))
     obs_shape = (3*frame_stack, *cropped_shape)
 
@@ -146,7 +150,7 @@ def main():
     agent.load_curl(args.model_dir_path, str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_times = run_eval_loop(env, agent, args.model_step, num_episodes=10, encoder_type=args.encoder_type, img_shape=cropped_shape, record_video=True)
+    ep_rewards, ep_times = run_eval_loop(env, agent, args.model_step, num_episodes=2, encoder_type=args.encoder_type, img_shape=cropped_shape, record_video=True)
 
     # Deactivate the environment
     env.deactivate()

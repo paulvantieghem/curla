@@ -81,6 +81,8 @@ class Actor(nn.Module):
     ):
         obs = self.encoder(obs, detach=detach_encoder)
 
+        self.latent_representation = obs.to('cpu').detach().numpy().copy()
+
         mu, log_std = self.trunk(obs).chunk(2, dim=-1)
 
         # constrain log_std inside [log_std_min, log_std_max]
