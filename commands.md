@@ -52,8 +52,8 @@ python train.py ^
 python train.py ^
     --num_eval_episodes 1 ^
     --init_steps 1 ^
-    --eval_freq 1000 ^
-    --num_train_steps 500
+    --eval_freq 500 ^
+    --num_train_steps 1000
 ```
 
 Train command

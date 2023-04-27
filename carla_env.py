@@ -93,9 +93,9 @@ class CarlaEnv:
                                 carla.WeatherParameters.MidRainSunset]
 
         # Set fixed simulation step for synchronous mode
-        self.settings = self.world.get_settings()
-        self.settings.fixed_delta_seconds = self.dt
-        self.world.apply_settings(self.settings)
+        self.world_settings = self.world.get_settings()
+        self.world_settings.fixed_delta_seconds = self.dt
+        self.world.apply_settings(self.world_settings)
 
         # Administration
         self.reset_step = 0     # Counts how many times the environment has been reset (episode counter)
@@ -185,6 +185,9 @@ class CarlaEnv:
                 shutil.rmtree('_out')
             os.mkdir('_out')
 
+        # Set synchronous mode
+        self.set_synchronous_mode(True)
+
     def reset(self):
         
         # Destroy all actors of the previous simulation
@@ -197,9 +200,6 @@ class CarlaEnv:
         # self.lane_invasion_history = []
         # self.lane_invasion_len = 0
         self.starting_frame_number = None
-
-        # Disable synchronous mode
-        self.set_synchronous_mode(False)
 
         # Set random weather preset with a random sun azimuth angle between 30 and 330 degrees
         weather_preset = random.choice(self.weather_presets)
@@ -244,6 +244,11 @@ class CarlaEnv:
             time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
+        # Make sure that all vehicles fell down to the ground after spawning
+        for _ in range(int(1/self.dt)):
+            self.world.tick()
+            time.sleep(self.dt)
+
         # Set autopilot for all NPC vehicles
         self.client.apply_batch_sync(batch)
 
@@ -274,17 +279,22 @@ class CarlaEnv:
             time.sleep(1.0)
             self.reset()
 
-        # Enable synchronous mode
-        self.set_synchronous_mode(True)
+        # Collect the initial sensor data and return the first frame number
+        while True:
+            try:
+                self.starting_frame_number = self.collect_sensor_data()
+                self.world.tick()
+                break
+            except:
+                self.world.tick()
+                time.sleep(2*self.dt)
+                if self.verbose: print('ticking world after failed sensor data collection')
 
         # Administration
         self.reset_step += 1
         self.episode_step = 0
         self.stall_counter = 0
         if self.verbose: print('episode started')
-
-        # Collect the initial sensor data and return the first frame number
-        self.starting_frame_number = self.collect_sensor_data()
 
         return self.obs
 
@@ -439,84 +449,6 @@ class CarlaEnv:
                 'brake_sum': self.brake_sum}
         
         return reward, done, self.info
-
-    
-    def render(self):
-        """Renders the current state of the environment."""
-
-        frame = self.rgb_image.copy()
-
-        # Define the dimensions and position of the bar charts
-        bar_width = 200
-        bar_height = 20
-        bar_x = 10
-        throttle_y = 30
-        brake_y = 60
-        steering_y = 90
-        bar_color = (49, 61, 92)
-        text_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255), 1, cv2.LINE_AA)
-
-        # Calculate the width of the bars based on the driving information
-        throttle_width = int(bar_width * self.throttle)
-        brake_width = int(bar_width * self.brake)
-        steering_width = int(bar_width * (self.steer) / 2)
-
-        # Draw the throttle bar
-        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + throttle_width, throttle_y + bar_height), bar_color, -1)
-        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + bar_width, throttle_y + bar_height), bar_color, 2)
-
-        # Draw the brake bar
-        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + brake_width, brake_y + bar_height), bar_color, -1)
-        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + bar_width, brake_y + bar_height), bar_color, 2)
-
-        # Draw the steering bar
-        if self.steer > 0:
-            cv2.rectangle(frame, (bar_x + int(bar_width/2), steering_y), (bar_x + int(bar_width/2) + steering_width, steering_y + bar_height), bar_color, -1)
-        else:
-            cv2.rectangle(frame, (bar_x + int(bar_width/2) + steering_width, steering_y), (bar_x + int(bar_width/2), steering_y + bar_height), bar_color, -1)
-        cv2.rectangle(frame, (bar_x, steering_y), (bar_x + bar_width, steering_y + bar_height), bar_color, 2)
-        cv2.rectangle(frame, (bar_x + int(bar_width/2) - 1, steering_y - 1), (bar_x + int(bar_width/2) + 1, steering_y + bar_height + 1), (255, 255, 255), -1)
-
-        # Add the driving information to the frame as text
-        cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height - 3), *text_settings)
-        cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height - 3),    *text_settings)
-        cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height - 3), *text_settings)
-
-        # Add highway and ego vehicle direction vectors to the frame
-        if self.u_highway is not None and self.v_ego is not None:
-            x = bar_x + int(bar_width/2)
-            y = 300
-            factor = 75
-            dx1 = int(self.u_highway[1]*factor)
-            dy1 = int(self.u_highway[0]*factor)
-            v_ego = self.v_ego/(self.desired_speed/3.6)
-            dx2 = int(v_ego[1]*factor)
-            dy2 = int(v_ego[0]*factor)
-            cv2.arrowedLine(frame, (x, y), (x - dx1, y + dy1), bar_color, 2, cv2.LINE_AA)
-            cv2.arrowedLine(frame, (x, y), (x - dx2, y + dy2), (255, 255, 255), 1, cv2.LINE_AA)
-
-        # Add episode information to the frame as text
-        if self.info is not None:
-            x = frame.shape[1] - 170
-            r1 = self.info['r1']
-            cv2.putText(frame, f'r1: +{np.abs(r1):.4f}', (x, 40), *text_settings)
-            r2 = self.info['r2']
-            cv2.putText(frame, f'r2: -{np.abs(r2):.4f}', (x, 70), *text_settings)
-            r3 = self.info['r3']
-            cv2.putText(frame, f'r3: -{np.abs(r3):.4f}', (x, 100), *text_settings)
-            r4 = self.info['r4']
-            cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 130), *text_settings)
-            r5 = self.info['r5']
-            cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 160), *text_settings)
-            cv2.putText(frame, '-------------', (x, 190), *text_settings)
-            r = r1 + r2 + r3 + r4 + r5
-            cv2.putText(frame, f'Reward: {r:.1f}', (x, 220), *text_settings)
-            mean_kmh = self.info['mean_kmh']
-            cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 250), *text_settings)
-            max_kmh = self.info['max_kmh']
-            cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 280), *text_settings)
-
-        return frame
     
     @property
     def observation_space(self, *args, **kwargs):
@@ -545,9 +477,11 @@ class CarlaEnv:
 
     def set_synchronous_mode(self, synchronous):
         '''Set the simulation to synchronous or asynchronous mode.'''
-        self.settings.synchronous_mode = synchronous
-        self.world.apply_settings(self.settings)
+        self.world_settings.synchronous_mode = synchronous
+        if synchronous:
+            self.world_settings.fixed_delta_seconds = self.dt
         self.traffic_manager.set_synchronous_mode(synchronous)
+        self.world.apply_settings(self.world_settings)
 
     def process_camera_data(self, carla_im_data):
         '''
@@ -618,4 +552,83 @@ class CarlaEnv:
         '''Clean up the environment before closing it.'''
         self.set_synchronous_mode(False)
         self.destroy_all_actors()
+
+    
+    def render(self):
+        """Renders the current state of the environment."""
+
+        frame = self.rgb_image.copy()
+
+        # Define the dimensions and position of the bar charts
+        bar_width = 200
+        bar_height = 20
+        bar_x = 10
+        throttle_y = 30
+        brake_y = 60
+        steering_y = 90
+        bar_color = (49, 61, 92)
+        text_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255), 1, cv2.LINE_AA)
+
+        # Calculate the width of the bars based on the driving information
+        throttle_width = int(bar_width * self.throttle)
+        brake_width = int(bar_width * self.brake)
+        steering_width = int(bar_width * (self.steer) / 2)
+
+        # Draw the throttle bar
+        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + throttle_width, throttle_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + bar_width, throttle_y + bar_height), bar_color, 2)
+
+        # Draw the brake bar
+        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + brake_width, brake_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x, brake_y), (bar_x + bar_width, brake_y + bar_height), bar_color, 2)
+
+        # Draw the steering bar
+        if self.steer > 0:
+            cv2.rectangle(frame, (bar_x + int(bar_width/2), steering_y), (bar_x + int(bar_width/2) + steering_width, steering_y + bar_height), bar_color, -1)
+        else:
+            cv2.rectangle(frame, (bar_x + int(bar_width/2) + steering_width, steering_y), (bar_x + int(bar_width/2), steering_y + bar_height), bar_color, -1)
+        cv2.rectangle(frame, (bar_x, steering_y), (bar_x + bar_width, steering_y + bar_height), bar_color, 2)
+        cv2.rectangle(frame, (bar_x + int(bar_width/2) - 1, steering_y - 1), (bar_x + int(bar_width/2) + 1, steering_y + bar_height + 1), (255, 255, 255), -1)
+
+        # Add the driving information to the frame as text
+        cv2.putText(frame, 'Throttle', (bar_x + bar_width + 10, throttle_y + bar_height - 3), *text_settings)
+        cv2.putText(frame, 'Brake',    (bar_x + bar_width + 10, brake_y + bar_height - 3),    *text_settings)
+        cv2.putText(frame, 'Steering', (bar_x + bar_width + 10, steering_y + bar_height - 3), *text_settings)
+
+        # Add highway and ego vehicle direction vectors to the frame
+        if self.u_highway is not None and self.v_ego is not None:
+            x = bar_x + int(bar_width/2)
+            y = int(frame.shape[0]/2)
+            factor = 75
+            dx1 = int(self.u_highway[1]*factor)
+            dy1 = int(self.u_highway[0]*factor)
+            v_ego = self.v_ego/(self.desired_speed/3.6)
+            dx2 = int(v_ego[1]*factor)
+            dy2 = int(v_ego[0]*factor)
+            cv2.arrowedLine(frame, (x, y), (x - dx1, y + dy1), bar_color, 2, cv2.LINE_AA)
+            cv2.arrowedLine(frame, (x, y), (x - dx2, y + dy2), (255, 255, 255), 1, cv2.LINE_AA)
+
+        # Add episode information to the frame as text
+        if self.info is not None:
+            x = frame.shape[1] - 170
+            cv2.putText(frame, 'Cumulative reward', (x, 30), *text_settings)
+            r1 = self.info['r1']
+            cv2.putText(frame, f'r1: +{np.abs(r1):.4f}', (x, 60), *text_settings)
+            r2 = self.info['r2']
+            cv2.putText(frame, f'r2: -{np.abs(r2):.4f}', (x, 90), *text_settings)
+            r3 = self.info['r3']
+            cv2.putText(frame, f'r3: -{np.abs(r3):.4f}', (x, 120), *text_settings)
+            r4 = self.info['r4']
+            cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 150), *text_settings)
+            r5 = self.info['r5']
+            cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 180), *text_settings)
+            r = r1 + r2 + r3 + r4 + r5
+            cv2.putText(frame, f'Total: {r:.1f}', (x, 210), *text_settings)
+            cv2.putText(frame, '-------------', (x, 240), *text_settings)
+            mean_kmh = self.info['mean_kmh']
+            cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 270), *text_settings)
+            max_kmh = self.info['max_kmh']
+            cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 300), *text_settings)
+
+        return frame
     
