@@ -215,23 +215,23 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     # Make necessary directories
-    args.work_dir_name = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.work_dir_name)
-    if not os.path.exists(args.work_dir_name):
-        os.makedirs(args.work_dir_name)
+    working_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.working_dir_name)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
     ts = datetime.now()
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
     exp_name = env_name + '--' + ts + '--im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
-    args.work_dir_name = os.path.join(args.work_dir_name, exp_name)
-    utils.make_dir(args.work_dir_name)
+    working_dir = os.path.join(working_dir, exp_name)
+    utils.make_dir(working_dir)
     global video_dir 
-    video_dir = utils.make_dir(os.path.join(args.work_dir_name, 'video'))
-    model_dir = utils.make_dir(os.path.join(args.work_dir_name, 'model'))
-    buffer_dir = utils.make_dir(os.path.join(args.work_dir_name, 'buffer'))
+    video_dir = utils.make_dir(os.path.join(working_dir, 'video'))
+    model_dir = utils.make_dir(os.path.join(working_dir, 'model'))
+    buffer_dir = utils.make_dir(os.path.join(working_dir, 'buffer'))
 
     # Logger
-    L = Logger(args.work_dir_name, use_tb=args.save_tb)
+    L = Logger(working_dir, use_tb=args.save_tb)
 
     # Carla environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
@@ -252,7 +252,7 @@ def main():
     video = VideoRecorder(vid_path, env.fps)
 
     # Store used arguments for repeatability
-    with open(os.path.join(args.work_dir_name, 'args.json'), 'w') as f:
+    with open(os.path.join(working_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
     # Make use of GPU if available

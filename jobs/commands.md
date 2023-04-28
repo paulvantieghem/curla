@@ -44,7 +44,8 @@ ssh -L 16006:127.0.0.1:6006 vsc35202@login-genius.hpc.kuleuven.be
 
 # On the server
 conda activate py37
-tensorboard --logdir="tmp" --port=6006
+cd $VSC_DATA/lib/curla
+tensorboard --logdir="experiments" --port=6006
 
 # On your local machine
 http://127.0.0.1:16006
@@ -53,8 +54,8 @@ http://127.0.0.1:16006
 #### Copying files VSC server <--> local machine
 ```
 # On your local machine: from VSC to local
-scp -r vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla/tmp/ /Users/PaulVT/Desktop/tmp
+scp -r vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla/experiments/ /Users/PaulVT/Desktop/experiments
 
 # On your local machine: from local to VSC
-scp -r /Users/PaulVT/Desktop/tmp vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla
+scp -r /Users/PaulVT/Desktop/experiments vsc35202@login-genius.hpc.kuleuven.be:/data/leuven/352/vsc35202/lib/curla
 ```

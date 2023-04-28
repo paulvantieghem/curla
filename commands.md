@@ -12,7 +12,9 @@ Install PyTorch 1.13.1 with CUDA 11.7:
 `pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117`
 
 Activate tensorboard logging
-`tensorboard --logdir tmp --port 6006`
+```
+tensorboard --logdir experiments --port 6006
+```
 
 Test command:
 ```
