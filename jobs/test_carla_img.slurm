@@ -28,9 +28,10 @@ CONTENT_ROOT="$VSC_DATA/lib/curla"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 #   * `python "$VSC_DATA/carla_test.py"` runs the python script within the activated conda environment of the apptainer image.
-# apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py --num_eval_episodes 1 --init_steps 1 --eval_freq 500 --num_train_steps 1000"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py --num_eval_episodes 1 --init_steps 1 --eval_freq 500 --num_train_steps 1000"
+echo "[MESSAGE] Finished training"
 
 # Run the apptainer image containing carla and the conda environment to manually launch the carla server:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image
 #   * `carla -RenderOffScreen` runs the carla server with the provided arguments (off-screen rendering in this case).
-apptainer run --nv "$CARLA_ROOT/conda_carla.sif" carla -RenderOffScreen
+# apptainer run --nv "$CARLA_ROOT/conda_carla.sif" carla -RenderOffScreen
