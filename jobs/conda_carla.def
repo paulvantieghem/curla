@@ -1,0 +1,65 @@
+Bootstrap: docker
+From: carlasim/carla:0.9.14
+
+%setup
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    mv Miniconda3-latest-Linux-x86_64.sh ${APPTAINER_ROOTFS}/home/install_conda.sh
+
+%files
+    environment.yml /home/environment.yml
+
+%environment
+    export CARLA_ROOT="/home/carla"
+    export CARLA_VERSION="0.9.14"
+
+%post -c /bin/bash
+    export HOME="/home"
+    cd ~
+
+    # Install and setup conda
+    bash ./install_conda.sh -b -p ./miniconda3
+    rm ./install_conda.sh
+    ./miniconda3/bin/conda init bash
+    source ~/.bashrc
+    conda install -y conda-build
+
+    # Setup conda environment
+    conda env create -f /home/environment.yml
+    conda activate curla
+    conda develop /home/carla/PythonAPI/carla/dist/carla-0.9.14-py3.7-linux-x86_64.egg
+    conda deactivate
+
+    # Setup run_python script
+    echo "#!/bin/bash" > ~/run_python.sh
+    echo "source /home/.bashrc" >> ~/run_python.sh
+    echo "exec /home/carla/CarlaUE4.sh -RenderOffScreen & CARLA=$!" >> ~/run_python.sh
+    echo "conda activate curla" >> ~/run_python.sh
+    echo "python \"\$@\"" >> ~/run_python.sh
+    echo "kill $CARLA" >> ~/run_python.sh
+    echo "kill -9 $(pgrep -f CarlaUE4)" >> ~/run_python.sh
+    echo "conda deactivate" >> ~/run_python.sh
+    chmod 775 ~/run_python.sh
+
+%runscript
+    command="$1"
+    if [ -z "$command" ]; then
+        command="carla"
+    else
+        shift 1
+    fi
+    if [ $command = "carla" ]; then
+        exec /home/carla/CarlaUE4.sh "$@"
+    elif [ $command = "python" ]; then
+        exec /home/run_python.sh "$@"
+    else
+        echo "Unknown run command '$command'; use 'carla' or 'python'."
+    fi
+
+%help
+    This container sets up a conda environment in the base carla image.
+    Usage:
+        * `apptainer run --nv conda_carla.sif` launches a new instance of the CARLA server.
+        * `apptainer run --nv conda_carla.sif carla [params]` launches a new instance of the
+          CARLA server with the given parameters.
+        * `apptainer run --nv conda_carla.sif python [params]` runs python in the conda
+          environment with the given parameters.

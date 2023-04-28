@@ -4,6 +4,8 @@ tmp*/
 models/
 eval_*/
 viz_*/
+*.out
+*.err
 
 # macOS files
 .DS_Store

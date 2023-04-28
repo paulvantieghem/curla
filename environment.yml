@@ -17,6 +17,7 @@ dependencies:
   - pytorch-cuda=11.7
   - libpng
   - libjpeg-turbo
+  - libtiff<4.4.0
   - pip:
     - numpy
     - psutil
@@ -29,3 +30,4 @@ dependencies:
     - termcolor
     - scikit-image
     - scikit-learn
+    - matplotlib

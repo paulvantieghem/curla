@@ -1,18 +1,30 @@
 #### Installations
+
+V100 GPU
 ```
-sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 install_conda.slurm
-sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 install_curla.slurm
+sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 jobs/install_carla_img.slurm
+```
+
+P100 GPU
+```
+sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100 jobs/install_carla_img.slurm
 ```
 
 #### Test
+V100 GPU
 ```
-sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 test.slurm
+sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 jobs/test_carla_img.slurm
+```
+
+P100 GPU
+```
+sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100 jobs/test_carla_img.slurm
 ```
 
 
 #### Train
 ```
-sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 train.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 train_carla_img.slurm
 ```
 
 #### Tensorboard
