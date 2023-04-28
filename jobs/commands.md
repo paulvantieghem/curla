@@ -21,6 +21,10 @@ P100 GPU
 sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100 jobs/test_carla_img.slurm
 ```
 
+Debug job (max 30 min) P100 GPU
+```
+sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100 -p batch_debug  jobs/test_carla_img.slurm
+```
 
 #### Train
 ```
