@@ -106,7 +106,7 @@ def parse_args():
     
     # Misc
     parser.add_argument('--seed', default=-1, type=int)
-    parser.add_argument('--work_dir', default='./tmp', type=str)
+    parser.add_argument('--work_dir_name', default='experiments', type=str)
     parser.add_argument('--save_tb', default=True, action='store_true')
     parser.add_argument('--save_buffer', default=False, action='store_true')
     parser.add_argument('--save_video', default=True, action='store_true')
@@ -215,22 +215,23 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     # Make necessary directories
-    if not os.path.exists(args.work_dir):
-        os.makedirs(args.work_dir)
+    args.work_dir_name = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.work_dir_name)
+    if not os.path.exists(args.work_dir_name):
+        os.makedirs(args.work_dir_name)
     ts = datetime.now()
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
     exp_name = env_name + '--' + ts + '--im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
-    args.work_dir = os.path.join(args.work_dir, exp_name)
-    utils.make_dir(args.work_dir)
+    args.work_dir_name = os.path.join(args.work_dir_name, exp_name)
+    utils.make_dir(args.work_dir_name)
     global video_dir 
-    video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
-    model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
-    buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
+    video_dir = utils.make_dir(os.path.join(args.work_dir_name, 'video'))
+    model_dir = utils.make_dir(os.path.join(args.work_dir_name, 'model'))
+    buffer_dir = utils.make_dir(os.path.join(args.work_dir_name, 'buffer'))
 
     # Logger
-    L = Logger(args.work_dir, use_tb=args.save_tb)
+    L = Logger(args.work_dir_name, use_tb=args.save_tb)
 
     # Carla environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
@@ -251,7 +252,7 @@ def main():
     video = VideoRecorder(vid_path, env.fps)
 
     # Store used arguments for repeatability
-    with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
+    with open(os.path.join(args.work_dir_name, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
     # Make use of GPU if available

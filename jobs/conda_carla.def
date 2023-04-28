@@ -34,7 +34,6 @@ From: carlasim/carla:0.9.14
     echo "source /home/.bashrc" >> ~/run_python.sh
     echo "exec /home/carla/CarlaUE4.sh -RenderOffScreen -nosound & CARLA=\$!" >> ~/run_python.sh
     echo "conda activate curla" >> ~/run_python.sh
-    echo "cd \$VSC_DATA/lib/curla" >> ~/run_python.sh
     echo "python \"\$@\"" >> ~/run_python.sh
     echo "kill \$CARLA" >> ~/run_python.sh
     echo "kill -9 \$(pgrep -f CarlaUE4)" >> ~/run_python.sh
