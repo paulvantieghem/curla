@@ -36,7 +36,7 @@ From: carlasim/carla:0.9.14
     echo "conda activate curla" >> ~/run_python.sh
     echo "cd \$VSC_DATA/lib/curla" >> ~/run_python.sh
     echo "python \"\$@\"" >> ~/run_python.sh
-    echo "kill $CARLA" >> ~/run_python.sh
+    echo "kill \$CARLA" >> ~/run_python.sh
     echo "kill -9 \$(pgrep -f CarlaUE4)" >> ~/run_python.sh
     echo "conda deactivate" >> ~/run_python.sh
     chmod 775 ~/run_python.sh

@@ -34,7 +34,7 @@ sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 --ntasks=18 --gpus-per-no
 
 #### Train
 ```
-sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 train_carla_img.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 jobs/train_carla_img.slurm
 ```
 
 #### Tensorboard
