@@ -215,7 +215,7 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     # Make necessary directories
-    working_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.working_dir_name)
+    working_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.work_dir_name)
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
     ts = datetime.now()
