@@ -50,7 +50,7 @@ From: carlasim/carla:0.9.14
     if [ $command = "carla" ]; then
         exec /home/carla/CarlaUE4.sh "$@"
     elif [ $command = "python" ]; then
-        exec /home/run_python.sh "$@" >> "/data/log_$(date +%Y-%m-%d_%H-%M-%S).out" 2> "/data/log_$(date +%Y-%m-%d_%H-%M-%S).err"
+        exec /home/run_python.sh "$@" > "/data/log_$(date +%Y-%m-%d_%H-%M-%S).out" 2> "/data/log_$(date +%Y-%m-%d_%H-%M-%S).err"
     else
         echo "Unknown run command '$command'; use 'carla' or 'python'."
     fi
