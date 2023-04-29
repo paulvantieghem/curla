@@ -25,4 +25,9 @@ export APPTAINER_CACHEDIR="$VSC_SCRATCH/apptainer/cache"
 mkdir -p $APPTAINER_TMPDIR
 mkdir -p $APPTAINER_CACHEDIR
 
+# Remove the .sif file if it already exists
+if [ -f $CARLA_ROOT/conda_carla.sif ]; then
+  rm -f $CARLA_ROOT/conda_carla.sif
+fi
+
 apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def
