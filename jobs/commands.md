@@ -10,6 +10,11 @@ Genius P100 GPU
 sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100 jobs/install_carla_img.slurm
 ```
 
+wICE A100 GPU
+```
+sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 --ntasks=18 --gpus-per-node=1 --partition=gpu jobs/install_carla_img.slurm
+```
+
 #### Test
 Genius V100 GPU
 ```
@@ -29,7 +34,6 @@ sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-p
 wICE A100 GPU
 ```
 sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 --ntasks=18 --gpus-per-node=1 --partition=gpu jobs/test_carla_img.slurm
-
 ```
 
 #### Train
