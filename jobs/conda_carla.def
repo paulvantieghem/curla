@@ -30,7 +30,7 @@ From: carlasim/carla:0.9.14
     conda deactivate
 
     # Setup run_python script
-    echo "#!/bin/bash" > ~/run_python.sh
+    echo "#\!/bin/bash" > ~/run_python.sh
     echo "source /home/.bashrc" >> ~/run_python.sh
     echo "exec /home/carla/CarlaUE4.sh -RenderOffScreen -nosound & CARLA=\$\!" >> ~/run_python.sh
     echo "conda activate curla" >> ~/run_python.sh
