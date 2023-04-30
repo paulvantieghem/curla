@@ -29,3 +29,4 @@ dependencies:
     - scikit-image
     - scikit-learn
     - matplotlib
+    - carla==0.9.14

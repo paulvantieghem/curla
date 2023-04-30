@@ -46,12 +46,8 @@ wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.14.tar.gz
 tar -xzf CARLA_0.9.14.tar.gz
 rm CARLA_0.9.14.tar.gz
 ```
-Develop the CARLA egg file in the conda environment
-```
-conda activate curla
-python -m pip install carla==0.9.14
-conda deactivate
-```
+
+On Windows, you will have to download and extract the CARLA 0.9.14 release manually. Releases can be downloaded from [the CARLA repository](https://github.com/carla-simulator/carla/releases).
 
 ### 2. Training
 
@@ -75,8 +71,6 @@ In your console, you should see printouts that look like:
 | train | E: 113 | S: 25000 | ER: -7.60489 | BR: -0.114820 | A_LOSS: 4.9164285 | CR_LOSS: 0.0465371 | CU_LOSS: 0.10740199
 | eval | S: 25000 | MER: -2.6413 | BER: -0.74430
 ```
-
-For reference, the maximum score for cartpole swing up is around 845 pts, so CURL has converged to the optimal score. This takes about an hour of training depending on your GPU. 
 
 Log abbreviation mapping:
 
