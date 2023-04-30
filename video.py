@@ -1,4 +1,4 @@
-# This piece of code was copied/modified from the following source:
+# This piece of code was copied & modified from the following source:
 #
 #    Title: CURL: Contrastive Unsupervised Representation Learning for Sample-Efficient Reinforcement Learning
 #    Author: Laskin, Michael and Srinivas, Aravind and Abbeel, Pieter

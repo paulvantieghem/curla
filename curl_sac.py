@@ -1,4 +1,4 @@
-# This piece of code was copied/modified from the following source:
+# This piece of code was copied & modified from the following source:
 #
 #    Title: CURL: Contrastive Unsupervised Representation Learning for Sample-Efficient Reinforcement Learning
 #    Author: Laskin, Michael and Srinivas, Aravind and Abbeel, Pieter
@@ -13,7 +13,7 @@ import copy
 import math
 
 import utils
-from encoder import make_encoder
+import encoder
 
 LOG_FREQ = 100_000
 
@@ -54,15 +54,12 @@ def weight_init(m):
 class Actor(nn.Module):
     """MLP actor network."""
     def __init__(
-        self, obs_shape, action_shape, hidden_dim, encoder_type,
+        self, obs_shape, action_shape, hidden_dim,
         encoder_feature_dim, log_std_min, log_std_max, num_layers, num_filters, return_latent=False
     ):
         super().__init__()
 
-        self.encoder = make_encoder(
-            encoder_type, obs_shape, encoder_feature_dim, num_layers,
-            num_filters, output_logits=True
-        )
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
 
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
@@ -145,25 +142,17 @@ class QFunction(nn.Module):
 
 
 class Critic(nn.Module):
-    """Critic network, employes two q-functions."""
+    """Critic network, employs two Q-functions."""
     def __init__(
-        self, obs_shape, action_shape, hidden_dim, encoder_type,
-        encoder_feature_dim, num_layers, num_filters
-    ):
+        self, obs_shape, action_shape, hidden_dim,
+        encoder_feature_dim, num_layers, num_filters):
+
         super().__init__()
 
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
 
-        self.encoder = make_encoder(
-            encoder_type, obs_shape, encoder_feature_dim, num_layers,
-            num_filters, output_logits=True
-        )
-
-        self.Q1 = QFunction(
-            self.encoder.feature_dim, action_shape[0], hidden_dim
-        )
-        self.Q2 = QFunction(
-            self.encoder.feature_dim, action_shape[0], hidden_dim
-        )
+        self.Q1 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
+        self.Q2 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
 
         self.outputs = dict()
         self.apply(weight_init)
@@ -263,7 +252,6 @@ class CurlSacAgent(object):
         critic_beta=0.9,
         critic_tau=0.005,
         critic_target_update_freq=2,
-        encoder_type='pixel',
         encoder_feature_dim=50,
         encoder_lr=1e-3,
         encoder_tau=0.005,
@@ -287,21 +275,20 @@ class CurlSacAgent(object):
         self.image_shape = obs_shape[-2:]
         self.curl_latent_dim = curl_latent_dim
         self.detach_encoder = detach_encoder
-        self.encoder_type = encoder_type
 
         self.actor = Actor(
-            obs_shape, action_shape, hidden_dim, encoder_type,
+            obs_shape, action_shape, hidden_dim,
             encoder_feature_dim, actor_log_std_min, actor_log_std_max,
             num_layers, num_filters, self.return_latent
         ).to(device)
 
         self.critic = Critic(
-            obs_shape, action_shape, hidden_dim, encoder_type,
+            obs_shape, action_shape, hidden_dim,
             encoder_feature_dim, num_layers, num_filters
         ).to(device)
 
         self.critic_target = Critic(
-            obs_shape, action_shape, hidden_dim, encoder_type,
+            obs_shape, action_shape, hidden_dim,
             encoder_feature_dim, num_layers, num_filters
         ).to(device)
 
@@ -316,32 +303,22 @@ class CurlSacAgent(object):
         # Set the target entropy to -|A|
         self.target_entropy = -np.prod(action_shape)
         
-        # optimizers
-        self.actor_optimizer = torch.optim.Adam(
-            self.actor.parameters(), lr=actor_lr, betas=(actor_beta, 0.999)
-        )
+        # Optimizers
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=actor_lr, betas=(actor_beta, 0.999))
 
-        self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(), lr=critic_lr, betas=(critic_beta, 0.999)
-        )
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=critic_lr, betas=(critic_beta, 0.999))
 
-        self.log_alpha_optimizer = torch.optim.Adam(
-            [self.log_alpha], lr=alpha_lr, betas=(alpha_beta, 0.999)
-        )
+        self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=alpha_lr, betas=(alpha_beta, 0.999))
 
-        if self.encoder_type == 'pixel':
-            # create CURL encoder (the 128 batch size is probably unnecessary)
-            self.CURL = CURL(obs_shape, encoder_feature_dim,
-                        self.curl_latent_dim, self.critic,self.critic_target, output_type='continuous').to(self.device)
+        # Create CURL encoder (the 128 batch size is probably unnecessary)
+        self.CURL = CURL(obs_shape, encoder_feature_dim, self.curl_latent_dim, 
+                            self.critic,self.critic_target, output_type='continuous').to(self.device)
 
-            # optimizer for critic encoder for reconstruction loss
-            self.encoder_optimizer = torch.optim.Adam(
-                self.critic.encoder.parameters(), lr=encoder_lr
-            )
+        # Optimizer for critic encoder for reconstruction loss
+        self.encoder_optimizer = torch.optim.Adam(self.critic.encoder.parameters(), lr=encoder_lr)
 
-            self.cpc_optimizer = torch.optim.Adam(
-                self.CURL.parameters(), lr=encoder_lr
-            )
+        self.cpc_optimizer = torch.optim.Adam(self.CURL.parameters(), lr=encoder_lr)
+
         self.cross_entropy_loss = nn.CrossEntropyLoss()
 
         self.train()
@@ -351,8 +328,7 @@ class CurlSacAgent(object):
         self.training = training
         self.actor.train(training)
         self.critic.train(training)
-        if self.encoder_type == 'pixel':
-            self.CURL.train(training)
+        self.CURL.train(training)
 
     @property
     def alpha(self):
@@ -453,10 +429,7 @@ class CurlSacAgent(object):
 
 
     def update(self, replay_buffer, L, step):
-        if self.encoder_type == 'pixel':
-            obs, action, reward, next_obs, not_done, cpc_kwargs = replay_buffer.sample_cpc()
-        else:
-            obs, action, reward, next_obs, not_done = replay_buffer.sample_proprio()
+        obs, action, reward, next_obs, not_done, cpc_kwargs = replay_buffer.sample_cpc()
     
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
@@ -478,7 +451,7 @@ class CurlSacAgent(object):
                 self.encoder_tau
             )
         
-        if step % self.cpc_update_freq == 0 and self.encoder_type == 'pixel':
+        if step % self.cpc_update_freq == 0:
             obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]
             self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
 

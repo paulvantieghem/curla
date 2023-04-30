@@ -1,4 +1,4 @@
-# This piece of code was copied/modified from the following source:
+# This piece of code was copied & modified from the following source:
 #
 #    Title: CURL: Contrastive Unsupervised Representation Learning for Sample-Efficient Reinforcement Learning
 #    Author: Laskin, Michael and Srinivas, Aravind and Abbeel, Pieter
@@ -28,7 +28,7 @@ OUT_DIM_RECT_76_135 = {4: [31, 61],}
 OUT_DIM_RECT_90_160 = {4: [36, 71],}
 
 
-class PixelEncoder(nn.Module):
+class CNNEncoder(nn.Module):
     """Convolutional encoder of pixels observations."""
     def __init__(self, obs_shape, feature_dim, num_layers=4, num_filters=32,output_logits=False):
         super().__init__()
@@ -126,32 +126,3 @@ class PixelEncoder(nn.Module):
             L.log_param('train_encoder/conv%s' % (i + 1), self.convs[i], step)
         L.log_param('train_encoder/fc', self.fc, step)
         L.log_param('train_encoder/ln', self.ln, step)
-
-
-class IdentityEncoder(nn.Module):
-    def __init__(self, obs_shape, feature_dim, num_layers, num_filters,*args):
-        super().__init__()
-
-        assert len(obs_shape) == 1
-        self.feature_dim = obs_shape[0]
-
-    def forward(self, obs, detach=False):
-        return obs
-
-    def copy_conv_weights_from(self, source):
-        pass
-
-    def log(self, L, step, log_freq):
-        pass
-
-
-_AVAILABLE_ENCODERS = {'pixel': PixelEncoder, 'identity': IdentityEncoder}
-
-
-def make_encoder(
-    encoder_type, obs_shape, feature_dim, num_layers, num_filters, output_logits=False
-):
-    assert encoder_type in _AVAILABLE_ENCODERS
-    return _AVAILABLE_ENCODERS[encoder_type](
-        obs_shape, feature_dim, num_layers, num_filters, output_logits
-    )

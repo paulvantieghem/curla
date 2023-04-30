@@ -18,7 +18,6 @@ def parse_args():
     # Model specifications
     parser.add_argument('--model_dir_path', default='', type=str)
     parser.add_argument('--model_step', default=0, type=int)
-    parser.add_argument('--encoder_type', default='pixel', type=str)
 
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)

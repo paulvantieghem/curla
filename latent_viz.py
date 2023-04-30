@@ -18,7 +18,6 @@ def parse_args():
     # Model specifications
     parser.add_argument('--model_dir_path', default='models', type=str)
     parser.add_argument('--model_step', default=400_000, type=int)
-    parser.add_argument('--encoder_type', default='pixel', type=str)
 
     # Image augmentation settings
     parser.add_argument('--image_height', default=76, type=int)
@@ -83,8 +82,7 @@ def main():
             obs = np.concatenate(frame_list, axis=0)
 
             # Get latent representation from agent
-            if args.encoder_type == 'pixel':
-                obs = utils.center_crop_image(obs, cropped_shape)
+            obs = utils.center_crop_image(obs, cropped_shape)
             with utils.eval_mode(agent):
                 assert obs.shape == obs_shape, f'Shape of observations incorrect - expected {obs_shape}, got {obs.shape}'
                 _ = agent.sample_action(obs)

@@ -23,7 +23,6 @@ python train.py ^
     --max_npc_vehicles 75 ^
     --num_eval_episodes 1 ^
     --init_steps 1 ^
-    --encoder_type pixel ^
     --save_tb ^
     --save_video ^
     --pre_transform_image_height 90 ^
@@ -61,7 +60,6 @@ python train.py ^
     --max_npc_vehicles 75 ^
     --num_eval_episodes 10 ^
     --init_steps 1000 ^
-    --encoder_type pixel ^
     --save_tb ^
     --save_video ^
     --pre_transform_image_height 90 ^

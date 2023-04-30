@@ -1,4 +1,4 @@
-# This piece of code was copied/modified from the following source:
+# This piece of code was copied & modified from the following source:
 #
 #    Title: CURL: Contrastive Unsupervised Representation Learning for Sample-Efficient Reinforcement Learning
 #    Author: Laskin, Michael and Srinivas, Aravind and Abbeel, Pieter
@@ -77,7 +77,6 @@ def parse_args():
     parser.add_argument('--num_eval_episodes', default=10, type=int)
 
     # Encoder
-    parser.add_argument('--encoder_type', default='pixel', type=str)
     parser.add_argument('--encoder_feature_dim', default=50, type=int)
     parser.add_argument('--encoder_lr', default=1e-3, type=float)
     parser.add_argument('--encoder_tau', default=0.05, type=float)
@@ -131,9 +130,8 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
             episode_reward = 0
             episode_steps = 0
             while not done:
-                # center crop image
-                if args.encoder_type == 'pixel':
-                    obs = augmentor.anchor_augmentation(obs)
+                # Apply anchor augmentation
+                obs = augmentor.anchor_augmentation(obs)
                 with utils.eval_mode(agent):
                     if sample_stochastically:
                         action = agent.sample_action(obs)
@@ -191,7 +189,6 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
             critic_beta=args.critic_beta,
             critic_tau=args.critic_tau,
             critic_target_update_freq=args.critic_target_update_freq,
-            encoder_type=args.encoder_type,
             encoder_feature_dim=args.encoder_feature_dim,
             encoder_lr=args.encoder_lr,
             encoder_tau=args.encoder_tau,
@@ -237,7 +234,7 @@ def main():
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
     exp_name = env_name + '--' + ts + '--im' + str(args.camera_image_height) + 'x' + str(args.camera_image_width) +'-b'  \
-    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type + '-' + args.augmentation
+    + str(args.batch_size) + '-s' + str(args.seed) + '-' + args.augmentation
     working_dir = os.path.join(working_dir, exp_name)
     utils.make_dir(working_dir)
     global video_dir 
@@ -259,8 +256,7 @@ def main():
     action_shape = env.action_space.shape
 
     # Stack several consecutive frames together
-    if args.encoder_type == 'pixel':
-        env = utils.FrameStack(env, k=args.frame_stack)
+    env = utils.FrameStack(env, k=args.frame_stack)
 
     # Video recorder
     vid_path = video_dir if args.save_video else None
@@ -273,15 +269,9 @@ def main():
     # Make use of GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Encoder type and observation shapes
-    if args.encoder_type == 'pixel':
-        obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
-        pre_aug_obs_shape = env.observation_space.shape
-    elif args.encoder_type == 'identity':
-        obs_shape = env.observation_space.shape
-        pre_aug_obs_shape = obs_shape
-    else:
-        raise ValueError('encoder_type is not supported: %s' % args.encoder_type)
+    # Pre and post augmentation observation shapes
+    pre_aug_obs_shape = env.observation_space.shape
+    obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
 
     # Replay buffer
     replay_buffer = utils.ReplayBuffer(
