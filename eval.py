@@ -149,7 +149,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Set up agent
-    agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, augmentor=augmentor, encoder_type=args.encoder_type)
+    agent = CurlSacAgent(obs_shape=obs_shape, action_shape=action_shape, device=device, augmentor=augmentor)
 
     # Load model
     print('Loading model %s' % os.path.join(args.model_dir_path, 'curl_%d.pt' % args.model_step))
