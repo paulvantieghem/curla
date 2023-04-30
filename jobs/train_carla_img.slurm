@@ -28,4 +28,5 @@ CONTENT_ROOT="$VSC_DATA/lib/curla"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 #   * `python "$VSC_DATA/carla_test.py"` runs the python script within the activated conda environment of the apptainer image.
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py" > "$CONTENT_ROOT/log_apptainer_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/log_apptainer_$(date +%m-%d_%H-%M).err"
+echo "[MESSAGE] Finished apptainer run"
