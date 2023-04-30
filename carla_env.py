@@ -31,6 +31,8 @@ gym.logger.set_level(40) # Sets the gym logger in ERROR mode (will not mention w
 # Modules
 import settings
 
+TIMEOUT = 30.0 # Time in seconds to wait on various things
+
 class CarlaEnv:
 
     # Constants
@@ -72,7 +74,7 @@ class CarlaEnv:
 
         # Client
         self.client = carla.Client('localhost', 2000)
-        self.timeout = self.client.set_timeout(30.0)
+        self.timeout = self.client.set_timeout(TIMEOUT)
 
         # World
         self.world = self.client.load_world(carla_town)
@@ -197,7 +199,10 @@ class CarlaEnv:
         self.world.set_weather(weather_preset)
 
         # Spawn ego vehicle
+        start_time = time.time()
         while True:
+            if time.time() - start_time > TIMEOUT:
+                raise Exception('Timeout while waiting for ego vehicle to spawn')
             try:
                 self.ego_vehicle_transform = random.choice(self.ego_vehicle_possible_transforms)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
@@ -255,16 +260,11 @@ class CarlaEnv:
         self.collision_sensor.listen(lambda event: self.process_collision_data(event))
         if self.verbose: print('created %s' % self.collision_sensor.type_id)
 
-        # Make sure the ego vehicle is spawned in the center of the lane
-        p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
-        dist = self._distance_from_center_lane(self.ego_vehicle, p_prev_wp, p_next_wp)
-        if dist >= 0.5:
-            if self.verbose: print('Ego vehicle not spawned in center of the lane, resetting again...')
-            time.sleep(1.0)
-            self.reset()
-
         # Collect the initial sensor data and return the first frame number
+        start_time = time.time()
         while True:
+            if time.time() - start_time > TIMEOUT:
+                raise Exception('Timeout while waiting for initial sensor data')
             try:
                 self.starting_frame_number = self.collect_sensor_data()
                 self.world.tick()
