@@ -110,7 +110,7 @@ def parse_args():
     parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
-    parser.add_argument('--log_interval', default=100, type=int)
+    parser.add_argument('--log_interval', default=500, type=int)
     args = parser.parse_args()
     return args
 
