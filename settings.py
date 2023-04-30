@@ -19,4 +19,4 @@ map_config = {
 SHOW_PREVIEW = False
 
 # Save the rgb camera images to the _out folder
-SAVE_IMGS = True
+SAVE_IMGS = False
