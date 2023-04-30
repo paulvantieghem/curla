@@ -8,7 +8,7 @@ else:
 
 # Carla spawn location configuration
 map_config = {
-    'Town04': {'road_id': 38, 'start_s': 33.0, 'start_lanes': [-1, -2, -3, -4]},
+    'Town04': {'road_id': 38, 'start_s': 33.0, 'start_lanes': [-1, -2, -3, -4], 'npc_spawn_horizon': 225.0, 'npc_spawn_spacing': 5.0},
     }
 
 #########################################

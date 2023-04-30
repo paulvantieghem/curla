@@ -115,6 +115,8 @@ class CarlaEnv:
         road_id = spawn_point_info['road_id']
         start_s = spawn_point_info['start_s']
         start_lanes = spawn_point_info['start_lanes']
+        npc_spawn_horizon = spawn_point_info['npc_spawn_horizon']
+        npc_spawn_spacing = spawn_point_info['npc_spawn_spacing']
 
         # Ego vehicle spawn points
         self.ego_vehicle_possible_transforms = []
@@ -125,10 +127,8 @@ class CarlaEnv:
 
         # NPC vehicle spawn points
         self.npc_vehicle_possible_transforms = []
-        spacing = 5.0
-        horizon = 200.0
-        distances = list(range(int(horizon/spacing+1)))
-        distances = [x*spacing for x in distances]
+        distances = list(range(int(npc_spawn_horizon/npc_spawn_spacing+1)))
+        distances = [x*npc_spawn_spacing for x in distances]
         assert len(distances)*len(start_lanes) > self.max_npc_vehicles
         for i in range(len(distances)):
             npc_s = distances[i]
