@@ -129,14 +129,24 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
             episode_reward = 0
             episode_steps = 0
             while not done:
+                
+                # Make sure not to exceed simulator update frequency
+                time.sleep(1.0/float(args.fps))
+                
                 # Apply anchor augmentation
                 obs = augmentor.anchor_augmentation(obs)
+                
+                # Sample action from agent
                 with utils.eval_mode(agent):
                     if sample_stochastically:
                         action = agent.sample_action(obs)
                     else:
                         action = agent.select_action(obs)
+                        
+                # Take an environment step
                 obs, reward, done, info = env.step(action)
+                
+                # Administration
                 video.record(env)
                 episode_reward += reward
                 episode_steps += 1
