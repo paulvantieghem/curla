@@ -21,11 +21,11 @@ OUT_DIM = {2: 39, 4: 35, 6: 31}
 # for 64 x 64 inputs
 OUT_DIM_64 = {2: 29, 4: 25, 6: 21}
 
-# for 135 x 76 inputs
-OUT_DIM_RECT_135_76 = {4: [31, 61],}
+# for 76 x 135 inputs
+OUT_DIM_RECT_76_135 = {4: [31, 61],}
 
-# for 160 x 90 inputs
-OUT_DIM_RECT_160_90 = {4: [36, 71],}
+# for 90 x 160 inputs
+OUT_DIM_RECT_90_160 = {4: [36, 71],}
 
 
 class PixelEncoder(nn.Module):
@@ -38,10 +38,10 @@ class PixelEncoder(nn.Module):
             out_dim = OUT_DIM[num_layers]
         elif obs_shape[1:] == (64, 64):
             out_dim = OUT_DIM_64[num_layers]
-        elif obs_shape[1:] == (135, 76) and num_layers == 4:
-            out_dim = OUT_DIM_RECT_135_76[num_layers]
-        elif obs_shape[1:] == (160, 90) and num_layers == 4:
-            out_dim = OUT_DIM_RECT_160_90[num_layers]
+        elif obs_shape[1:] == (76, 135) and num_layers == 4:
+            out_dim = OUT_DIM_RECT_76_135[num_layers]
+        elif obs_shape[1:] == (90, 160) and num_layers == 4:
+            out_dim = OUT_DIM_RECT_90_160[num_layers]
         else:
             raise NotImplementedError("Encoder does not support input shape")
 

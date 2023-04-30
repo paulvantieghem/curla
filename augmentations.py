@@ -18,7 +18,7 @@ class RandomCrop(IdentityAugmentation):
     def __init__(self, input_shape):
         super().__init__(input_shape)
         self.cropping_factor = 0.84
-        self.output_shape = (int(np.ceil(x*self.cropping_factor)) for x in self.input_shape)
+        self.output_shape = tuple(int(np.ceil(x*self.cropping_factor)) for x in self.input_shape)
 
     def anchor_augmentation(self, image):
         '''

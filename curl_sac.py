@@ -15,7 +15,7 @@ import math
 import utils
 from encoder import make_encoder
 
-LOG_FREQ = 10000
+LOG_FREQ = 100_000
 
 
 def gaussian_logprob(noise, log_std):
