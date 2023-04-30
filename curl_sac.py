@@ -55,7 +55,7 @@ class Actor(nn.Module):
     """MLP actor network."""
     def __init__(
         self, obs_shape, action_shape, hidden_dim, encoder_type,
-        encoder_feature_dim, log_std_min, log_std_max, num_layers, num_filters
+        encoder_feature_dim, log_std_min, log_std_max, num_layers, num_filters, return_latent=False
     ):
         super().__init__()
 
@@ -76,16 +76,19 @@ class Actor(nn.Module):
         self.outputs = dict()
         self.apply(weight_init)
 
+        self.return_latent = return_latent
+
     def forward(
         self, obs, compute_pi=True, compute_log_pi=True, detach_encoder=False
     ):
         obs = self.encoder(obs, detach=detach_encoder)
 
-        self.latent_representation = obs.to('cpu').detach().numpy().copy()
+        if self.return_latent:
+            self.latent_representation = obs.to('cpu').detach().numpy().copy()
 
         mu, log_std = self.trunk(obs).chunk(2, dim=-1)
 
-        # constrain log_std inside [log_std_min, log_std_max]
+        # Constrain log_std inside [log_std_min, log_std_max]
         log_std = torch.tanh(log_std)
         log_std = self.log_std_min + 0.5 * (
             self.log_std_max - self.log_std_min
@@ -166,7 +169,8 @@ class Critic(nn.Module):
         self.apply(weight_init)
 
     def forward(self, obs, action, detach_encoder=False):
-        # detach_encoder allows to stop gradient propogation to encoder
+        
+        # detach_encoder allows to stop gradient propagation to encoder
         obs = self.encoder(obs, detach=detach_encoder)
 
         q1 = self.Q1(obs, action)
@@ -243,6 +247,8 @@ class CurlSacAgent(object):
         obs_shape,
         action_shape,
         device,
+        augmentor,
+        return_latent=False,
         hidden_dim=256,
         discount=0.99,
         init_temperature=0.01,
@@ -268,6 +274,8 @@ class CurlSacAgent(object):
         detach_encoder=False,
         curl_latent_dim=128
     ):
+        self.augmentor = augmentor
+        self.return_latent = return_latent
         self.device = device
         self.discount = discount
         self.critic_tau = critic_tau
@@ -284,7 +292,7 @@ class CurlSacAgent(object):
         self.actor = Actor(
             obs_shape, action_shape, hidden_dim, encoder_type,
             encoder_feature_dim, actor_log_std_min, actor_log_std_max,
-            num_layers, num_filters
+            num_layers, num_filters, self.return_latent
         ).to(device)
 
         self.critic = Critic(
@@ -304,7 +312,8 @@ class CurlSacAgent(object):
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
-        # set target entropy to -|A|
+
+        # Set the target entropy to -|A|
         self.target_entropy = -np.prod(action_shape)
         
         # optimizers
@@ -360,7 +369,7 @@ class CurlSacAgent(object):
 
     def sample_action(self, obs):
         if obs.shape[-2:] != self.image_shape:
-            obs = utils.center_crop_image(obs, self.image_shape)
+            obs = self.augmentor.anchor_augmentation(obs)
  
         with torch.no_grad():
             obs = torch.FloatTensor(obs).to(self.device)

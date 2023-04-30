@@ -20,20 +20,36 @@ def tie_weights(src, trg):
 OUT_DIM = {2: 39, 4: 35, 6: 31}
 # for 64 x 64 inputs
 OUT_DIM_64 = {2: 29, 4: 25, 6: 21}
+
 # for 135 x 76 inputs
 OUT_DIM_RECT_135_76 = {4: [31, 61],}
+
+# for 160 x 90 inputs
+OUT_DIM_RECT_160_90 = {4: [36, 71],}
 
 
 class PixelEncoder(nn.Module):
     """Convolutional encoder of pixels observations."""
     def __init__(self, obs_shape, feature_dim, num_layers=4, num_filters=32,output_logits=False):
         super().__init__()
-
         assert len(obs_shape) == 3
+
+        if obs_shape[1:] == (84, 84):
+            out_dim = OUT_DIM[num_layers]
+        elif obs_shape[1:] == (64, 64):
+            out_dim = OUT_DIM_64[num_layers]
+        elif obs_shape[1:] == (135, 76) and num_layers == 4:
+            out_dim = OUT_DIM_RECT_135_76[num_layers]
+        elif obs_shape[1:] == (160, 90) and num_layers == 4:
+            out_dim = OUT_DIM_RECT_160_90[num_layers]
+        else:
+            raise NotImplementedError("Encoder does not support input shape")
+
         self.obs_shape = obs_shape
         self.feature_dim = feature_dim
         self.num_layers = num_layers
 
+        # Build convolutional layers
         self.convs = nn.ModuleList([nn.Conv2d(in_channels=obs_shape[0], 
                                               out_channels=num_filters, 
                                               kernel_size=3, 
@@ -45,7 +61,7 @@ class PixelEncoder(nn.Module):
                                         kernel_size=3, 
                                         stride=1))
 
-        out_dim = OUT_DIM_RECT_135_76[num_layers]
+        # Build linear layers
         self.fc = nn.Linear(num_filters * out_dim[0] * out_dim[1], self.feature_dim)
         self.ln = nn.LayerNorm(self.feature_dim)
 

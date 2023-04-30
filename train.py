@@ -19,6 +19,7 @@ import copy
 from datetime import datetime
 
 import utils
+import augmentations
 from logger import Logger
 from video import VideoRecorder
 from torchvision import transforms
@@ -42,8 +43,8 @@ def parse_args():
     parser.add_argument('--env_verbose', default=False, action='store_true') # Verbosity of the CARLA environment 'CarlaEnv' class
 
     # Carla camera settings
-    parser.add_argument('--pre_transform_image_height', default=90, type=int)
-    parser.add_argument('--pre_transform_image_width', default=160, type=int)
+    parser.add_argument('--camera_image_height', default=90, type=int)
+    parser.add_argument('--camera_image_width', default=160, type=int)
     parser.add_argument('--fov', default=120, type=int) # degrees
     parser.add_argument('--cam_x', default=1.3, type=float) # meters
     parser.add_argument('--cam_y', default=0.0, type=float) # meters
@@ -58,8 +59,7 @@ def parse_args():
     parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding
 
     # Image augmentation settings
-    parser.add_argument('--image_height', default=76, type=int)
-    parser.add_argument('--image_width', default=135, type=int)
+    parser.add_argument('--augmentation', default='random_crop', type=str)
     parser.add_argument('--frame_stack', default=3, type=int)
 
     # Replay buffer
@@ -116,7 +116,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochastically=False):
+def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sample_stochastically=False):
         all_ep_rewards = []
         all_ep_steps = []
         all_ep_infos = {'r1': [], 'r2': [], 'r3': [], 'r4': [], 'r5': [],
@@ -133,7 +133,7 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
             while not done:
                 # center crop image
                 if args.encoder_type == 'pixel':
-                    obs = utils.center_crop_image(obs, (args.image_height, args.image_width))
+                    obs = augmentor.anchor_augmentation(obs)
                 with utils.eval_mode(agent):
                     if sample_stochastically:
                         action = agent.sample_action(obs)
@@ -170,12 +170,13 @@ def run_eval_loop(env, agent, video, num_episodes, L, step, args, sample_stochas
             L.log('eval/' + prefix + 'z_mean_ep_' + k, float(np.mean(v)), step)
         return L
 
-def make_agent(obs_shape, action_shape, args, device):
+def make_agent(obs_shape, action_shape, args, device, augmentor):
     if args.agent == 'curl_sac':
         return CurlSacAgent(
             obs_shape=obs_shape,
             action_shape=action_shape,
             device=device,
+            augmentor=augmentor,
             hidden_dim=args.hidden_dim,
             discount=args.discount,
             init_temperature=args.init_temperature,
@@ -214,6 +215,20 @@ def main():
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
+    # Augmentation class
+    augmentor = None
+    camera_image_shape = (args.camera_image_height, args.camera_image_width)
+    if args.augmentation == 'identity':
+        augmentor = augmentations.IdentityAugmentation(camera_image_shape)
+    elif args.augmentation == 'random_crop':
+        augmentor = augmentations.RandomCrop(camera_image_shape)
+    else:
+        raise ValueError('augmentation is not supported: %s' % args.augmentation)
+    
+    # Set the output shape of the augmentation
+    args.augmented_image_height = augmentor.output_shape[0]
+    args.augmented_image_width = augmentor.output_shape[1]
+
     # Make necessary directories
     working_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.work_dir_name)
     if not os.path.exists(working_dir):
@@ -221,8 +236,8 @@ def main():
     ts = datetime.now()
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
-    exp_name = env_name + '--' + ts + '--im' + str(args.image_height) + 'x' + str(args.image_width) +'-b'  \
-    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
+    exp_name = env_name + '--' + ts + '--im' + str(args.camera_image_height) + 'x' + str(args.camera_image_width) +'-b'  \
+    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type + '-' + args.augmentation
     working_dir = os.path.join(working_dir, exp_name)
     utils.make_dir(working_dir)
     global video_dir 
@@ -236,7 +251,7 @@ def main():
     # Carla environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.env_verbose, args.pre_transform_image_height, args.pre_transform_image_width, 
+                   args.fps, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
                    args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     env.seed(args.seed)
@@ -260,11 +275,13 @@ def main():
 
     # Encoder type and observation shapes
     if args.encoder_type == 'pixel':
-        obs_shape = (3*args.frame_stack, args.image_height, args.image_width)
-        pre_aug_obs_shape = (3*args.frame_stack,args.pre_transform_image_height, args.pre_transform_image_width)
-    else:
+        obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
+        pre_aug_obs_shape = env.observation_space.shape
+    elif args.encoder_type == 'identity':
         obs_shape = env.observation_space.shape
         pre_aug_obs_shape = obs_shape
+    else:
+        raise ValueError('encoder_type is not supported: %s' % args.encoder_type)
 
     # Replay buffer
     replay_buffer = utils.ReplayBuffer(
@@ -273,7 +290,7 @@ def main():
         capacity=args.replay_buffer_capacity,
         batch_size=args.batch_size,
         device=device,
-        image_shape=(args.image_height, args.image_width),
+        augmentor=augmentor
     )
 
     # Agent
@@ -281,7 +298,8 @@ def main():
         obs_shape=obs_shape,
         action_shape=action_shape,
         args=args,
-        device=device
+        device=device,
+        augmentor=augmentor
     )
 
     # Initializations
@@ -296,7 +314,7 @@ def main():
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             if env.verbose: print('episode done: evaluation starts')
-            L = run_eval_loop(env, agent, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
+            L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
                 agent.save_curl(model_dir, step)
             if args.save_buffer:

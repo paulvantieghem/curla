@@ -453,7 +453,7 @@ class CarlaEnv:
     @property
     def observation_space(self, *args, **kwargs):
         """Returns the observation spec of the sensor."""
-        return gym.spaces.Box(low=0.0, high=255.0, shape=(self.im_height, self.im_width, 3), dtype=np.uint8)
+        return gym.spaces.Box(low=0.0, high=255.0, shape=(3, self.im_height, self.im_width), dtype=np.uint8)
 
     @property
     def action_space(self):
