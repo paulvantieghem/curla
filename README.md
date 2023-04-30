@@ -2,15 +2,15 @@
 **CURLA: CURL x CARLA**   
 Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinforcement Learning
 
-* [CURL](https://github.com/MishaLaskin/curl): Contrastive Unsupervised Representations for Reinforcement Learning (Laskin et al., 2020).
-* [CARLA](https://github.com/carla-simulator/carla): Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017).
+* CURL: Contrastive Unsupervised Representations for Reinforcement Learning (Laskin et al., 2020) [[Paper](https://arxiv.org/abs/2004.04136)/[Code](https://github.com/MishaLaskin/curl)].
+* CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
 
 
 
 ### 1. Installation
 System requirements:
 * Linux or Windows operating system
-* A graphics card with at least 4GB of memory
+* An NVIDIA GPU with at least 6GB of memory
 * At least 30GB of free disk space
 * [Anaconda](https://www.anaconda.com/products/individual) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
 
@@ -30,10 +30,10 @@ cd path/to/my_project
 git clone git@github.com:paulvantieghem/curla.git
 ```
 
-All of the dependencies are in the `conda_env.yml` file. To create the conda environment, run:
+All of the dependencies are in the `environment.yml` file. To create the conda environment, run:
 ```
 cd path/to/my_project/curla
-conda env create -f conda_env.yml
+conda env create -f environment.yml
 ```
 
 #### 1.2 CARLA
@@ -90,7 +90,7 @@ MER - mean evaluation episode reward
 BER - best evaluation episode reward
 ```
 
-All data related to the run is stored in the specified by `--working_dir` (default: `tmp`). To enable model or video saving, use the `--save_model` or `--save_video` flags. For all available flags, inspect `train.py`.
+All data related to the run is stored in the specified by `--working_dir_name` (default: `experiments`). To enable model or video saving, use the `--save_model` or `--save_video` flags. For all available flags, inspect `train.py`.
 
 For custom training, have a look at the `train.py` file and the `settings.py` file.
 
