@@ -37,20 +37,19 @@ conda env create -f conda_env.yml
 ```
 
 #### 1.2 CARLA
-Download the CARLA 0.9.11 release and extract it in the `carla` directory:
+Download the CARLA 0.9.14 release and extract it in the `carla` directory:
 ```
 cd path/to/my_project
 mkdir carla
 cd carla
-wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.11.tar.gz
-tar -xzf CARLA_0.9.11.tar.gz
-rm CARLA_0.9.11.tar.gz
+wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.14.tar.gz
+tar -xzf CARLA_0.9.14.tar.gz
+rm CARLA_0.9.14.tar.gz
 ```
 Develop the CARLA egg file in the conda environment
 ```
 conda activate curla
-conda install conda-build
-conda develop ./PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg
+python -m pip install carla==0.9.14
 conda deactivate
 ```
 
