@@ -10,7 +10,7 @@ Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinf
 ### 1. Installation
 System requirements:
 * Linux or Windows operating system
-* A graphics card with at least 4GB of memory
+* An NVIDIA GPU with at least 6GB of memory
 * At least 30GB of free disk space
 * [Anaconda](https://www.anaconda.com/products/individual) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
 
