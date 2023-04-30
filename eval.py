@@ -22,7 +22,6 @@ def parse_args():
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
     parser.add_argument('--max_npc_vehicles', default=10, type=int)
-    parser.add_argument('--npc_ignore_traffic_lights_prob', default=0, type=int)
     parser.add_argument('--desired_speed', default=65, type=int) # km/h | NPCs drive at 70% of the speed limit (90), which is 63 km/h
     parser.add_argument('--max_stall_time', default=5, type=int) # seconds
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
@@ -135,7 +134,7 @@ def main():
     args.augmented_image_width = augmentor.output_shape[1]
 
     # Set up environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, args.npc_ignore_traffic_lights_prob, 
+    env = CarlaEnv(args.carla_town, args.max_npc_vehicles,
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,

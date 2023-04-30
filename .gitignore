@@ -6,6 +6,7 @@ eval_*/
 viz_*/
 *.out
 *.err
+debug_commands.md
 
 # macOS files
 .DS_Store

@@ -39,16 +39,14 @@ class CarlaEnv:
     enable_spectator = settings.SPECTATOR
 
 
-    def __init__(self, carla_town, max_npc_vehicles, npc_ignore_traffic_lights_prob, 
-                   desired_speed, max_stall_time, stall_speed, seconds_per_episode,
-                   fps, verbose, pre_transform_image_height, pre_transform_image_width, 
-                   fov,cam_x, cam_y, cam_z, cam_pitch, lambda_r1, lambda_r2, lambda_r3, 
-                   lambda_r4, lambda_r5):
+    def __init__(self, carla_town, max_npc_vehicles, desired_speed, max_stall_time, 
+                 stall_speed, seconds_per_episode, fps, verbose, pre_transform_image_height, 
+                 pre_transform_image_width, fov,cam_x, cam_y, cam_z, cam_pitch, 
+                 lambda_r1, lambda_r2, lambda_r3, lambda_r4, lambda_r5):
 
         # Set parameters
         self.carla_town = carla_town
         self.max_npc_vehicles = max_npc_vehicles
-        self.npc_ignore_traffic_lights_prob = npc_ignore_traffic_lights_prob
         self.desired_speed = desired_speed
         self.max_stall_time = max_stall_time
         self.stall_speed = stall_speed
