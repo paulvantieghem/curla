@@ -30,10 +30,10 @@ cd path/to/my_project
 git clone git@github.com:paulvantieghem/curla.git
 ```
 
-All of the dependencies are in the `conda_env.yml` file. To create the conda environment, run:
+All of the dependencies are in the `environment.yml` file. To create the conda environment, run:
 ```
 cd path/to/my_project/curla
-conda env create -f conda_env.yml
+conda env create -f environment.yml
 ```
 
 #### 1.2 CARLA
