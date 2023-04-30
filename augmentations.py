@@ -70,3 +70,14 @@ class RandomCrop(IdentityAugmentation):
         cropped_image_batch = windows[np.arange(n), h1, w1]
 
         return cropped_image_batch
+    
+
+def make_augmentor(name, input_shape):
+    augmentor = None
+    if name == 'identity':
+        augmentor = IdentityAugmentation(input_shape)
+    elif name == 'random_crop':
+        augmentor = RandomCrop(input_shape)
+    else:
+        raise ValueError('augmentation is not supported: %s' % name)
+    return augmentor

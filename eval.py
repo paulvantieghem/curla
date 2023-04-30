@@ -7,7 +7,7 @@ import random
 import math
 
 import utils
-import augmentations
+from augmentations import make_augmentor
 from curl_sac import CurlSacAgent
 from carla_env import CarlaEnv
 from video import VideoRecorder
@@ -32,18 +32,18 @@ def parse_args():
     # Carla camera settings
     parser.add_argument('--camera_image_height', default=90, type=int)
     parser.add_argument('--camera_image_width', default=160, type=int)
-    parser.add_argument('--fov', default=120, type=int) # degrees
-    parser.add_argument('--cam_x', default=1.3, type=float) # meters
-    parser.add_argument('--cam_y', default=0.0, type=float) # meters
-    parser.add_argument('--cam_z', default=1.75, type=float) # meters
-    parser.add_argument('--cam_pitch', default=-15, type=int) # degrees
+    parser.add_argument('--cam_x', default=1.3, type=float)     # meters
+    parser.add_argument('--cam_y', default=0.0, type=float)     # meters
+    parser.add_argument('--cam_z', default=1.75, type=float)    # meters
+    parser.add_argument('--fov', default=120, type=int)         # degrees
+    parser.add_argument('--cam_pitch', default=-15, type=int)   # degrees
 
-    # Carla reward function settings
-    parser.add_argument('--lambda_r1', default=1.0, type=float)     # Highway progression
-    parser.add_argument('--lambda_r2', default=0.3, type=float)     # Center of lane deviation
-    parser.add_argument('--lambda_r3', default=1.0, type=float)     # Steering angle
-    parser.add_argument('--lambda_r4', default=0.005, type=float)   # Collision
-    parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding
+    # Carla reward function parameters/weights
+    parser.add_argument('--lambda_r1', default=1.0, type=float)     # Highway progression (+)
+    parser.add_argument('--lambda_r2', default=0.3, type=float)     # Center of lane deviation (-)
+    parser.add_argument('--lambda_r3', default=1.0, type=float)     # Steering angle (-)
+    parser.add_argument('--lambda_r4', default=0.005, type=float)   # Collision (-)
+    parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding (-)
 
     # Image augmentation settings
     parser.add_argument('--augmentation', default='random_crop', type=str)
@@ -120,14 +120,9 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     # Augmentation class
-    augmentor = None
+    # Anchor/target data augmentor
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
-    if args.augmentation == 'identity':
-        augmentor = augmentations.IdentityAugmentation(camera_image_shape)
-    elif args.augmentation == 'random_crop':
-        augmentor = augmentations.RandomCrop(camera_image_shape)
-    else:
-        raise ValueError('augmentation is not supported: %s' % args.augmentation)
+    augmentor = make_augmentor(args.augmentation, camera_image_shape)
     
     # Set the output shape of the augmentation
     args.augmented_image_height = augmentor.output_shape[0]

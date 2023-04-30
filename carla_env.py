@@ -101,8 +101,6 @@ class CarlaEnv:
         self.total_step = 0     # Counts the total amount of time steps
         self.actor_list = []
         self.collision_history = []
-        # self.lane_invasion_history = []
-        # self.lane_invasion_len = 0
 
         # Blueprint library
         self.blueprint_library = self.world.get_blueprint_library()
@@ -141,19 +139,15 @@ class CarlaEnv:
 
         # Camera sensor settings
         self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
-        self.camera_sensor_bp.set_attribute('image_size_x', f'{1152}')
-        self.camera_sensor_bp.set_attribute('image_size_y', f'{640}')
+        self.camera_sensor_bp.set_attribute('image_size_x', f'{1152}') # This size only matters for the video rendering, should be divisible by 64
+        self.camera_sensor_bp.set_attribute('image_size_y', f'{640}')  # This size only matters for the video rendering, should be divisible by 64
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
-        # self.camera_sensor_bp.set_attribute('enable_postprocess_effects', str(True))
         self.camera_sensor_bp.set_attribute('exposure_compensation', str(-0.5))
         self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z), carla.Rotation(pitch=self.cam_pitch))
 
         # Collision sensor settings
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
-
-        # Lane invasion sensor settings
-        # self.lane_invasion_sensor_bp = self.blueprint_library.find('sensor.other.lane_invasion')
 
         # Traffic manager
         self.traffic_manager = self.client.get_trafficmanager()
@@ -195,8 +189,6 @@ class CarlaEnv:
         self.actor_list = []
         self.npc_vehicles_list = []
         self.collision_history = []
-        # self.lane_invasion_history = []
-        # self.lane_invasion_len = 0
         self.starting_frame_number = None
 
         # Set random weather preset with a random sun azimuth angle between 30 and 330 degrees
@@ -262,12 +254,6 @@ class CarlaEnv:
         self.actor_list.append(self.collision_sensor)
         self.collision_sensor.listen(lambda event: self.process_collision_data(event))
         if self.verbose: print('created %s' % self.collision_sensor.type_id)
-
-        # Spawn lane invasion sensor
-        # self.lane_invasion_sensor = self.world.spawn_actor(self.lane_invasion_sensor_bp, carla.Transform(), attach_to=self.ego_vehicle)
-        # self.actor_list.append(self.lane_invasion_sensor)
-        # self.lane_invasion_sensor.listen(lambda event: self.process_lane_invasion_data(event))
-        # if self.verbose: print('created %s' % self.lane_invasion_sensor.type_id)
 
         # Make sure the ego vehicle is spawned in the center of the lane
         p_prev_wp, p_next_wp = self._get_waypoints(distance=1.0)
@@ -344,7 +330,6 @@ class CarlaEnv:
 
         # Initializations
         if self.episode_step == 0:
-            # self.lane_invasion_len = 0
             self.total_rewards = {'r1': 0.0, 'r2': 0.0, 'r3': 0.0, 'r4': 0.0, 'r5': 0.0}
             self.kmh_tracker = [0.0,]
             self.brake_sum = 0.0
@@ -520,10 +505,6 @@ class CarlaEnv:
         '''Process the collision data from the collision sensor.'''
         self.collision_history.append(event)
 
-    # def process_lane_invasion_data(self, event):
-    #     '''Process the lane invasion data from the lane invasion sensor.'''
-    #     self.lane_invasion_history.append(event)
-
     def collect_sensor_data(self):
         '''Collect the data from the camera sensor.'''
         camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
@@ -542,7 +523,6 @@ class CarlaEnv:
         if len(self.actor_list) != 0:
             try: 
                 self.camera_sensor.destroy()
-                # self.lane_invasion_sensor.destroy()
                 self.collision_sensor.destroy()
             except:
                 print('[WARNING] Error destroying sensors!')
