@@ -90,7 +90,7 @@ MER - mean evaluation episode reward
 BER - best evaluation episode reward
 ```
 
-All data related to the run is stored in the specified by `--working_dir` (default: `experiments`). To enable model or video saving, use the `--save_model` or `--save_video` flags. For all available flags, inspect `train.py`.
+All data related to the run is stored in the specified by `--working_dir_name` (default: `experiments`). To enable model or video saving, use the `--save_model` or `--save_video` flags. For all available flags, inspect `train.py`.
 
 For custom training, have a look at the `train.py` file and the `settings.py` file.
 
