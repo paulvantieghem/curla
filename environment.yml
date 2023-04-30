@@ -10,13 +10,14 @@ dependencies:
   - pyparsing
   - absl-py
   - pillow
-  - libpng
-  - libjpeg-turbo
-  - libtiff<4.4.0
+  - cudatoolkit=11.7
   - pytorch==1.13.1
   - torchvision==0.14.1
   - torchaudio==0.13.1
   - pytorch-cuda=11.7
+  - libpng
+  - libjpeg-turbo
+  - libtiff<4.4.0
   - pip:
     - numpy
     - psutil
