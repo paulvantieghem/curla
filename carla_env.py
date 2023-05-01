@@ -31,7 +31,10 @@ gym.logger.set_level(40) # Sets the gym logger in ERROR mode (will not mention w
 # Modules
 import settings
 
-TIMEOUT = 30.0 # Time in seconds to wait on various things
+# Constants
+TIMEOUT = 30.0      # Time in seconds to wait on various things
+RENDER_WIDTH = 1152 # This size only matters for the video rendering, should be divisible by 64
+RENDER_HEIGHT = 640 # This size only matters for the video rendering, should be divisible by 64
 
 class CarlaEnv:
 
@@ -141,8 +144,8 @@ class CarlaEnv:
 
         # Camera sensor settings
         self.camera_sensor_bp = self.blueprint_library.find('sensor.camera.rgb')
-        self.camera_sensor_bp.set_attribute('image_size_x', f'{1152}') # This size only matters for the video rendering, should be divisible by 64
-        self.camera_sensor_bp.set_attribute('image_size_y', f'{640}')  # This size only matters for the video rendering, should be divisible by 64
+        self.camera_sensor_bp.set_attribute('image_size_x', f'{RENDER_WIDTH}')
+        self.camera_sensor_bp.set_attribute('image_size_y', f'{RENDER_HEIGHT}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
         self.camera_sensor_bp.set_attribute('exposure_compensation', str(-0.5))
@@ -477,7 +480,7 @@ class CarlaEnv:
         raw_image = np.array(carla_im_data.raw_data)
 
         # Reshape image data to (H, W, X) format (X = BGRA)
-        bgra_image = raw_image.reshape((640, 1152, -1))
+        bgra_image = raw_image.reshape((RENDER_HEIGHT, RENDER_WIDTH, -1))
 
         # Remove alpha to obtain (H, W, C) image with C = BGR
         bgr_image = bgra_image[:, :, :3]
