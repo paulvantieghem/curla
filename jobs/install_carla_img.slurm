@@ -13,6 +13,12 @@
 module --force purge
 module load CUDA
 
+# Check CUDA version
+echo "nvcc --version:"
+nvcc --version
+echo "nvidia-smi:"
+nvidia-smi
+
 # Get the latest version of the curla repository
 ssh-add ~/.ssh/id_ed25519
 git pull
@@ -33,6 +39,6 @@ if [ -f $CARLA_ROOT/conda_carla.sif ]; then
 fi
 
 # Build the apptainer image containing carla and the conda environment:
-echo "[MESSAGE] Starting apptainer build" > "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
+echo "[MESSAGE] Starting apptainer build"
 apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def > "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
-echo "[MESSAGE] Finished apptainer build" > "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
+echo "[MESSAGE] Finished apptainer build"
