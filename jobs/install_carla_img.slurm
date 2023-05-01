@@ -34,7 +34,7 @@ fi
 
 # Build the apptainer image containing carla and the conda environment:
 echo "[MESSAGE] Starting apptainer build"
-apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
+apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def > "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
 echo "[MESSAGE] Finished apptainer build"
 
 # Run the apptainer image containing carla and the conda environment to test if the python script runs:
