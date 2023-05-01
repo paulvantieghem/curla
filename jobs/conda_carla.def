@@ -18,8 +18,10 @@ From: carlasim/carla:0.9.14
     apt-get update -y
 
     # Check GPU availability
+    echo "Checking GPU availability..."
     nvcc --version
     nvidia-smi
+    echo "GPU availability check done."
 
     export HOME="/home"
     cd ~
