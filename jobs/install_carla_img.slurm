@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
@@ -19,6 +19,7 @@ git pull
 
 # Create CARLA root directory
 CARLA_ROOT="$VSC_DATA/lib/carla"
+CONTENT_ROOT="$VSC_DATA/lib/curla"
 mkdir -p $CARLA_ROOT
 
 export APPTAINER_TMPDIR="$VSC_SCRATCH/apptainer/tmp"
@@ -31,4 +32,12 @@ if [ -f $CARLA_ROOT/conda_carla.sif ]; then
   rm -f $CARLA_ROOT/conda_carla.sif
 fi
 
-apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def
+# Build the apptainer image containing carla and the conda environment:
+echo "[MESSAGE] Starting apptainer build"
+apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
+echo "[MESSAGE] Finished apptainer build"
+
+# Run the apptainer image containing carla and the conda environment to test if the python script runs:
+echo "[MESSAGE] Starting apptainer run"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py" > "$CONTENT_ROOT/install_apptainer_run_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_run_$(date +%m-%d_%H-%M).err"
+echo "[MESSAGE] Finished apptainer run"
