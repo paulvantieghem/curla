@@ -39,6 +39,15 @@ From: carlasim/carla:0.9.14
     echo "kill -9 \$(pgrep -f CarlaUE4)" >> ~/run_python.sh
     echo "conda deactivate" >> ~/run_python.sh
     chmod 775 ~/run_python.sh
+    
+%test
+    echo "[MESSAGE] Starting test section"
+    echo 'import torch' >> ~/cuda_test.py
+    echo 'print("CUDA availability:", torch.cuda.is_available())' >> ~/cuda_test.py
+    conda activate curla
+    python ~/cuda_test.py
+    conda deactivate
+    
 
 %runscript
     command="$1"
