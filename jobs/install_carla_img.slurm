@@ -11,7 +11,7 @@
 
 # Purge loaded modules
 module --force purge
-module load CUDA/10
+module load CUDA
 
 # Get the latest version of the curla repository
 ssh-add ~/.ssh/id_ed25519
