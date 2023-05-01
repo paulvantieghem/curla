@@ -66,10 +66,11 @@ tensorboard --logdir tmp --port 6006
 In your console, you should see printouts that look like:
 
 ```
-| train | E: 111 | S: 24363 | ER: -21.7607 | BR: -0.086255 | A_LOSS: 4.7732180 | CR_LOSS: 0.1910904 | CU_LOSS: 0.18136342
-| train | E: 112 | S: 24840 | ER: -19.5015 | BR: -0.085453 | A_LOSS: 4.8132076 | CR_LOSS: 0.2422579 | CU_LOSS: 0.13720009
-| train | E: 113 | S: 25000 | ER: -7.60489 | BR: -0.114820 | A_LOSS: 4.9164285 | CR_LOSS: 0.0465371 | CU_LOSS: 0.10740199
-| eval | S: 25000 | MER: -2.6413 | BER: -0.74430
+| train | E: 801 | S: 274981 | ER: 344.330 | BR: 0.2396 | A_LOSS: -14.4758 | CR_LOSS: 17.1911 | CU_LOSS: 0.0025
+| train | E: 802 | S: 275000 | ER: -6.7408 | BR: 0.0000 | A_LOSS: 0.000000 | CR_LOSS: 0.00000 | CU_LOSS: 0.0000
+| eval  | S: 275000 | MER: 104.6457 | BER: 526.8412
+| train | E: 803 | S: 276000 | ER: 469.893 | BR: 0.2631 | A_LOSS: -14.9994 | CR_LOSS: 5.94400 | CU_LOSS: 0.0068
+| train | E: 804 | S: 277000 | ER: 536.399 | BR: 0.2714 | A_LOSS: -14.4183 | CR_LOSS: 5.31420 | CU_LOSS: 0.0028
 ```
 
 Log abbreviation mapping:
