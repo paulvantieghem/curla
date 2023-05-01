@@ -12,7 +12,7 @@ sbatch -A lp_edu_alg_parallel_comp -M genius -N 1 -n 9 --gpus-per-node=1 --mem-p
 
 wICE A100 GPU
 ```
-sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 --ntasks=18 --gpus-per-node=1 --partition=gpu jobs/install_carla_img.slurm
+sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 --partition=gpu jobs/install_carla_img.slurm
 ```
 
 #### Test
@@ -39,6 +39,11 @@ sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 --ntasks=18 --gpus-per-no
 #### Train
 ```
 sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100 jobs/train_carla_img.slurm
+```
+
+wICE A100 GPU
+```
+sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu jobs/train_carla_img.slurm
 ```
 
 #### Tensorboard
