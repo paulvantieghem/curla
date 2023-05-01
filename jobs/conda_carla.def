@@ -13,13 +13,17 @@ From: carlasim/carla:0.9.14
     export CARLA_VERSION="0.9.14"
 
 %post -c /bin/bash
-    export HOME="/home"
-    cd ~
-    
+
+    # Downloads the latest package lists (important).
+    apt-get update -y
+
     # Check GPU availability
     nvcc --version
     nvidia-smi
 
+    export HOME="/home"
+    cd ~
+    
     # Install and setup conda
     bash ./install_conda.sh -b -p ./miniconda3
     rm ./install_conda.sh
