@@ -281,6 +281,7 @@ class CarlaEnv:
         self.reset_step += 1
         self.episode_step = 0
         self.stall_counter = 0
+        self.abs_kmh = 0.0
         if self.verbose: print('episode started')
 
         return self.obs
@@ -349,7 +350,7 @@ class CarlaEnv:
 
         # Velocity vector of the ego vehicle
         self.v_ego = self.ego_vehicle.get_velocity()
-        abs_kmh = float(3.6*math.sqrt(self.v_ego.x**2 + self.v_ego.y**2))
+        self.abs_kmh = float(3.6*math.sqrt(self.v_ego.x**2 + self.v_ego.y**2))
         self.v_ego = np.array([self.v_ego.x, self.v_ego.y])
 
         # Highway lane direction unit vector
@@ -394,8 +395,8 @@ class CarlaEnv:
 
         # Reward for speeding during the current time step
         r5 = 0.0
-        if abs_kmh > self.desired_speed + 1.0:
-            velocity_delta = np.abs(abs_kmh - self.desired_speed)/3.6 # [m/s]
+        if self.abs_kmh > self.desired_speed + 1.0:
+            velocity_delta = np.abs(self.abs_kmh - self.desired_speed)/3.6 # [m/s]
             # This ensures that the r5 punishment for speeding is greater than
             # the potential r1 reward for speeding (in straight line, see r1)
             r5 = self.dt*velocity_delta + self.dt
@@ -408,7 +409,7 @@ class CarlaEnv:
 
         # Update stalling counter
         if self.episode_step >= 50:
-            if abs_kmh < self.stall_speed:
+            if self.abs_kmh < self.stall_speed:
                 self.stall_counter += 1
             else:
                 self.stall_counter = 0
@@ -424,7 +425,7 @@ class CarlaEnv:
         self.total_rewards['r3'] += r3 # Penalty for the norm (absolute value) of the steering angle
         self.total_rewards['r4'] += r4 # Penalty for collision intensities
         self.total_rewards['r5'] += r5 # Penalty for speeding
-        self.kmh_tracker.append(abs_kmh)
+        self.kmh_tracker.append(self.abs_kmh)
         self.info = {'r1': self.total_rewards['r1'], 
                 'r2': self.total_rewards['r2'], 
                 'r3': self.total_rewards['r3'], 
@@ -613,6 +614,7 @@ class CarlaEnv:
             cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 270), *text_settings)
             max_kmh = self.info['max_kmh']
             cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 300), *text_settings)
+            cv2.putText(frame, f'Cur km/h:  {self.abs_kmh:.1f}', (x, 330), *text_settings)
 
         return frame
     
