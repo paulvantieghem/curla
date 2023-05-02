@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
@@ -12,26 +12,12 @@
 # Purge loaded modules
 module --force purge
 
-# Load necessary modules
-module use /apps/leuven/${VSC_ARCH_LOCAL}/2021a/modules/all
-module load intel/2021a
-module load libpng
-module load libjpeg-turbo
-module load CUDA
-
-# Check CUDA version
-echo "nvcc --version:"
-nvcc --version
-echo "nvidia-smi:"
-nvidia-smi
-
 # Get the latest version of the curla repository
 ssh-add ~/.ssh/id_ed25519
 git pull
 
 # Create CARLA root directory
 CARLA_ROOT="$VSC_DATA/lib/carla"
-CONTENT_ROOT="$VSC_DATA/lib/curla"
 mkdir -p $CARLA_ROOT
 
 export APPTAINER_TMPDIR="$VSC_SCRATCH/apptainer/tmp"
@@ -44,7 +30,4 @@ if [ -f $CARLA_ROOT/conda_carla.sif ]; then
   rm -f $CARLA_ROOT/conda_carla.sif
 fi
 
-# Build the apptainer image containing carla and the conda environment:
-echo "[MESSAGE] Starting apptainer build"
-apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def > "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/install_apptainer_build_$(date +%m-%d_%H-%M).err"
-echo "[MESSAGE] Finished apptainer build"
+apptainer build --nv "$CARLA_ROOT/conda_carla.sif" ./jobs/conda_carla.def

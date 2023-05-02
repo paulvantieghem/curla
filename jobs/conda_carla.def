@@ -13,24 +13,19 @@ From: carlasim/carla:0.9.14
     export CARLA_VERSION="0.9.14"
 
 %post -c /bin/bash
-
-    # Downloads the latest package lists (important).
-    apt-get update -y
-
-    # Check GPU availability
-    echo "Checking GPU availability..."
-    nvcc --version
-    nvidia-smi
-    echo "GPU availability check done."
-
     export HOME="/home"
     cd ~
-    
+
+    # Check GPU and CUDA availability
+    nvcc --version
+    nvidia-smi
+
     # Install and setup conda
     bash ./install_conda.sh -b -p ./miniconda3
     rm ./install_conda.sh
     ./miniconda3/bin/conda init bash
     source ~/.bashrc
+    conda install -y conda-build
 
     # Setup conda environment
     conda env create -f /home/environment.yml
