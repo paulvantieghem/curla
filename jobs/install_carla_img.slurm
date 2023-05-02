@@ -11,6 +11,12 @@
 
 # Purge loaded modules
 module --force purge
+
+# Load necessary modules
+module use /apps/leuven/${VSC_ARCH_LOCAL}/2021a/modules/all
+module load intel/2021a
+module load libpng
+module load libjpeg-turbo
 module load CUDA
 
 # Check CUDA version
