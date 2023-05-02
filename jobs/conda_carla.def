@@ -16,10 +16,25 @@ From: carlasim/carla:0.9.14
     export HOME="/home"
     cd ~
 
+<<<<<<< HEAD
     # Check GPU and CUDA availability
     nvcc --version
     nvidia-smi
 
+=======
+    # Downloads the latest package lists (important).
+    apt-get update -y
+    
+    # Check GPU availability
+    source ~/.bashrc
+    nvcc --version
+    nvidia-smi
+    
+    # Set alias
+    export HOME="/home"
+    cd ~
+    
+>>>>>>> refs/remotes/origin/main
     # Install and setup conda
     bash ./install_conda.sh -b -p ./miniconda3
     rm ./install_conda.sh
