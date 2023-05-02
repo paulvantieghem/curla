@@ -17,12 +17,6 @@ From: carlasim/carla:0.9.14
     # Downloads the latest package lists (important).
     apt-get update -y
 
-    # Check GPU availability
-    echo "Checking GPU availability..."
-    nvcc --version
-    nvidia-smi
-    echo "GPU availability check done."
-
     export HOME="/home"
     cd ~
     
@@ -31,6 +25,12 @@ From: carlasim/carla:0.9.14
     rm ./install_conda.sh
     ./miniconda3/bin/conda init bash
     source ~/.bashrc
+    
+    # Check GPU availability
+    echo "Checking GPU availability..."
+    nvcc --version
+    nvidia-smi
+    echo "GPU availability check done."
 
     # Setup conda environment
     conda env create -f /home/environment.yml
