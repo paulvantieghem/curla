@@ -13,6 +13,9 @@ From: carlasim/carla:0.9.14
     export CARLA_VERSION="0.9.14"
 
 %post -c /bin/bash
+
+    # Downloads the latest package lists (important).
+    apt-get update -y
     
     # Check GPU availability
     source ~/.bashrc
@@ -22,9 +25,6 @@ From: carlasim/carla:0.9.14
     # Set alias
     export HOME="/home"
     cd ~
-    
-    # Downloads the latest package lists (important).
-    apt-get update -y
     
     # Install and setup conda
     bash ./install_conda.sh -b -p ./miniconda3
