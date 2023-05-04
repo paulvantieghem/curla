@@ -16,10 +16,6 @@ From: carlasim/carla:0.9.14
     export HOME="/home"
     cd ~
 
-    # Check GPU and CUDA availability
-    nvcc --version
-    nvidia-smi
-
     # Install and setup conda
     bash ./install_conda.sh -b -p ./miniconda3
     rm ./install_conda.sh
