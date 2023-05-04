@@ -127,10 +127,7 @@ class ReplayBuffer(Dataset):
 
     def sample_cpc(self):
 
-        start = time.time()
-        idxs = np.random.randint(
-            0, self.capacity if self.full else self.idx, size=self.batch_size
-        )
+        idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=self.batch_size)
       
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
@@ -140,6 +137,13 @@ class ReplayBuffer(Dataset):
         obses = self.augmentor.target_augmentation(obses)
         next_obses = self.augmentor.target_augmentation(next_obses)
         pos = self.augmentor.target_augmentation(pos)
+
+        #### DEBUG ####
+        # import matplotlib.pyplot as plt
+        # img = obses[0, 0:3, :, :].transpose(1,2,0)
+        # print(img.shape)
+        # plt.imshow(img)
+        # plt.show()
     
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(

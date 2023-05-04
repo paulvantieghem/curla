@@ -161,11 +161,12 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
             all_ep_steps.append(episode_steps)
             for k, v in info.items():
                 all_ep_infos[k].append(v)
-
-        bad_idx = list(range(num_episodes))
-        bad_idx.remove(best_episode['ep'])
-        for ep in bad_idx:
-            os.remove(os.path.join(video_dir, f'eval_step_{step}_ep_{ep+1}.mp4'))
+        
+        if num_episodes > 1:
+            bad_idx = list(range(num_episodes))
+            bad_idx.remove(best_episode['ep'])
+            for ep in bad_idx:
+                os.remove(os.path.join(video_dir, f'eval_step_{step}_ep_{ep+1}.mp4'))
         
         # Log evaluation metrics
         L.log('eval/' + prefix + 'max_ep_reward', float(np.max(all_ep_rewards)), step)
@@ -309,7 +310,8 @@ def main():
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             if env.verbose: print('episode done: evaluation starts')
-            L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
+            if args.num_eval_episodes > 0:
+                L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
                 agent.save(model_dir, step)
             if args.save_buffer:

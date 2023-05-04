@@ -14,7 +14,8 @@ def tie_weights(src, trg):
     trg.weight = src.weight
     trg.bias = src.bias
 
-# Calculate output dimensions for different input sizes: http://layer-calc.com/
+# Calculate output dimensions for different input sizes: http://layer-calc.com/, 
+# or just use the commented print statement on line 86 of this file
 
 # for 84 x 84 inputs
 OUT_DIM = {2: 39, 4: 35, 6: 31}
@@ -25,7 +26,7 @@ OUT_DIM_64 = {2: 29, 4: 25, 6: 21}
 OUT_DIM_RECT_76_135 = {4: [31, 61],}
 
 # for 90 x 160 inputs
-OUT_DIM_RECT_90_160 = {4: [36, 71],}
+OUT_DIM_RECT_90_160 = {4: [38, 73],}
 
 
 class CNNEncoder(nn.Module):
@@ -82,6 +83,7 @@ class CNNEncoder(nn.Module):
 
         for i in range(1, self.num_layers):
             conv = torch.relu(self.convs[i](conv))
+            # print(f'conv{i+1} shape: {conv.shape}')
             self.outputs['conv%s' % (i + 1)] = conv
 
         h = conv.view(conv.size(0), -1)

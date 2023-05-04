@@ -1,6 +1,7 @@
 import numpy as np
 from skimage.util.shape import view_as_windows
 from kornia import augmentation as K
+import torch
 
 class IdentityAugmentation:
     def __init__(self, input_shape):
@@ -80,18 +81,21 @@ class ColorJiggle(IdentityAugmentation):
         self.output_shape = self.input_shape
 
         # Define the ColorJiggle augmentation with 100% probability
-        self.aug1 = K.ColorJiggle(brightness=0.0, 
-                                 contrast=0.0, 
-                                 saturation=0.0, 
-                                 hue=0.0, 
+        self.aug1 = K.ColorJiggle(brightness=0.2, 
+                                 contrast=0.2, 
+                                 saturation=0.2, 
+                                 hue=0.2, 
                                  same_on_batch=False, 
                                  p=1.0, 
                                  keepdim=True)
         
         # Define the RandomGrayscale augmentation with 10% probability
-        self.aug2 = K.RandomGrayscale(rgb_weights=None, 
-                                      same_on_batch=False, 
-                                      p=0.1, keepdim=False)
+        self.aug2 = K.RandomGrayscale(same_on_batch=False, 
+                                      p=0.1,
+                                      keepdim=True)
+        
+        # Define the device to be used
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
     def anchor_augmentation(self, image):
@@ -117,11 +121,31 @@ class ColorJiggle(IdentityAugmentation):
             augmented_batch: Batch of color jiggled images with shape (batch_size, channels*frame_stack, height, width)
         '''
 
+        # Convert batch to Pytorch tensor
+        tensor_batch = torch.from_numpy(image_batch.astype(np.float32) / 255.0)
+        tensor_batch.to(self.device)
+
+        # Each image in the batch is actually a frame stack of `frame_stack` images,
+        # resulting in a tensor of shape (batch_size, channels*frame_stack, height, width),
+        # which is not compatible with the color jiggling augmentation. Therefore, we
+        # split the tensor into `frame_stack` tensors of shape (batch_size, channels, height, width),
+        # apply the augmentation to each tensor and concatenate the resulting tensors back
+        frame_stack = image_batch.shape[1]//3
+        tensor_batch = torch.cat(torch.split(tensor_batch, frame_stack, dim=1), dim=0)
+
         # Perform color jiggling on batch with 100% probability
-        augmented_batch = self.aug1(image_batch)
+        tensor_batch = self.aug1(tensor_batch)
 
         # Perform random grayscale on batch with 10% probability
-        augmented_batch = self.aug2(augmented_batch)
+        tensor_batch = self.aug2(tensor_batch)
+
+        # Reshape batch back to original shape
+        tensor_batch = torch.cat(torch.split(tensor_batch, tensor_batch.shape[0]//frame_stack, dim=0), dim=1)
+
+        # Convert batch back to numpy array
+        augmented_batch = tensor_batch.numpy()*255.0
+        augmented_batch = augmented_batch.astype(np.uint8)
+
 
         return augmented_batch
     
