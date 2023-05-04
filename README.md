@@ -96,8 +96,8 @@ All data related to the run is stored in the specified by `--working_dir_name` (
 For custom training, have a look at the `train.py` file and the `settings.py` file.
 
 ### 3. Evaluation
-At each evaluation step during training, the current CURL model is saved in the `tmp/experiment_name/model` directory. To evaluate a saved model, run:
+At each evaluation step during training, the current CURL model is saved in the `experiments/experiment_name/model` directory. To evaluate a saved model, run:
 ```
-eval.py --model_dir_path path/to/model_dir --model_step 1_000_000
+eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
 ```
-Here, `model_dir_path` is the path to the directory containing the saved model and `step` is the training step at which the model was saved. More evaluation options are available, have a look at the `eval.py` file for more information. Make sure to match the evaluation settings with the training settings for coherent results.
+Here, `experiment_dir_path` is the path to the directory of the experiment you want to evaluate that contains the `model` directory, and `model_step` is the training step at which the model was saved. The rest of the arguments are automatically read from the `args.log` file in the experiment directory to match the training arguments exactly.
