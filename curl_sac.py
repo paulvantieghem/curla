@@ -15,7 +15,7 @@ import math
 import utils
 import encoder
 
-LOG_FREQ = 100_000
+LOG_FREQ = 25_000
 
 
 def gaussian_logprob(noise, log_std):
@@ -259,6 +259,7 @@ class CurlSacAgent(object):
         num_filters=32,
         cpc_update_freq=1,
         log_interval=100,
+        log_param_hist_imgs=False,
         detach_encoder=False,
         curl_latent_dim=128
     ):
@@ -272,6 +273,7 @@ class CurlSacAgent(object):
         self.critic_target_update_freq = critic_target_update_freq
         self.cpc_update_freq = cpc_update_freq
         self.log_interval = log_interval
+        self.log_param_hist_imgs = log_param_hist_imgs
         self.image_shape = obs_shape[-2:]
         self.curl_latent_dim = curl_latent_dim
         self.detach_encoder = detach_encoder
@@ -375,7 +377,8 @@ class CurlSacAgent(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        self.critic.log(L, step)
+        if self.log_param_hist_imgs:
+            self.critic.log(L, step)
 
     def update_actor_and_alpha(self, obs, L, step):
         # detach encoder, so we don't update it with the actor loss
@@ -398,7 +401,8 @@ class CurlSacAgent(object):
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        self.actor.log(L, step)
+        if self.log_param_hist_imgs:
+            self.actor.log(L, step)
 
         self.log_alpha_optimizer.zero_grad()
         alpha_loss = (self.alpha *

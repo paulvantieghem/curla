@@ -111,6 +111,7 @@ def parse_args():
     parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--log_interval', default=500, type=int)
+    parser.add_argument('--log_param_hist_imgs', default=False, action='store_true')
     args = parser.parse_args()
     return args
 
@@ -204,6 +205,7 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
             num_layers=args.num_layers,
             num_filters=args.num_filters,
             log_interval=args.log_interval,
+            log_param_hist_imgs = args.log_param_hist_imgs,
             detach_encoder=args.detach_encoder,
             curl_latent_dim=args.curl_latent_dim
 
