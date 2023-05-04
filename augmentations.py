@@ -1,5 +1,6 @@
 import numpy as np
 from skimage.util.shape import view_as_windows
+from kornia import augmentation as K
 
 class IdentityAugmentation:
     def __init__(self, input_shape):
@@ -49,7 +50,7 @@ class RandomCrop(IdentityAugmentation):
         Args:
             image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
         Returns:
-            cropped_image_batch: Batch of randomly cropped images with shape (batch_size, channels*frame_stack, *self.output_shape)
+            augmented_batch: Batch of randomly cropped images with shape (batch_size, channels*frame_stack, *self.output_shape)
         '''
 
         # Batch size
@@ -67,9 +68,62 @@ class RandomCrop(IdentityAugmentation):
         windows = view_as_windows(image_batch, (1, self.output_shape[0], self.output_shape[1], 1))[..., 0,:,:, 0] # @TODO: Check correctness!
 
         # Selects a random window for each batch element
-        cropped_image_batch = windows[np.arange(n), h1, w1]
+        augmented_batch = windows[np.arange(n), h1, w1]
 
-        return cropped_image_batch
+        return augmented_batch
+    
+
+class ColorJiggle(IdentityAugmentation):
+
+    def __init__(self, input_shape):
+        super().__init__(input_shape)
+        self.output_shape = self.input_shape
+
+        # Define the ColorJiggle augmentation with 100% probability
+        self.aug1 = K.ColorJiggle(brightness=0.0, 
+                                 contrast=0.0, 
+                                 saturation=0.0, 
+                                 hue=0.0, 
+                                 same_on_batch=False, 
+                                 p=1.0, 
+                                 keepdim=True)
+        
+        # Define the RandomGrayscale augmentation with 10% probability
+        self.aug2 = K.RandomGrayscale(rgb_weights=None, 
+                                      same_on_batch=False, 
+                                      p=0.1, keepdim=False)
+
+
+    def anchor_augmentation(self, image):
+        '''
+        Returns the original image
+
+        Args:
+            image: Image with shape (channels*frame_stack, height, width)
+        Returns:
+            image: Image with shape (channels*frame_stack, height, width)
+        '''
+
+        return image
+    
+    def target_augmentation(self, image_batch):
+        '''
+        Applies a random transformation to the brightness, contrast, saturation 
+        and hue of the image batch
+
+        Args:
+            image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
+        Returns:
+            augmented_batch: Batch of color jiggled images with shape (batch_size, channels*frame_stack, height, width)
+        '''
+
+        # Perform color jiggling on batch with 100% probability
+        augmented_batch = self.aug1(image_batch)
+
+        # Perform random grayscale on batch with 10% probability
+        augmented_batch = self.aug2(augmented_batch)
+
+        return augmented_batch
     
 
 def make_augmentor(name, input_shape):
@@ -78,6 +132,8 @@ def make_augmentor(name, input_shape):
         augmentor = IdentityAugmentation(input_shape)
     elif name == 'random_crop':
         augmentor = RandomCrop(input_shape)
+    elif name == 'color_jiggle':
+        augmentor = ColorJiggle(input_shape)
     else:
         raise ValueError('augmentation is not supported: %s' % name)
     return augmentor

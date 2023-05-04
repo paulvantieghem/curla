@@ -365,10 +365,9 @@ class CurlSacAgent(object):
             target_Q = reward + (not_done * self.discount * target_V)
 
         # get current Q estimates
-        current_Q1, current_Q2 = self.critic(
-            obs, action, detach_encoder=self.detach_encoder)
-        critic_loss = F.mse_loss(current_Q1,
-                                 target_Q) + F.mse_loss(current_Q2, target_Q)
+        current_Q1, current_Q2 = self.critic(obs, action, detach_encoder=self.detach_encoder)
+        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+        
         if step % self.log_interval == 0:
             L.log('train_critic/loss', critic_loss, step)
 
