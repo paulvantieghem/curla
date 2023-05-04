@@ -311,7 +311,6 @@ def main():
             if env.verbose: print('episode done: evaluation starts')
             L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
-                agent.save_curl(model_dir, step)
                 agent.save(model_dir, step)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)

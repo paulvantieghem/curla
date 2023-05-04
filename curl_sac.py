@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 import math
+import os
 
 import utils
 import encoder
@@ -460,28 +461,20 @@ class CurlSacAgent(object):
             self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
 
     def save(self, model_dir, step):
-        torch.save(
-            self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-        )
 
-    def save_curl(self, model_dir, step):
-        torch.save(
-            self.CURL.state_dict(), '%s/curl_%s.pt' % (model_dir, step)
-        )
+        # Remove older models
+        for model in os.listdir(model_dir):
+            if "actor" in model or "critic" in model or "curl" in model:
+                if os.path.isfile(os.path.join(model_dir, model)):
+                    os.remove(os.path.join(model_dir, model))
+
+        # Save current models
+        torch.save(self.CURL.state_dict(), '%s/curl_%s.pt' % (model_dir, step))
+        torch.save(self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step))
+        torch.save(self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step))
 
     def load(self, model_dir, step):
-        self.actor.load_state_dict(
-            torch.load('%s/actor_%s.pt' % (model_dir, step))
-        )
-        self.critic.load_state_dict(
-            torch.load('%s/critic_%s.pt' % (model_dir, step))
-        )
-
-    def load_curl(self, model_dir, step):
-        self.CURL.load_state_dict(
-            torch.load('%s/curl_%s.pt' % (model_dir, step))
-        )
+        self.CURL.load_state_dict(torch.load('%s/curl_%s.pt' % (model_dir, step)))
+        self.actor.load_state_dict( torch.load('%s/actor_%s.pt' % (model_dir, step)))
+        self.critic.load_state_dict(torch.load('%s/critic_%s.pt' % (model_dir, step)))
  
