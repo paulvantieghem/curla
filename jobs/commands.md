@@ -37,7 +37,7 @@ sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 -
 ssh -L 16006:127.0.0.1:6006 vsc35202@login-genius.hpc.kuleuven.be
 
 # On the server
-conda activate py37
+conda activate logger
 cd $VSC_DATA/lib/curla
 tensorboard --logdir="experiments" --port=6006
 
