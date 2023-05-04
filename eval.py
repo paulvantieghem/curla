@@ -154,6 +154,7 @@ def main():
     # Load model
     print('Loading model %s' % os.path.join(args.model_dir_path, 'curl_%d.pt' % args.model_step))
     agent.load_curl(args.model_dir_path, str(args.model_step))
+    agent.load(args.model_dir_path, str(args.model_step))
 
     # Run evaluation loop
     ep_rewards, ep_times = run_eval_loop(env, agent, augmentor, args.model_step, num_episodes=1, record_video=True)

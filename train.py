@@ -310,6 +310,7 @@ def main():
             L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
                 agent.save_curl(model_dir, step)
+                agent.save(model_dir, step)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
             done = True
@@ -359,9 +360,7 @@ def main():
 
         # Update the weights of the CURL model
         if step >= args.init_steps:
-            num_updates = 1 
-            for _ in range(num_updates):
-                agent.update(replay_buffer, L, step)
+            agent.update(replay_buffer, L, step)
 
         # Take the environment step
         next_obs, reward, done, info = env.step(action)
