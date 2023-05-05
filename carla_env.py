@@ -1,4 +1,4 @@
-# This code is based on (but does not directly copy) the following sources:
+# The code in this file is partially based on (but does not directly copy) the following sources:
 # 
 # - The examples provided with the CARLA repository: 
 #   https://github.com/carla-simulator/carla/blob/master/PythonAPI/examples
@@ -7,10 +7,11 @@
 #   https://www.youtube.com/playlist?list=PLQVvvaa0QuDeI12McNQdnTlWz9XlCa0uo
 #
 # - The 'Learning Invariant Representations for Reinforcement Learning without Reconstruction' 
-#   paper by Zhang et al. (2020) and 'deep_bisim4control' repository by 'facebookresearch' on GitHub:
+#   paper by Zhang et al. (2020):
 #   https://arxiv.org/abs/2006.10742
+#
+# - The 'deep_bisim4control' repository by 'facebookresearch' on GitHub:
 #   https://github.com/facebookresearch/deep_bisim4control 
-#   
 
 
 # Standard library
