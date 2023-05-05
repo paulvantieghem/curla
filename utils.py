@@ -14,6 +14,7 @@ from collections import deque
 import random
 from torch.utils.data import Dataset, DataLoader
 import time
+import psutil
 from skimage.util.shape import view_as_windows
 
 class eval_mode(object):
@@ -92,6 +93,24 @@ class ReplayBuffer(Dataset):
         self.actions = np.empty((capacity, *action_shape), dtype=np.float32)
         self.rewards = np.empty((capacity, 1), dtype=np.float32)
         self.not_dones = np.empty((capacity, 1), dtype=np.float32)
+
+        # Check if replay buffer size exceeds available memory
+        total_bytes = (self.obses.nbytes + self.next_obses.nbytes + self.actions.nbytes + self.rewards.nbytes + self.not_dones.nbytes)
+        total_memory = psutil.virtual_memory().total
+        total_available_memory = psutil.virtual_memory().available
+        print('-'*50)
+        if total_bytes > 1024**3:
+            print('Replay buffer size: %.2f GB' % (total_bytes / 1024 / 1024 / 1024))
+            print('Total memory: %.2f GB' % (total_memory / 1024 / 1024 / 1024))
+            print('Total available memory: %.2f GB' % (total_available_memory / 1024 / 1024 / 1024))
+        else:
+            print('Replay buffer size: %.2f MB' % (total_bytes / 1024 / 1024))
+            print('Total memory: %.2f MB' % (total_memory / 1024 / 1024))
+            print('Total available memory: %.2f MB' % (total_available_memory / 1024 / 1024))
+        print('-'*50)
+        if total_bytes > total_available_memory:
+            raise ValueError('Replay buffer size exceeds available memory')
+
 
         self.idx = 0
         self.last_save = 0
