@@ -58,11 +58,6 @@ cd path/to/my_project/curla
 python train.py --num_train_steps 1_000_000
 ```
 
-Tensorboard logging is enabled by default. To view the logs, run the following command in the `curla` directory:
-```
-tensorboard --logdir tmp --port 6006
-```
-
 In your console, you should see printouts that look like:
 
 ```
@@ -92,6 +87,11 @@ BER - best evaluation episode reward
 ```
 
 All data related to the run is stored in the specified by `--working_dir_name` (default: `experiments`). To enable model or video saving, use the `--save_model` or `--save_video` flags. For all available flags, inspect `train.py`.
+
+Tensorboard logging is enabled by default. To view the logs, run the following command in the `curla` directory:
+```
+tensorboard --logdir experiments --port 6006
+```
 
 For custom training, have a look at the `train.py` file and the `settings.py` file.
 
