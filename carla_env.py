@@ -192,8 +192,8 @@ class CarlaEnv:
         self.destroy_all_actors()
 
         # Reload the world once in a while to avoid bugs, but keep the current settings
-        if self.reset_counter % 10 == 0:
-            if self.verbose: print('reloading world')
+        if self.reset_counter % 10 == 0 and self.reset_counter != 0:
+            print('[carla_env.py] Reloading world...')
             self.client.reload_world(reset_settings=False)
             self.world = self.client.get_world()
             self.spectator = self.world.get_spectator()
@@ -212,14 +212,14 @@ class CarlaEnv:
         # Spawn ego vehicle
         start_time = time.time()
         while True:
-            if time.time() - start_time > TIMEOUT:
-                raise Exception('Timeout while waiting for ego vehicle to spawn')
             try:
                 self.ego_vehicle_transform = random.choice(self.ego_vehicle_possible_transforms)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
                 break
             except:
                 time.sleep(0.05)
+            if time.time() - start_time > TIMEOUT:
+                raise Exception('Timeout while waiting for ego vehicle to spawn')
         self.actor_list.append(self.ego_vehicle)
         if self.verbose: print('created %s' % self.ego_vehicle.type_id)
 
@@ -271,8 +271,6 @@ class CarlaEnv:
         # Collect the initial sensor data and return the first frame number
         start_time = time.time()
         while True:
-            if time.time() - start_time > TIMEOUT:
-                raise Exception('Timeout while waiting for initial sensor data')
             try:
                 self.starting_frame_number = self.collect_sensor_data()
                 self.world.tick(TIMEOUT)
@@ -281,6 +279,8 @@ class CarlaEnv:
                 self.world.tick(TIMEOUT)
                 time.sleep(2*self.dt)
                 if self.verbose: print('ticking world after failed sensor data collection')
+            if time.time() - start_time > TIMEOUT:
+                raise Exception('Timeout while waiting for initial sensor data')
 
         # Administration
         self.reset_counter += 1
@@ -516,7 +516,10 @@ class CarlaEnv:
 
     def collect_sensor_data(self):
         '''Collect the data from the camera sensor.'''
-        camera_sensor_data = self.camera_sensor_queue.get(timeout=TIMEOUT)
+        try:
+            camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
+        except:
+            raise Exception('Timeout while waiting for camera sensor data')
         self.process_camera_data(camera_sensor_data)
         return camera_sensor_data.frame # Return frame number
 
@@ -533,7 +536,7 @@ class CarlaEnv:
             self.camera_sensor.destroy()
             self.collision_sensor.destroy()
         except:
-            print('[WARNING] Error destroying sensors!')
+            print('[carla_env.py] No sensors to destroy or error destroying sensors.')
         if len(self.actor_list) != 0:
             self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
         if self.verbose: print('done.\n\n')

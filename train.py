@@ -17,6 +17,8 @@ import time
 import json
 import copy
 from datetime import datetime
+import psutil
+from collections import deque
 
 import utils
 from augmentations import make_augmentor
@@ -301,8 +303,13 @@ def main():
     # Initializations
     episode, episode_reward, done, info = 0, 0, True, None
     start_time = time.time()
-    fps = 0
+    fps = 0.0
+    sys_mem_pcnt = 0.0
+    proc_mem_MB = 0.0
+    sys_mem = deque(maxlen=int(args.log_interval))
+    proc_mem = deque(maxlen=int(args.log_interval))
     max_episode_reward = (env.desired_speed/3.6)*env.dt*env._max_episode_steps
+    print(f'Maximum episode reward possible for requested CarlaEnv configuration: {round(max_episode_reward, 2)}')
 
     for step in range(args.num_train_steps+1):
 
@@ -310,6 +317,7 @@ def main():
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             if env.verbose: print('episode done: evaluation starts')
+            print(f'[train.py] Started evaluation loop at step {step}')
             if args.num_eval_episodes > 0:
                 L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             if args.save_model:
@@ -317,6 +325,7 @@ def main():
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
             done = True
+            print(f'[train.py] Finished evaluation loop at step {step}')
 
         # Reset if done
         if done:
@@ -368,6 +377,10 @@ def main():
         # Take the environment step
         next_obs, reward, done, info = env.step(action)
 
+        # Log memory usage
+        sys_mem.append(psutil.virtual_memory().percent)
+        proc_mem.append(round(psutil.Process(os.getpid()).memory_info().rss/(1024**2), 2))
+
         # Allow infinite bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(done)
 
@@ -377,6 +390,13 @@ def main():
         obs = next_obs
         episode_step += 1
         fps = round(episode_step / (time.time() - start_time), 2)
+        sys_mem_pcnt = round(sum(sys_mem)/len(sys_mem), 2)
+        proc_mem_MB = round(sum(proc_mem)/len(proc_mem), 2)
+
+        # Log stats
+        if step % args.log_interval == 0:
+            L.log('train/mean_sys_mem_pcnt', sys_mem_pcnt, step)
+            L.log('train/mean_proc_mem_MB', proc_mem_MB, step)
 
     # Clear the environment
     env.deactivate()
