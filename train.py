@@ -305,7 +305,7 @@ def main():
     start_time = time.time()
     fps = 0.0
     sys_mem_pcnt = 0.0
-    proc_mem_MB = 0.0
+    proc_mem_GB = 0.0
     sys_mem = deque(maxlen=int(args.log_interval))
     proc_mem = deque(maxlen=int(args.log_interval))
     max_episode_reward = (env.desired_speed/3.6)*env.dt*env._max_episode_steps
@@ -379,7 +379,7 @@ def main():
 
         # Log memory usage
         sys_mem.append(psutil.virtual_memory().percent)
-        proc_mem.append(round(psutil.Process(os.getpid()).memory_info().rss/(1024**2), 2))
+        proc_mem.append(round(psutil.Process(os.getpid()).memory_info().rss/(1024**3), 4))
 
         # Allow infinite bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(done)
@@ -391,12 +391,12 @@ def main():
         episode_step += 1
         fps = round(episode_step / (time.time() - start_time), 2)
         sys_mem_pcnt = round(sum(sys_mem)/len(sys_mem), 2)
-        proc_mem_MB = round(sum(proc_mem)/len(proc_mem), 2)
+        proc_mem_GB = round(sum(proc_mem)/len(proc_mem), 4)
 
         # Log stats
         if step % args.log_interval == 0:
             L.log('train/mean_sys_mem_pcnt', sys_mem_pcnt, step)
-            L.log('train/mean_proc_mem_MB', proc_mem_MB, step)
+            L.log('train/mean_proc_mem_GB', proc_mem_GB, step)
 
     # Clear the environment
     env.deactivate()
