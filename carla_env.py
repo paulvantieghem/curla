@@ -101,7 +101,7 @@ class CarlaEnv:
         self.world.apply_settings(self.world_settings)
 
         # Administration
-        self.reset_step = 0     # Counts how many times the environment has been reset (episode counter)
+        self.reset_counter = 0  # Counts how many times the environment has been reset (episode counter)
         self.episode_step = 0   # Counts the amount of time steps taken within the current episode
         self.total_step = 0     # Counts the total amount of time steps
         self.actor_list = []
@@ -156,6 +156,7 @@ class CarlaEnv:
 
         # Traffic manager
         self.traffic_manager = self.client.get_trafficmanager()
+        self.traffic_manager_port = self.traffic_manager.get_port()
 
         # Setup for NPC vehicles
         self.npc_vehicle_blueprints = []
@@ -190,6 +191,13 @@ class CarlaEnv:
         # Destroy all actors of the previous simulation
         self.destroy_all_actors()
 
+        # Reload the world once in a while to avoid bugs, but keep the current settings
+        if self.reset_counter % 10 == 0:
+            if self.verbose: print('reloading world')
+            self.client.reload_world(reset_settings=False)
+            self.world = self.client.get_world()
+            self.spectator = self.world.get_spectator()
+
         # Administration
         self.actor_list = []
         self.npc_vehicles_list = []
@@ -211,7 +219,6 @@ class CarlaEnv:
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
                 break
             except:
-                if self.verbose: print('Spawn of ego vehicle failed, trying again')
                 time.sleep(0.05)
         self.actor_list.append(self.ego_vehicle)
         if self.verbose: print('created %s' % self.ego_vehicle.type_id)
@@ -235,16 +242,14 @@ class CarlaEnv:
             if temp is not None:
                 self.npc_vehicles_list.append(temp)
                 self.actor_list.append(temp)
-                batch.append(carla.command.SetAutopilot(temp, True))
+                batch.append(carla.command.SetAutopilot(temp, True, self.traffic_manager_port))
                 npc_counter += 1
-            else:
-                if self.verbose: print('Spawn of npc vehicle failed, trying again')
             time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Make sure that all vehicles fell down to the ground after spawning
         for _ in range(int(1/self.dt)):
-            self.world.tick()
+            self.world.tick(TIMEOUT)
             time.sleep(self.dt)
 
         # Set autopilot for all NPC vehicles
@@ -270,15 +275,15 @@ class CarlaEnv:
                 raise Exception('Timeout while waiting for initial sensor data')
             try:
                 self.starting_frame_number = self.collect_sensor_data()
-                self.world.tick()
+                self.world.tick(TIMEOUT)
                 break
             except:
-                self.world.tick()
+                self.world.tick(TIMEOUT)
                 time.sleep(2*self.dt)
                 if self.verbose: print('ticking world after failed sensor data collection')
 
         # Administration
-        self.reset_step += 1
+        self.reset_counter += 1
         self.episode_step = 0
         self.stall_counter = 0
         self.abs_kmh = 0.0
@@ -313,7 +318,7 @@ class CarlaEnv:
             if self.verbose: print('episode done: episode time is up')
 
         # Tick world
-        self.world.tick()
+        self.world.tick(TIMEOUT)
         self.episode_step += 1
         self.total_step += 1
 
@@ -497,13 +502,13 @@ class CarlaEnv:
             cv2.imshow('', self.obs[:, :, ::-1])
             cv2.waitKey(1)
         if self.save_imgs:
-            cv2.imwrite(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.png'), self.obs[:, :, ::-1])
+            cv2.imwrite(os.path.join('_out', f'im_{self.reset_counter}_{self.episode_step}.png'), self.obs[:, :, ::-1])
 
         # Reshape image to (C, H, W) format required by the CURL model
         self.obs = np.transpose(self.obs, (2, 0, 1))
 
         if self.save_imgs:
-            np.save(os.path.join('_out', f'im_{self.reset_step}_{self.episode_step}.npy'), self.obs)
+            np.save(os.path.join('_out', f'im_{self.reset_counter}_{self.episode_step}.npy'), self.obs)
     
     def process_collision_data(self, event):
         '''Process the collision data from the collision sensor.'''
@@ -511,7 +516,7 @@ class CarlaEnv:
 
     def collect_sensor_data(self):
         '''Collect the data from the camera sensor.'''
-        camera_sensor_data = self.camera_sensor_queue.get(timeout=2.0)
+        camera_sensor_data = self.camera_sensor_queue.get(timeout=TIMEOUT)
         self.process_camera_data(camera_sensor_data)
         return camera_sensor_data.frame # Return frame number
 
@@ -524,12 +529,12 @@ class CarlaEnv:
     def destroy_all_actors(self):
         '''Destroy all actors in the environment.'''
         if self.verbose: print('destroying actors')
+        try: 
+            self.camera_sensor.destroy()
+            self.collision_sensor.destroy()
+        except:
+            print('[WARNING] Error destroying sensors!')
         if len(self.actor_list) != 0:
-            try: 
-                self.camera_sensor.destroy()
-                self.collision_sensor.destroy()
-            except:
-                print('[WARNING] Error destroying sensors!')
             self.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
         if self.verbose: print('done.\n\n')
 
