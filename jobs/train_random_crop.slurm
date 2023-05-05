@@ -32,6 +32,9 @@ git pull
 # Define the CARLA and content root directories
 CARLA_ROOT="$VSC_DATA/lib/carla"
 CONTENT_ROOT="$VSC_DATA/lib/curla"
+IMAGE="$CARLA_ROOT/conda_carla.sif"
+FILE="$CONTENT_ROOT/train.py"
+AUGMENTATION="--augmentation random_crop"
 
 # Run the apptainer image containing carla and the conda environment to run a python script:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image.
@@ -40,7 +43,6 @@ CONTENT_ROOT="$VSC_DATA/lib/curla"
 #   * `-B $VSC_DATA` and `-B $VSC_SCRATCH` bind the data and scratch partitions such that these are visible from within
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
-#   * `python "$VSC_DATA/carla_test.py"` runs the python script within the activated conda environment of the apptainer image.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$CARLA_ROOT/conda_carla.sif" python "$CONTENT_ROOT/train.py" > "$CONTENT_ROOT/train_apptainer_run_$(date +%m-%d_%H-%M).out" 2> "$CONTENT_ROOT/train_apptainer_run_$(date +%m-%d_%H-%M).err"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" python "$FILE" "$AUGMENTATION"
 echo "[MESSAGE] Finished apptainer run"
