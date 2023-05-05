@@ -5,9 +5,9 @@
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=train_carla_img
-#SBATCH --output=train_carla_img.out
-#SBATCH --error=train_carla_img.err
+#SBATCH --job-name=train_color_jiggle
+#SBATCH --output=train_color_jiggle.out
+#SBATCH --error=train_color_jiggle.err
 
 # Purge loaded modules
 module --force purge
