@@ -24,7 +24,6 @@ import utils
 from augmentations import make_augmentor
 from logger import Logger
 from video import VideoRecorder
-from torchvision import transforms
 
 from curl_sac import CurlSacAgent
 from carla_env import CarlaEnv
@@ -42,6 +41,7 @@ def parse_args():
     parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
     parser.add_argument('--fps', default=20, type=int) # Hz
     parser.add_argument('--env_verbose', default=False, action='store_true') # Verbosity of the CARLA environment 'CarlaEnv' class
+    parser.add_argument('--port', default=2000, type=int) # 
 
     # Carla camera settings
     parser.add_argument('--camera_image_height', default=90, type=int)
@@ -257,7 +257,7 @@ def main():
     # Carla environment
     env = CarlaEnv(args.carla_town, args.max_npc_vehicles, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.env_verbose, args.camera_image_height, args.camera_image_width, 
+                   args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
                    args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     env.seed(args.seed)

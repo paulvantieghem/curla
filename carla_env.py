@@ -50,7 +50,7 @@ class CarlaEnv:
 
 
     def __init__(self, carla_town, max_npc_vehicles, desired_speed, max_stall_time, 
-                 stall_speed, seconds_per_episode, fps, verbose, pre_transform_image_height, 
+                 stall_speed, seconds_per_episode, fps, port, verbose, pre_transform_image_height, 
                  pre_transform_image_width, fov,cam_x, cam_y, cam_z, cam_pitch, 
                  lambda_r1, lambda_r2, lambda_r3, lambda_r4, lambda_r5):
 
@@ -62,6 +62,7 @@ class CarlaEnv:
         self.stall_speed = stall_speed
         self.seconds_per_episode = seconds_per_episode
         self.fps = fps
+        self.port = port
         self.dt = 1.0/fps
         self.verbose = verbose
         self.im_height = pre_transform_image_height
@@ -81,7 +82,7 @@ class CarlaEnv:
         self.obs = None
 
         # Client
-        self.client = carla.Client('localhost', 2000)
+        self.client = carla.Client('localhost', self.port)
         self.timeout = self.client.set_timeout(TIMEOUT)
 
         # World
