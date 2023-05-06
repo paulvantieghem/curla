@@ -321,7 +321,6 @@ def main():
 
     # Initializations
     episode, episode_reward, done, info = 0, 0, True, None
-    start_time = time.time()
     fps = 0.0
     sys_mem_pcnt = 0.0
     proc_mem_GB = 0.0
@@ -331,6 +330,10 @@ def main():
     print(f'Maximum episode reward possible for requested CarlaEnv configuration: {round(max_episode_reward, 2)}')
 
     for step in range(args.num_train_steps+1):
+        
+        # Only start calculating fps after `args.init_steps` steps
+        if step == args.init_steps:
+            start_time = time.time()
 
         # Evaluate agent periodically
         if step % args.eval_freq == 0:
@@ -355,7 +358,8 @@ def main():
                 L.log('train/ep_steps', episode_step, step)
                 L.log('train/ep_reward', episode_reward, step)
                 L.log('train/ep_max_score_ratio', max_score_achieved, step)
-                L.log('train/ep_mean_fps', fps, step)
+                if step > args.init_steps:
+                    L.log('train/ep_mean_fps', fps, step)
                 if info != None:
                     L.log('train/z_ep_r1_sum', info['r1'], step)
                     L.log('train/z_ep_r2_sum', info['r2'], step)
@@ -408,7 +412,8 @@ def main():
         replay_buffer.add(obs, action, reward, next_obs, done_bool)
         obs = next_obs
         episode_step += 1
-        fps = round(episode_step / (time.time() - start_time), 2)
+        if step >= args.init_steps:
+            fps = round(episode_step / (time.time() - start_time), 2)
         sys_mem_pcnt = round(sum(sys_mem)/len(sys_mem), 2)
         proc_mem_GB = round(sum(proc_mem)/len(proc_mem), 4)
 
