@@ -108,7 +108,7 @@ def main():
 
     # Load model
     model_dir_path = os.path.join(args.experiment_dir_path, 'model')
-    agent.load(model_dir_path, str(args.model_step))
+    agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
     ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=1, record_video=True)

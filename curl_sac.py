@@ -459,21 +459,17 @@ class CurlSacAgent(object):
             obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]
             self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
 
-    def save(self, model_dir, step):
+    def save(self, model_dir, augmentation, step):
+        torch.save(self.CURL.state_dict(), '%s/%s_curl_%s.pt' % (model_dir, augmentation, step))
+        torch.save(self.actor.state_dict(), '%s/%s_actor_%s.pt' % (model_dir, augmentation, step))
+        torch.save(self.critic.state_dict(), '%s/%s_critic_%s.pt' % (model_dir, augmentation, step))
 
-        # Remove older models
-        for model in os.listdir(model_dir):
-            if "actor" in model or "critic" in model or "curl" in model:
-                if os.path.isfile(os.path.join(model_dir, model)):
-                    os.remove(os.path.join(model_dir, model))
-
-        # Save current models
-        torch.save(self.CURL.state_dict(), '%s/curl_%s.pt' % (model_dir, step))
-        torch.save(self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step))
-        torch.save(self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step))
-
-    def load(self, model_dir, step):
-        self.CURL.load_state_dict(torch.load('%s/curl_%s.pt' % (model_dir, step)))
-        self.actor.load_state_dict( torch.load('%s/actor_%s.pt' % (model_dir, step)))
-        self.critic.load_state_dict(torch.load('%s/critic_%s.pt' % (model_dir, step)))
+    def load(self, model_dir, augmentation, step):
+        self.CURL.load_state_dict(torch.load('%s/%s_curl_%s.pt' % (model_dir, augmentation, step)))
+        print('Loaded model %s/%s_curl_%s.pt' % (model_dir, augmentation, step))
+        self.actor.load_state_dict( torch.load('%s/%s_actor_%s.pt' % (model_dir, augmentation, step)))
+        print('Loaded model %s/%s_actor_%s.pt' % (model_dir, augmentation, step))
+        self.critic.load_state_dict(torch.load('%s/%s_critic_%s.pt' % (model_dir, augmentation, step)))
+        self.critic_target.load_state_dict(self.critic.state_dict())
+        print('Loaded model %s/%s_critic_%s.pt' % (model_dir, augmentation, step))
  
