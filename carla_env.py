@@ -32,6 +32,7 @@ gym.logger.set_level(40) # Sets the gym logger in ERROR mode (will not mention w
 
 # Modules
 import settings
+from carla_server import CarlaServer
 
 # Constants
 TIMEOUT = 30.0      # Time in seconds to wait on various things
@@ -80,6 +81,12 @@ class CarlaEnv:
 
         # Initial values
         self.obs = None
+
+        # Server
+        if os.name == "nt":
+            self.server = CarlaServer(port=self.port, offscreen=False, sound=False)
+        else:
+            self.server = CarlaServer(port=self.port, offscreen=True, sound=True)
 
         # Client
         self.client = carla.Client('localhost', self.port)
@@ -553,6 +560,7 @@ class CarlaEnv:
         '''Clean up the environment before closing it.'''
         self.set_synchronous_mode(False)
         self.destroy_all_actors()
+        self.server.kill()
 
     
     def render(self):

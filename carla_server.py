@@ -59,6 +59,16 @@ class CarlaServer:
             print(f"Launching CARLA server (attempt {attempt}/{retries})")
             self._server = subprocess.Popen(cmd, env=env)
             time.sleep(delay)
+            try:
+                if self.is_active:
+                    # Try to run _test_target in a client session with small timeout and many retries.
+                    # This ensures the CARLA server is completely ready to handle further client connections.
+                    self.run_client(self._test_target, worker_threads=1, timeout=5, retries=20, verbose=False)
+            except RuntimeError:
+                # Server didn't respond to client connections, either it crashed or is unresponsive.
+                # Kill server process if it didn't crash already and try again.
+                self.kill()
+                self._server = None
 
             if not self.is_active:
                 # Server process terminated, retry launch
@@ -83,3 +93,75 @@ class CarlaServer:
     @property
     def is_active(self):
         return self._server is not None and self._server.poll() is None
+    
+
+    def run_client(self, target, worker_threads=0, timeout=None, retries=None, verbose=True):
+        # To prevent issues when clients are closed, it is recommended to launch the client in a separate process.
+        # See https://github.com/carla-simulator/carla/issues/2789#issuecomment-689619998
+        if timeout is None:
+            timeout = self._connect_timeout
+        if retries is None:
+            retries = self._connect_retries
+
+        err_out, err_in = mp.Pipe(False)
+        p = mp.Process(target=self._client_proc, args=(self._port, worker_threads, timeout, retries, verbose, target, err_in))
+        try:
+            p.start()
+            # Receive exception or `False` from child process
+            e = err_out.recv()
+            if e:
+                # Raise it again in main process
+                raise e
+        finally:
+            p.join()
+
+    @staticmethod
+    def _client_proc(port, worker_threads, timeout, retries, verbose=True, target=None, err=None):
+        try:
+            client = None
+            attempt = 0
+            while client is None and attempt < retries:
+                attempt += 1
+                if verbose:
+                    print(f"Connecting to CARLA server (attempt {attempt}/{retries})")
+                try:
+                    client = CarlaClient('localhost', port, worker_threads)
+                    client.set_timeout(timeout)
+                    client.test_connection()  # Blocking call until server responds or RuntimeError occurs
+                except RuntimeError:
+                    # Client connection timed out, retry connection
+                    client = None
+                    if verbose:
+                        print("Client connection timed out.")
+
+            if client is None:
+                exc = RuntimeError("Could not connect to CARLA server.")
+                if err:
+                    err.send(exc)
+                    return
+                else:
+                    raise exc
+            if verbose:
+                print("Client ready")
+
+            if target is None:
+                return client
+            else:
+                try:
+                    target(client)
+                except Exception as exc:
+                    # Send any exception through the error connection, such that it can be raised in the main process
+                    if err:
+                        err.send(exc)
+                    # Raise it in child process as well to make debugging easier for users
+                    raise exc
+        finally:
+            if err:
+                # Always close error connection before returning
+                err.send(False)
+                err.close()
+
+    @staticmethod
+    def _test_target(client):
+        # Test target to wait for the CARLA server to be ready for further client connections.
+        client.test_connection()

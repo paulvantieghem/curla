@@ -217,6 +217,25 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
     else:
         assert 'agent is not supported: %s' % args.agent
 
+
+def make_env(args):
+
+    # Initialize the CARLA environment
+    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, 
+                   args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
+                   args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
+                   args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
+    
+    # Set the random seed and reset
+    env.seed(args.seed)
+    env.reset()
+
+    # Wrap CarlaEnv in FrameStack class to stack several consecutive frames together
+    env = utils.FrameStack(env, k=args.frame_stack)
+
+    return env
+
 def main():
 
     # Parse arguments
@@ -255,17 +274,7 @@ def main():
     L = Logger(working_dir, use_tb=args.save_tb)
 
     # Carla environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, 
-                   args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
-                   args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
-    env.seed(args.seed)
-    env.reset()
-    action_shape = env.action_space.shape
-
-    # Stack several consecutive frames together
-    env = utils.FrameStack(env, k=args.frame_stack)
+    env = make_env(args)
 
     # Video recorder
     vid_path = video_dir if args.save_video else None
@@ -277,6 +286,9 @@ def main():
 
     # Make use of GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Action shape
+    action_shape = env.action_space.shape
 
     # Pre and post augmentation observation shapes
     pre_aug_obs_shape = env.observation_space.shape
