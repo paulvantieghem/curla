@@ -257,7 +257,7 @@ class CarlaEnv:
         nb_steps = math.ceil(delta_t/self.dt)   # Amount of steps in delta_t seconds (rounded up)
         for _ in range(nb_steps):
             self.world.tick(TIMEOUT)
-            time.sleep(self.dt)
+            time.sleep(2*self.dt)
 
         # Set autopilot for all NPC vehicles
         self.client.apply_batch_sync(batch)
