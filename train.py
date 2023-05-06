@@ -71,8 +71,8 @@ def parse_args():
     parser.add_argument('--load_pretrained', default=False, action='store_true')
     parser.add_argument('--init_steps', default=1000, type=int)
     parser.add_argument('--num_train_steps', default=1_000_000, type=int)
-    parser.add_argument('--batch_size', default=128, type=int)
-    parser.add_argument('--hidden_dim', default=1024, type=int)
+    parser.add_argument('--batch_size', default=64, type=int)   # Was 128
+    parser.add_argument('--hidden_dim', default=512, type=int)  # Was 1024
 
     # Eval
     parser.add_argument('--eval_freq', default=25_000, type=int)

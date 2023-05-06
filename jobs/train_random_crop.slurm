@@ -43,8 +43,8 @@ fi
 IMAGE="$CARLA_ROOT/conda_carla.sif"
 SCRIPT="$CONTENT_ROOT/train.py"
 AUGMENTATION="random_crop"
-LOG_OUT="$LOG_DIR/train_random_crop$(date +%m-%d_%H-%M).out"
-LOG_ERR="$LOG_DIR/train_random_crop$(date +%m-%d_%H-%M).err"
+LOG_OUT="$LOG_DIR/train_random_crop_$(date +%m-%d_%H-%M).out"
+LOG_ERR="$LOG_DIR/train_random_crop_$(date +%m-%d_%H-%M).err"
 
 # Run the apptainer image containing carla and the conda environment to run a python script:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image.

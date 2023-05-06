@@ -128,24 +128,21 @@ class ReplayBuffer(Dataset):
 
     def sample_proprio(self):
         
-        idxs = np.random.randint(
-            0, self.capacity if self.full else self.idx, size=self.batch_size
-        )
-        
-        obses = self.obses[idxs]
-        next_obses = self.next_obses[idxs]
+        # Sample a random batch of transitions from the replay buffer
+        idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=self.batch_size)
 
-        obses = torch.as_tensor(obses, device=self.device).float()
+        # Convert to Pytorch tensors on the device
+        obses = torch.as_tensor(self.obses[idxs], device=self.device).float()
         actions = torch.as_tensor(self.actions[idxs], device=self.device)
         rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
-        next_obses = torch.as_tensor(
-            next_obses, device=self.device
-        ).float()
+        next_obses = torch.as_tensor(self.next_obses[idxs], device=self.device).float()
         not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
+
         return obses, actions, rewards, next_obses, not_dones
 
     def sample_cpc(self):
-
+        
+        # Sample a random batch of transitions from the replay buffer
         idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=self.batch_size)
       
         obses = self.obses[idxs]
@@ -165,16 +162,13 @@ class ReplayBuffer(Dataset):
         # plt.show()
     
         obses = torch.as_tensor(obses, device=self.device).float()
-        next_obses = torch.as_tensor(
-            next_obses, device=self.device
-        ).float()
+        next_obses = torch.as_tensor(next_obses, device=self.device).float()
         actions = torch.as_tensor(self.actions[idxs], device=self.device)
         rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
         not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
-
         pos = torch.as_tensor(pos, device=self.device).float()
-        cpc_kwargs = dict(obs_anchor=obses, obs_pos=pos,
-                          time_anchor=None, time_pos=None)
+
+        cpc_kwargs = dict(obs_anchor=obses, obs_pos=pos, time_anchor=None, time_pos=None)
 
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
 
