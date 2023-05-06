@@ -21,6 +21,7 @@ import time
 import math
 import queue
 import shutil
+import pkg_resources
 
 # Installed 
 import carla
@@ -36,6 +37,9 @@ import settings
 TIMEOUT = 30.0      # Time in seconds to wait on various things
 RENDER_WIDTH = 1152 # This size only matters for the video rendering, should be divisible by 64
 RENDER_HEIGHT = 640 # This size only matters for the video rendering, should be divisible by 64
+CARLA_VERSION = pkg_resources.get_distribution('carla').version
+SPAWN_HEIGHT = 0.5 if CARLA_VERSION == '0.9.14' else 3.0
+G = 9.807 # Gravitational acceleration in m/s^2
 
 class CarlaEnv:
 
@@ -124,7 +128,7 @@ class CarlaEnv:
         self.ego_vehicle_possible_transforms = []
         for i in range(len(start_lanes)):
             ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
-            ego_vehicle_transform.location.z = 0.5 # To avoid collision with road when spawning
+            ego_vehicle_transform.location.z = SPAWN_HEIGHT # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
 
         # NPC vehicle spawn points
@@ -137,7 +141,7 @@ class CarlaEnv:
             for j in range(len(start_lanes)):
                 start_lane = start_lanes[j]
                 npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
-                ego_vehicle_transform.location.z = 0.5 # To avoid collision with road when spawning
+                ego_vehicle_transform.location.z = SPAWN_HEIGHT # To avoid collision with road when spawning
                 self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
 
         # Ego vehicle settings
@@ -249,7 +253,9 @@ class CarlaEnv:
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Make sure that all vehicles fell down to the ground after spawning
-        for _ in range(int(1/self.dt)):
+        delta_t = math.sqrt((2*SPAWN_HEIGHT)/G) # Time to fall to the ground in seconds (ignoring air resistance)
+        nb_steps = math.ceil(delta_t/self.dt)   # Amount of steps in delta_t seconds (rounded up)
+        for _ in range(nb_steps):
             self.world.tick(TIMEOUT)
             time.sleep(self.dt)
 
