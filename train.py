@@ -355,7 +355,8 @@ def main():
                 L.log('train/ep_steps', episode_step, step)
                 L.log('train/ep_reward', episode_reward, step)
                 L.log('train/ep_max_score_ratio', max_score_achieved, step)
-                L.log('train/ep_mean_fps', fps, step)
+                if step >= args.init_steps:
+                    L.log('train/ep_mean_fps', fps, step)
                 if info != None:
                     L.log('train/z_ep_r1_sum', info['r1'], step)
                     L.log('train/z_ep_r2_sum', info['r2'], step)
