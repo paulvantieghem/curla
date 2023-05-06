@@ -32,9 +32,19 @@ git pull
 # Define the CARLA and content root directories
 CARLA_ROOT="$VSC_DATA/lib/carla"
 CONTENT_ROOT="$VSC_DATA/lib/curla"
+
+# Create the log directory if it does not exist yet
+LOG_DIR="$CONTENT_ROOT/logs"
+if [ ! -d "$LOG_DIR" ]; then
+  mkdir -p "$LOG_DIR"
+fi
+
+# Define the apptainer image, python script, augmentation and log files
 IMAGE="$CARLA_ROOT/conda_carla.sif"
-FILE="$CONTENT_ROOT/train.py"
-AUGMENTATION="--augmentation random_crop"
+SCRIPT="$CONTENT_ROOT/train.py"
+AUGMENTATION="random_crop"
+LOG_OUT="$LOG_DIR/train_random_crop$(date +%m-%d_%H-%M).out"
+LOG_ERR="$LOG_DIR/train_random_crop$(date +%m-%d_%H-%M).err"
 
 # Run the apptainer image containing carla and the conda environment to run a python script:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image.
@@ -44,5 +54,5 @@ AUGMENTATION="--augmentation random_crop"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" python "$FILE" "$AUGMENTATION"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" > "$LOG_OUT" 2> "$LOG_ERR"
 echo "[MESSAGE] Finished apptainer run"

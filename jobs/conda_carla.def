@@ -23,40 +23,9 @@ From: carlasim/carla:0.9.14
     source ~/.bashrc
     conda install -y conda-build
 
-    # Setup conda environment
+    # Create conda environment from environment.yml
     conda env create -f /home/environment.yml
 
-    # Setup run_python script
-    echo '#!/bin/bash' > ~/run_python.sh
-    echo "source /home/.bashrc" >> ~/run_python.sh
-    echo "exec /home/carla/CarlaUE4.sh -RenderOffScreen -nosound & CARLA=\$!" >> ~/run_python.sh
-    echo "conda activate curla" >> ~/run_python.sh
-    echo "python -u \"\$@\"" >> ~/run_python.sh
-    echo "kill \$CARLA" >> ~/run_python.sh
-    echo "kill -9 \$(pgrep -f CarlaUE4)" >> ~/run_python.sh
-    echo "conda deactivate" >> ~/run_python.sh
-    chmod 775 ~/run_python.sh
-
 %runscript
-    command="$1"
-    if [ -z "$command" ]; then
-        command="carla"
-    else
-        shift 1
-    fi
-    if [ $command = "carla" ]; then
-        exec /home/carla/CarlaUE4.sh "$@"
-    elif [ $command = "python" ]; then
-        exec /home/run_python.sh "$@" > "/data/leuven/352/vsc35202/lib/curla/train_run_python_$(date +%m-%d_%H-%M).out" 2> "/data/leuven/352/vsc35202/lib/curla/train_run_python_$(date +%m-%d_%H-%M).err"
-    else
-        echo "Unknown run command '$command'; use 'carla' or 'python'."
-    fi
-
-%help
-    This container sets up a conda environment in the base carla image.
-    Usage:
-        * `apptainer run --nv conda_carla.sif` launches a new instance of the CARLA server.
-        * `apptainer run --nv conda_carla.sif carla [params]` launches a new instance of the
-          CARLA server with the given parameters.
-        * `apptainer run --nv conda_carla.sif python [params]` runs python in the conda
-          environment with the given parameters.
+    chmod 775 /data/leuven/352/vsc35202/lib/curla/jobs/run.sh
+    exec /data/leuven/352/vsc35202/lib/curla/jobs/run.sh "$@" > "/data/leuven/352/vsc35202/lib/curla/logs/train_run_$(date +%m-%d_%H-%M).out" 2> "/data/leuven/352/vsc35202/lib/curla/logs/train_run_$(date +%m-%d_%H-%M).err"
