@@ -4,6 +4,30 @@ import psutil
 import subprocess
 import time
 import pkg_resources
+import carla
+
+class CarlaClient(carla.Client):
+    LOAD_WORLD_ATTEMPTS = 5
+
+    def test_connection(self):
+        # Test the connection with the CARLA server by retrieving the world data.
+        # This is a blocking call until the server responds or a RuntimeError occurs.
+        self.get_world()
+
+    def load_world(self, *args, **kwargs):
+        # Safely load a new map by retrying it a couple of times.
+        world = None
+        attempt = 0
+        while world is None and attempt < self.LOAD_WORLD_ATTEMPTS:
+            try:
+                world = super().load_world(*args, **kwargs)
+            except RuntimeError:
+                world = None
+                attempt += 1
+        if world is None:
+            raise RuntimeError("Could not load world")
+        else:
+            return world
 
 
 class CarlaServer:

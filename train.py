@@ -10,15 +10,12 @@ import torch
 import argparse
 import os
 import math
-import gymnasium as gym
-import sys
-import random
 import time
 import json
-import copy
 from datetime import datetime
 import psutil
 from collections import deque
+import importlib
 
 import utils
 from augmentations import make_augmentor
@@ -26,8 +23,9 @@ from logger import Logger
 from video import VideoRecorder
 
 from curl_sac import CurlSacAgent
-from carla_env import CarlaEnv
+import carla_env
 
+CARLA_RESET_FREQ = 20
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -221,7 +219,7 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
 def make_env(args):
 
     # Initialize the CARLA environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles, 
+    env = carla_env.CarlaEnv(args.carla_town, args.max_npc_vehicles, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
@@ -339,6 +337,7 @@ def main():
     sys_mem = deque(maxlen=int(args.log_interval))
     proc_mem = deque(maxlen=int(args.log_interval))
     max_episode_reward = (env.desired_speed/3.6)*env.dt*env._max_episode_steps
+    need_to_reset = False
     print(f'Maximum episode reward possible for requested CarlaEnv configuration: {round(max_episode_reward, 2)}')
 
     for step in range(args.num_train_steps+1):
@@ -346,6 +345,10 @@ def main():
         # Only start calculating fps after `args.init_steps` steps
         if step == args.init_steps:
             start_time = time.time()
+
+        # Reset the CARLA server periodically
+        if step > 0 and step % CARLA_RESET_FREQ == 0:
+            need_to_reset = True
 
         # Evaluate agent periodically
         if step % args.eval_freq == 0:
@@ -381,6 +384,16 @@ def main():
                     L.log('train/z_ep_mean_kmh', info['mean_kmh'], step)
                     L.log('train/z_ep_max_kmh', info['max_kmh'], step)
                     L.log('train/z_ep_brake_sum', info['brake_sum'], step)
+
+            # Reset the CARLA server if needed
+            if need_to_reset:
+                print(f'[train.py] Resetting CARLA server at step {step}')
+                env.deactivate()
+                del env
+                args.port = np.random.randint(50_000, 60_000)
+                env = make_env(args)
+                need_to_reset = False
+
 
             # Dump log
             L.dump(step)
