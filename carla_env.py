@@ -51,10 +51,10 @@ class CarlaEnv:
     enable_spectator = settings.SPECTATOR
 
 
-    def __init__(self, carla_town, max_npc_vehicles, desired_speed, max_stall_time, 
-                 stall_speed, seconds_per_episode, fps, port, verbose, pre_transform_image_height, 
-                 pre_transform_image_width, fov,cam_x, cam_y, cam_z, cam_pitch, 
-                 lambda_r1, lambda_r2, lambda_r3, lambda_r4, lambda_r5):
+    def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
+                 stall_speed=0.5, seconds_per_episode=50, fps=20, port=2000, verbose=False, pre_transform_image_height=90, 
+                 pre_transform_image_width=160, fov=120, cam_x=1.3, cam_y=0.0, cam_z=1.75, cam_pitch=-15, 
+                 lambda_r1=1.0, lambda_r2=0.3, lambda_r3=1.0, lambda_r4=0.005, lambda_r5=1.0):
 
         # Set parameters
         self.carla_town = carla_town
@@ -163,7 +163,7 @@ class CarlaEnv:
         self.camera_sensor_bp.set_attribute('image_size_y', f'{RENDER_HEIGHT}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
-        self.camera_sensor_bp.set_attribute('exposure_compensation', str(-0.5))
+        # self.camera_sensor_bp.set_attribute('exposure_compensation', str(-0.5))
         self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z), carla.Rotation(pitch=self.cam_pitch))
 
         # Collision sensor settings
@@ -171,7 +171,6 @@ class CarlaEnv:
 
         # Traffic manager
         self.traffic_manager = self.client.get_trafficmanager()
-        self.traffic_manager_port = self.traffic_manager.get_port()
 
         # Setup for NPC vehicles
         self.npc_vehicle_blueprints = []
@@ -205,13 +204,6 @@ class CarlaEnv:
         
         # Destroy all actors of the previous simulation
         self.destroy_all_actors()
-
-        # Reload the world once in a while to avoid bugs, but keep the current settings
-        if self.reset_counter % 10 == 0 and self.reset_counter != 0:
-            print('[carla_env.py] Reloading world...')
-            self.client.reload_world(reset_settings=False)
-            self.world = self.client.get_world()
-            self.spectator = self.world.get_spectator()
 
         # Administration
         self.actor_list = []
@@ -257,14 +249,14 @@ class CarlaEnv:
             if temp is not None:
                 self.npc_vehicles_list.append(temp)
                 self.actor_list.append(temp)
-                batch.append(carla.command.SetAutopilot(temp, True, self.traffic_manager_port))
+                batch.append(carla.command.SetAutopilot(temp, True))
                 npc_counter += 1
             time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Make sure that all vehicles fell down to the ground after spawning
-        delta_t = math.sqrt((2*SPAWN_HEIGHT)/G) # Time to fall to the ground in seconds (ignoring air resistance)
-        nb_steps = math.ceil(delta_t/self.dt)   # Amount of steps in delta_t seconds (rounded up)
+        delta_t = math.sqrt((2*SPAWN_HEIGHT)/G) + 0.5   # Time to fall to the ground in seconds (ignoring air resistance) + margin
+        nb_steps = math.ceil(delta_t/self.dt)           # Amount of steps in delta_t seconds (rounded up)
         for _ in range(nb_steps):
             self.world.tick(TIMEOUT)
             time.sleep(2*self.dt)
@@ -544,7 +536,6 @@ class CarlaEnv:
         '''Set the seed for the random number generators.'''
         random.seed(seed)
         self._np_random = np.random.RandomState(seed) 
-        self.traffic_manager.set_random_device_seed(seed)
     
     def destroy_all_actors(self):
         '''Destroy all actors in the environment.'''
@@ -562,8 +553,6 @@ class CarlaEnv:
         '''Clean up the environment before closing it.'''
         self.set_synchronous_mode(False)
         self.destroy_all_actors()
-        del self.client
-        del self.world
         self.server.kill()
     
     def render(self):

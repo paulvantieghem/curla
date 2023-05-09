@@ -4,7 +4,7 @@ import os
 map_config = {
     'Town04': {
         'road_id': 38,                      # Road id of the road to spawn on
-        'start_s': 33.0,                    # Longitudinal distance along the road to spawn ego vehicle at
+        'start_s': 45.0,                    # Longitudinal distance along the road to spawn ego vehicle at
         'start_lanes': [-1, -2, -3, -4],    # List of possible starting lane ids for both ego and NPC vehicles
         'npc_spawn_horizon': 225.0,         # Max distance ahead of the ego vehicle to spawn NPCs
         'npc_spawn_spacing': 5.0},          # Longitudinal spacing between NPC spawn points

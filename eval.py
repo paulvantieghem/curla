@@ -50,6 +50,7 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
                 # Sample action from agent
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
+                    action = np.array([1.0, 0.0])
 
                 # Take step in environment
                 obs, reward, done, info = env.step(action)

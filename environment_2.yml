@@ -1,0 +1,33 @@
+name: curla2
+channels:
+  - defaults
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.7
+  - pip
+  - pyparsing
+  - absl-py
+  - pillow
+  - cudatoolkit=11.7
+  - pytorch==1.13.1
+  - torchvision==0.14.1
+  - torchaudio==0.13.1
+  - pytorch-cuda=11.7
+  - libpng
+  - libjpeg-turbo
+  - libtiff<4.4.0
+  - pip:
+    - numpy
+    - psutil
+    - gymnasium
+    - imageio
+    - imageio-ffmpeg
+    - opencv-python
+    - tensorboard
+    - termcolor
+    - scikit-image
+    - scikit-learn
+    - matplotlib
+    - kornia
