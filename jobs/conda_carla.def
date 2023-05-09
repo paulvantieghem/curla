@@ -23,8 +23,12 @@ From: carlasim/carla:0.9.8
     source ~/.bashrc
     conda install -y conda-build
 
-    # Create conda environment from environment.yml
+    # Setup conda environment
     conda env create -f /home/environment.yml
+    conda activate curla
+    conda develop /home/carla/PythonAPI/carla/dist/carla-0.9.8-py3.5-linux-x86_64.egg
+    conda deactivate
+
 
 %runscript
     chmod 775 /data/leuven/352/vsc35202/lib/curla/jobs/run.sh
