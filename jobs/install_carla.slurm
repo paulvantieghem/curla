@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=02:00:00
+#SBATCH --time=00:30:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
@@ -48,6 +48,6 @@ conda env create -f environment_2.yml
 conda activate curla
 conda install conda-build
 cd $VSC_DATA/lib/carla
-conda develop ./PythonAPI/carla/dist/carla-0.9.8-py3.7-linux-x86_64.egg
+conda develop ./PythonAPI/carla/dist/carla-0.9.8-py3.5-linux-x86_64.egg
 conda deactivate
 echo "[MESSAGE] Conda environment installed"

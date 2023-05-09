@@ -5,16 +5,16 @@ channels:
   - nvidia
   - conda-forge
 dependencies:
-  - python=3.8
+  - python=3.7
   - pip
   - pyparsing
   - absl-py
   - pillow
-  - nvidia::cudatoolkit=11.7
-  - pytorch::pytorch==1.13.1
-  - pytorch::torchvision==0.14.1
-  - pytorch::torchaudio==0.13.1
-  - pytorch::pytorch-cuda=11.7
+  - cudatoolkit=11.7
+  - pytorch==1.13.1
+  - torchvision==0.14.1
+  - torchaudio==0.13.1
+  - pytorch-cuda=11.7
   - libpng
   - libjpeg-turbo
   - libtiff<4.4.0
@@ -31,4 +31,3 @@ dependencies:
     - scikit-learn
     - matplotlib
     - kornia
-    - carla==0.9.14
