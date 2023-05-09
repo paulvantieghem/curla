@@ -31,8 +31,10 @@ class CarlaClient(carla.Client):
 
 
 class CarlaServer:
-    CARLA_ROOT = os.environ.get('CARLA_ROOT')
-    CARLA_VERSION = pkg_resources.get_distribution('carla').version
+    CARLA_ROOT = os.environ.get('CARLA_ROOT') 
+    carla_version_string = pkg_resources.get_distribution('carla').version
+    x, y, z = carla_version_string.split('.')
+    CARLA_VERSION = (int(x), int(y), int(z))
 
     def __init__(self, port=2000, offscreen=True, sound=False, launch_delay=30, launch_retries=3,
                  connect_timeout=10, connect_retries=3):
