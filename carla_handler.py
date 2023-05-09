@@ -49,6 +49,8 @@ class CarlaServer:
 
     def launch(self, delay=None, retries=None):
 
+        print(f'CARLA_VERSION: {self.CARLA_VERSION}')
+
         # Check if the server is already running
         if self.is_active:
             print("CARLA server is already running.")

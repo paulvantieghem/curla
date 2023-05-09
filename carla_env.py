@@ -299,7 +299,19 @@ class CarlaEnv:
         if self.verbose: print('episode started')
 
         return self.obs
+    
+    def _process_action(self, action):
 
+        # Process action
+        action[0] = 2*np.clip(action[0], -0.5, 0.5)
+        action[1] = np.clip(action[1], -0.3, 0.3)
+
+        # Convert action to throttle, brake and steer
+        throttle = float(np.max([action[0], 0.0]))
+        brake = float(-np.min([action[0], 0.0]))
+        steer = float(action[1])
+        
+        return action, throttle, brake, steer
 
     def step(self, action):
 
@@ -311,10 +323,7 @@ class CarlaEnv:
             if self.verbose: print('traffic light ahead of ego vehicle set to green')
 
         # Apply the action to the ego vehicle
-        action = np.clip(action, -1, 1)
-        self.throttle = float(np.max([action[0], 0.0]))
-        self.brake = float(-np.min([action[0], 0.0]))
-        self.steer = float(action[1])
+        action, self.throttle, self.brake, self.steer = self._process_action(action)
         control_action = carla.VehicleControl(throttle=self.throttle, steer=self.steer, brake=self.brake, hand_brake=False, reverse=False, manual_gear_shift=False)
         self.ego_vehicle.apply_control(control_action)
 
@@ -459,7 +468,7 @@ class CarlaEnv:
     @property
     def action_space(self):
         """Returns the expected action passed to the `step` method."""
-        return gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
+        return gym.spaces.Box(low=np.array([-0.5, -0.3], dtype=np.float32), high=np.array([0.5, 0.3], dtype=np.float32), dtype=np.float32)
     
     def _get_waypoints(self, distance):
         """Returns the previous and next waypoints at a given distance from the ego vehicle."""

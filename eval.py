@@ -10,7 +10,7 @@ import json
 import utils
 from augmentations import make_augmentor
 from curl_sac import CurlSacAgent
-from carla_env import CarlaEnv
+import carla_env
 from video import VideoRecorder
 from train import make_agent
 
@@ -50,7 +50,10 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
                 # Sample action from agent
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                    action = np.array([1.0, 0.0])
+                    # if episode_step < 100:
+                    #     action = np.array([1.0, 0.0])
+                    # else:
+                    #     action = np.array([1.0, 0.3])
 
                 # Take step in environment
                 obs, reward, done, info = env.step(action)
@@ -65,6 +68,24 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
             ep_rewards.append(episode_reward)
             print('Episode %d/%d, Cumulative reward: %f, Steps: %f' % (i + 1, num_episodes, episode_reward, episode_step))
         return ep_rewards, ep_steps
+
+def make_env(args):
+
+    # Initialize the CARLA environment
+    env = carla_env.CarlaEnv(args.carla_town, args.max_npc_vehicles, 
+                   args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
+                   args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
+                   args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
+    
+    # Set the random seed and reset
+    env.seed(args.seed)
+    env.reset()
+
+    # Wrap CarlaEnv in FrameStack class to stack several consecutive frames together
+    env = utils.FrameStack(env, k=args.frame_stack)
+
+    return env
 
 def main():
 
@@ -85,21 +106,12 @@ def main():
     args.augmented_image_width = augmentor.output_shape[1]
 
     # Set up environment
-    env = CarlaEnv(args.carla_town, args.max_npc_vehicles,
-                   args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.env_verbose, args.camera_image_height, args.camera_image_width, 
-                   args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
-    env.seed(args.seed) # Important not to remove !
-    env.reset()
+    env = make_env(args)
 
     # Shapes
     action_shape = env.action_space.shape
     pre_aug_obs_shape = env.observation_space.shape
     obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
-
-    # Stack several consecutive frames together
-    env = utils.FrameStack(env, k=args.frame_stack)
 
     # Make use of GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -112,7 +124,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=1, record_video=True)
+    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=3, record_video=True)
 
     # Deactivate the environment
     env.deactivate()
