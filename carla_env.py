@@ -260,7 +260,7 @@ class CarlaEnv:
                 batch.append(carla.command.SetAutopilot(temp, True))
                 npc_counter += 1
             else:
-                print('failed to spawn npc vehicle')
+                if self.verbose: print('failed to spawn npc vehicle')
                 time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
