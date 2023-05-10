@@ -40,7 +40,7 @@ TIMEOUT = 30.0      # Time in seconds to wait on various things
 RENDER_WIDTH = 1152 # This size only matters for the video rendering, should be divisible by 64
 RENDER_HEIGHT = 640 # This size only matters for the video rendering, should be divisible by 64
 CARLA_VERSION = pkg_resources.get_distribution('carla').version
-SPAWN_HEIGHT = 0.5 if CARLA_VERSION == '0.9.14' else 3.0
+SPAWN_HEIGHT = 0.5 if CARLA_VERSION == '0.9.14' else 0.2
 G = 9.807 # Gravitational acceleration in m/s^2
 
 class CarlaEnv:
@@ -49,6 +49,9 @@ class CarlaEnv:
     show_preview = settings.SHOW_PREVIEW
     save_imgs = settings.SAVE_IMGS
     enable_spectator = settings.SPECTATOR
+    MAX_STEER = settings.MAX_STEER
+    MAX_THROTTLE = settings.MAX_THROTTLE
+    MAX_BRAKE = settings.MAX_BRAKE
 
 
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
@@ -101,7 +104,7 @@ class CarlaEnv:
         if self.verbose: print('loaded town %s' % self.map)
 
         # Weather presets
-        self.weather_presets = [carla.WeatherParameters.ClearNoon, 
+        self.weather_presets = [carla.WeatherParameters.ClearNoon,
                                 carla.WeatherParameters.ClearSunset, 
                                 carla.WeatherParameters.CloudyNoon, 
                                 carla.WeatherParameters.CloudySunset, 
@@ -129,29 +132,34 @@ class CarlaEnv:
         map_config = settings.map_config
         spawn_point_info = map_config[self.carla_town]
         road_id = spawn_point_info['road_id']
-        start_s = spawn_point_info['start_s']
+        start_s = int(spawn_point_info['start_s'])
         start_lanes = spawn_point_info['start_lanes']
-        npc_spawn_horizon = spawn_point_info['npc_spawn_horizon']
-        npc_spawn_spacing = spawn_point_info['npc_spawn_spacing']
+        npc_spawn_horizon = int(spawn_point_info['npc_spawn_horizon'])
+        npc_spawn_spacing = int(spawn_point_info['npc_spawn_spacing'])
 
         # Ego vehicle spawn points
         self.ego_vehicle_possible_transforms = []
         for i in range(len(start_lanes)):
             ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
-            ego_vehicle_transform.location.z = SPAWN_HEIGHT # To avoid collision with road when spawning
+            ego_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
 
         # NPC vehicle spawn points
-        self.npc_vehicle_possible_transforms = []
         distances = list(range(int(npc_spawn_horizon/npc_spawn_spacing+1)))
         distances = [x*npc_spawn_spacing for x in distances]
-        assert len(distances)*len(start_lanes) > self.max_npc_vehicles
+        distances_to_remove = []
+        for distance in distances: # Make sure that no NPC vehicles spawn right next (or on) the ego vehicle
+            if distance < start_s + npc_spawn_spacing and distance > start_s - npc_spawn_spacing:
+                distances_to_remove.append(distance)
+        for distance in distances_to_remove: distances.remove(distance)
+        assert len(distances)*len(start_lanes) > self.max_npc_vehicles, 'Not enough spawn points for the desired amount of NPC vehicles'
+        self.npc_vehicle_possible_transforms = []
         for i in range(len(distances)):
             npc_s = distances[i]
             for j in range(len(start_lanes)):
                 start_lane = start_lanes[j]
                 npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
-                ego_vehicle_transform.location.z = SPAWN_HEIGHT # To avoid collision with road when spawning
+                npc_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
                 self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
 
         # Ego vehicle settings
@@ -251,7 +259,9 @@ class CarlaEnv:
                 self.actor_list.append(temp)
                 batch.append(carla.command.SetAutopilot(temp, True))
                 npc_counter += 1
-            time.sleep(0.01)
+            else:
+                print('failed to spawn npc vehicle')
+                time.sleep(0.01)
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Make sure that all vehicles fell down to the ground after spawning
@@ -303,8 +313,8 @@ class CarlaEnv:
     def _process_action(self, action):
 
         # Process action
-        action[0] = 2*np.clip(action[0], -0.5, 0.5)
-        action[1] = np.clip(action[1], -0.3, 0.3)
+        action[0] = np.clip(action[0], -self.MAX_BRAKE, self.MAX_THROTTLE)
+        action[1] = np.clip(action[1], -self.MAX_STEER, self.MAX_STEER)
 
         # Convert action to throttle, brake and steer
         throttle = float(np.max([action[0], 0.0]))
@@ -468,7 +478,9 @@ class CarlaEnv:
     @property
     def action_space(self):
         """Returns the expected action passed to the `step` method."""
-        return gym.spaces.Box(low=np.array([-0.5, -0.3], dtype=np.float32), high=np.array([0.5, 0.3], dtype=np.float32), dtype=np.float32)
+        return gym.spaces.Box(low=np.array([-self.MAX_BRAKE, -self.MAX_STEER], dtype=np.float32), 
+                              high=np.array([self.MAX_THROTTLE, self.MAX_STEER], dtype=np.float32), 
+                              dtype=np.float32)
     
     def _get_waypoints(self, distance):
         """Returns the previous and next waypoints at a given distance from the ego vehicle."""
@@ -580,9 +592,9 @@ class CarlaEnv:
         text_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255), 1, cv2.LINE_AA)
 
         # Calculate the width of the bars based on the driving information
-        throttle_width = int(bar_width * self.throttle)
-        brake_width = int(bar_width * self.brake)
-        steering_width = int(bar_width * (self.steer) / 2)
+        throttle_width = int(bar_width * self.throttle/self.MAX_THROTTLE)
+        brake_width = int(bar_width * self.brake/self.MAX_BRAKE)
+        steering_width = int(bar_width * (self.steer/self.MAX_STEER) / 2)
 
         # Draw the throttle bar
         cv2.rectangle(frame, (bar_x, throttle_y), (bar_x + throttle_width, throttle_y + bar_height), bar_color, -1)

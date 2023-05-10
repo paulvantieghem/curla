@@ -18,6 +18,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_dir_path', default='', type=str)
     parser.add_argument('--model_step', default=0, type=int)
+    parser.add_argument('--env_verbose', default=False, action='store_true')
     args = parser.parse_args()
     return args
 
@@ -50,10 +51,10 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
                 # Sample action from agent
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                    # if episode_step < 100:
+                    # if episode_step < 20*20:
                     #     action = np.array([1.0, 0.0])
                     # else:
-                    #     action = np.array([1.0, 0.3])
+                    #     action = np.array([1.0, -0.005])
 
                 # Take step in environment
                 obs, reward, done, info = env.step(action)
@@ -91,8 +92,12 @@ def main():
 
     # Parse arguments
     args = parse_args()
+    verbose = False
+    if args.env_verbose:
+        verbose = True
     with open(os.path.join(args.experiment_dir_path, 'args.json'), 'r') as f:
         args.__dict__.update(json.load(f))
+    if verbose: args.env_verbose = True
 
     # Random seed
     utils.set_seed_everywhere(args.seed)
@@ -124,7 +129,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=3, record_video=True)
+    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=2, record_video=True)
 
     # Deactivate the environment
     env.deactivate()
