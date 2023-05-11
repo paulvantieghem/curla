@@ -454,13 +454,6 @@ class CurlSacAgent(object):
             self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
 
     def save(self, model_dir, augmentation, step):
-
-        # Delete all .pt files in model dir before saving new models
-        for file in os.listdir(model_dir):
-            if file.endswith(".pt"):
-                os.remove(os.path.join(model_dir, file))
-
-        # Save new models
         torch.save(self.CURL.state_dict(), '%s/%s_curl_%s.pt' % (model_dir, augmentation, step))
         torch.save(self.actor.state_dict(), '%s/%s_actor_%s.pt' % (model_dir, augmentation, step))
         torch.save(self.critic.state_dict(), '%s/%s_critic_%s.pt' % (model_dir, augmentation, step))

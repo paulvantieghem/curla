@@ -109,6 +109,7 @@ def parse_args():
     parser.add_argument('--save_buffer', default=False, action='store_true')
     parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=True, action='store_true')
+    parser.add_argument('--save_freq', default=100_000, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--log_interval', default=500, type=int)
     parser.add_argument('--log_param_hist_imgs', default=False, action='store_true')
@@ -239,6 +240,7 @@ def main():
     args = parse_args()
     if args.seed == -1: 
         args.__dict__["seed"] = np.random.randint(1,1000000)
+    assert args.save_freq % args.eval_freq == 0, 'Save frequency must be a multiple of eval frequency'
 
     # Random seed
     utils.set_seed_everywhere(args.seed)
@@ -351,12 +353,15 @@ def main():
             print(f'[train.py] Started evaluation loop at step {step}')
             if args.num_eval_episodes > 0:
                 L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
-            if args.save_model:
-                agent.save(model_dir, args.augmentation, step)
-            if args.save_buffer:
-                replay_buffer.save(buffer_dir)
             done = True
             print(f'[train.py] Finished evaluation loop at step {step}')
+
+            # Save model and replay buffer
+            if step % args.save_freq == 0:
+                if args.save_model:
+                    agent.save(model_dir, args.augmentation, step)
+                if args.save_buffer:
+                    replay_buffer.save(buffer_dir)
 
         # Reset if done
         if done:
