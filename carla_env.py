@@ -50,8 +50,8 @@ class CarlaEnv:
     save_imgs = settings.SAVE_IMGS
     enable_spectator = settings.SPECTATOR
     MAX_STEER = settings.MAX_STEER
-    MAX_THROTTLE = settings.MAX_THROTTLE
-    MAX_BRAKE = settings.MAX_BRAKE
+    MAX_THROTTLE_BRAKE = settings.MAX_THROTTLE_BRAKE
+    THROTTLE_BRAKE_OFFSET = settings.THROTTLE_BRAKE_OFFSET
 
 
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
@@ -179,6 +179,7 @@ class CarlaEnv:
 
         # Traffic manager
         self.traffic_manager = self.client.get_trafficmanager()
+        self.traffic_manager.global_percentage_speed_difference(30.0)
 
         # Setup for NPC vehicles
         self.npc_vehicle_blueprints = []
@@ -230,6 +231,8 @@ class CarlaEnv:
             try:
                 self.ego_vehicle_transform = random.choice(self.ego_vehicle_possible_transforms)
                 self.ego_vehicle = self.world.spawn_actor(self.ego_vehicle_bp, self.ego_vehicle_transform)
+                control_action = carla.VehicleControl(throttle=0.1, steer=0.0, brake=0.0, hand_brake=False, reverse=False, manual_gear_shift=False)
+                self.ego_vehicle.apply_control(control_action)
                 break
             except:
                 time.sleep(0.05)
@@ -313,12 +316,13 @@ class CarlaEnv:
     def _process_action(self, action):
 
         # Process action
-        action[0] = np.clip(action[0], -self.MAX_BRAKE, self.MAX_THROTTLE)
+        action[0] = np.clip(action[0], -self.MAX_THROTTLE_BRAKE, self.MAX_THROTTLE_BRAKE)
+        action[0] = np.clip(action[0] + self.THROTTLE_BRAKE_OFFSET, -self.MAX_THROTTLE_BRAKE, self.MAX_THROTTLE_BRAKE)
         action[1] = np.clip(action[1], -self.MAX_STEER, self.MAX_STEER)
 
         # Convert action to throttle, brake and steer
         throttle = float(np.max([action[0], 0.0]))
-        brake = float(-np.min([action[0], 0.0]))
+        brake = float(-np.min([action[0]/(1-self.THROTTLE_BRAKE_OFFSET), 0.0]))
         steer = float(action[1])
         
         return action, throttle, brake, steer
@@ -478,8 +482,8 @@ class CarlaEnv:
     @property
     def action_space(self):
         """Returns the expected action passed to the `step` method."""
-        return gym.spaces.Box(low=np.array([-self.MAX_BRAKE, -self.MAX_STEER], dtype=np.float32), 
-                              high=np.array([self.MAX_THROTTLE, self.MAX_STEER], dtype=np.float32), 
+        return gym.spaces.Box(low=np.array([-self.MAX_THROTTLE_BRAKE, -self.MAX_STEER], dtype=np.float32), 
+                              high=np.array([self.MAX_THROTTLE_BRAKE, self.MAX_STEER], dtype=np.float32), 
                               dtype=np.float32)
     
     def _get_waypoints(self, distance):
@@ -592,8 +596,8 @@ class CarlaEnv:
         text_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,255,255), 1, cv2.LINE_AA)
 
         # Calculate the width of the bars based on the driving information
-        throttle_width = int(bar_width * self.throttle/self.MAX_THROTTLE)
-        brake_width = int(bar_width * self.brake/self.MAX_BRAKE)
+        throttle_width = int(bar_width * self.throttle/self.MAX_THROTTLE_BRAKE)
+        brake_width = int(bar_width * self.brake/self.MAX_THROTTLE_BRAKE)
         steering_width = int(bar_width * (self.steer/self.MAX_STEER) / 2)
 
         # Draw the throttle bar
