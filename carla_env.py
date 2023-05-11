@@ -52,6 +52,7 @@ class CarlaEnv:
     MAX_STEER = settings.MAX_STEER
     MAX_THROTTLE_BRAKE = settings.MAX_THROTTLE_BRAKE
     THROTTLE_BRAKE_OFFSET = settings.THROTTLE_BRAKE_OFFSET
+    weather_presets = settings.WEATHER_PRESETS
 
 
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
@@ -103,16 +104,6 @@ class CarlaEnv:
         self.world = self.client.get_world()
         self.map = self.world.get_map()
         if self.verbose: print('loaded town %s' % self.map)
-
-        # Weather presets
-        self.weather_presets = [carla.WeatherParameters.ClearNoon,
-                                carla.WeatherParameters.ClearSunset, 
-                                carla.WeatherParameters.CloudyNoon, 
-                                carla.WeatherParameters.CloudySunset, 
-                                carla.WeatherParameters.WetNoon, 
-                                carla.WeatherParameters.WetSunset, 
-                                carla.WeatherParameters.MidRainyNoon, 
-                                carla.WeatherParameters.MidRainSunset]
 
         # Set fixed simulation step for synchronous mode
         self.world_settings = self.world.get_settings()

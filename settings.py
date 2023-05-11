@@ -1,4 +1,5 @@
 import os
+import carla
 
 # Carla spawn location configuration
 # WARNING: These values were only tested for CARLA 0.9.8, you might have to change them for other versions
@@ -19,6 +20,18 @@ map_config = {
         }
     }
 }
+
+# Carla weather presets for norma training and evaluation
+WEATHER_PRESETS =  [carla.WeatherParameters.ClearNoon,
+                    carla.WeatherParameters.ClearSunset, 
+                    carla.WeatherParameters.CloudyNoon, 
+                    carla.WeatherParameters.CloudySunset, 
+                    carla.WeatherParameters.WetNoon, 
+                    carla.WeatherParameters.WetSunset, 
+                    carla.WeatherParameters.MidRainSunset]
+
+# Carla weather presets for evaluation on unseen weather conditions
+# WEATHER_PRESETS =  [carla.WeatherParameters.MidRainyNoon, ]
 
 # Action space configuration
 MAX_STEER = 0.3             # Number between 0.0 and 1.0
