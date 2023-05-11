@@ -9,9 +9,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import copy
-import math
-import os
 
 import utils
 import encoder
@@ -421,18 +418,21 @@ class CurlSacAgent(object):
         logits = self.CURL.compute_logits(z_a, z_pos)
         labels = torch.arange(logits.shape[0]).long().to(self.device)
         loss = self.cross_entropy_loss(logits, labels)
-        
+
         self.encoder_optimizer.zero_grad()
         self.cpc_optimizer.zero_grad()
         loss.backward()
 
         self.encoder_optimizer.step()
         self.cpc_optimizer.step()
+
         if step % self.log_interval == 0:
             L.log('train/curl_loss', loss, step)
 
 
     def update(self, replay_buffer, L, step):
+
+        # Sample a batch from the replay buffer
         obs, action, reward, next_obs, not_done, cpc_kwargs = replay_buffer.sample_cpc()
     
         if step % self.log_interval == 0:
@@ -444,16 +444,9 @@ class CurlSacAgent(object):
             self.update_actor_and_alpha(obs, L, step)
 
         if step % self.critic_target_update_freq == 0:
-            utils.soft_update_params(
-                self.critic.Q1, self.critic_target.Q1, self.critic_tau
-            )
-            utils.soft_update_params(
-                self.critic.Q2, self.critic_target.Q2, self.critic_tau
-            )
-            utils.soft_update_params(
-                self.critic.encoder, self.critic_target.encoder,
-                self.encoder_tau
-            )
+            utils.soft_update_params(self.critic.Q1, self.critic_target.Q1, self.critic_tau)
+            utils.soft_update_params(self.critic.Q2, self.critic_target.Q2, self.critic_tau)
+            utils.soft_update_params(self.critic.encoder, self.critic_target.encoder, self.encoder_tau)
         
         if step % self.cpc_update_freq == 0:
             obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]

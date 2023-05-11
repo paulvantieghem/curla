@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('--cam_x', default=1.3, type=float)     # meters
     parser.add_argument('--cam_y', default=0.0, type=float)     # meters
     parser.add_argument('--cam_z', default=1.75, type=float)    # meters
-    parser.add_argument('--fov', default=120, type=int)         # degrees
+    parser.add_argument('--fov', default=110, type=int)         # degrees
     parser.add_argument('--cam_pitch', default=-15, type=int)   # degrees
 
     # Carla reward function parameters/weights

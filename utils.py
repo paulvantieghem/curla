@@ -16,6 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 import time
 import psutil
 from skimage.util.shape import view_as_windows
+import augmentations
 
 class eval_mode(object):
     def __init__(self, *models):
@@ -144,30 +145,53 @@ class ReplayBuffer(Dataset):
         
         # Sample a random batch of transitions from the replay buffer
         idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=self.batch_size)
-      
-        obses = self.obses[idxs]
-        next_obses = self.next_obses[idxs]
-        pos = obses.copy()
 
-        # Apply augmentations to the targets
-        obses = self.augmentor.target_augmentation(obses)
-        next_obses = self.augmentor.target_augmentation(next_obses)
-        pos = self.augmentor.target_augmentation(pos)
+        if isinstance(self.augmentor, augmentations.RandomCrop):
+
+            obses = self.obses[idxs]
+            next_obses = self.next_obses[idxs]
+            pos = obses.copy()
+
+            # Apply augmentations to the targets
+            obses = self.augmentor.target_augmentation(obses)
+            next_obses = self.augmentor.target_augmentation(next_obses)
+            pos = self.augmentor.target_augmentation(pos)
+
+            # Index and convert to PyTorch tensors on the device
+            obses = torch.as_tensor(obses, device=self.device).float()
+            next_obses = torch.as_tensor(next_obses, device=self.device).float()
+            actions = torch.as_tensor(self.actions[idxs], device=self.device)
+            rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
+            not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
+            pos = torch.as_tensor(pos, device=self.device).float()
+
+        else: 
+    
+            # Index and convert to PyTorch tensors on the device
+            obses = torch.as_tensor(self.obses[idxs], device=self.device).float()
+            next_obses = torch.as_tensor(self.next_obses[idxs], device=self.device).float()
+            pos = obses.detach().clone()
+            actions = torch.as_tensor(self.actions[idxs], device=self.device)
+            rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
+            not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
+            pos = torch.as_tensor(pos, device=self.device).float()
+
+            # Apply augmentations to the targets
+            obses = self.augmentor.target_augmentation(obses)
+            next_obses = self.augmentor.target_augmentation(next_obses)
+            pos = self.augmentor.target_augmentation(pos)
 
         #### DEBUG ####
         # import matplotlib.pyplot as plt
-        # img = obses[0, 0:3, :, :].transpose(1,2,0)
-        # print(img.shape)
-        # plt.imshow(img)
+        # test = obses.to('cpu').detach().numpy().astype(np.uint8)
+        # fig, axes = plt.subplots(2, 2, figsize=(12,6))
+        # for i, ax in enumerate(axes.flat):
+        #     img = test[i, 0:3, :, :].transpose(1,2,0)
+        #     ax.imshow(img)
+        #     ax.axis('off')
         # plt.show()
-    
-        obses = torch.as_tensor(obses, device=self.device).float()
-        next_obses = torch.as_tensor(next_obses, device=self.device).float()
-        actions = torch.as_tensor(self.actions[idxs], device=self.device)
-        rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
-        not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
-        pos = torch.as_tensor(pos, device=self.device).float()
 
+        # Store CPC kwargs in a dict
         cpc_kwargs = dict(obs_anchor=obses, obs_pos=pos, time_anchor=None, time_pos=None)
 
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
