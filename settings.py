@@ -2,19 +2,28 @@ import os
 
 # Carla spawn location configuration
 # WARNING: These values were only tested for CARLA 0.9.8, you might have to change them for other versions
+lanes = [-1, -2, -3, -4]
 map_config = {
     'Town04': {
-        'road_id': 38,                      # Road id of the road to spawn on
-        'start_s': 45.0,                    # Longitudinal distance along the road to spawn ego vehicle at
-        'start_lanes': [-1, -2, -3, -4],    # List of possible starting lane ids for both ego and NPC vehicles
-        'npc_spawn_horizon': 250.0,         # Max distance ahead of the ego vehicle to spawn NPCs
-        'npc_spawn_spacing': 10.0},         # Longitudinal spacing between NPC spawn points
+        'ego_config': {
+            'road_id': 39,                      # Road id of the road to spawn on
+            'lanes': lanes,                     # Possible lanes to spawn vehicle in
+            'start_s': 55.0,                    # Longitudinal distance along the road to spawn ego vehicle at
+        }, 
+        'npc_config': {
+            'road_id': [39, 40],                # Road id of the road to spawn on
+            'lanes': [lanes, lanes],            # Possible lanes to spawn vehicle in
+            'start_s': [35.0, 10.0],            # Longitudinal distance along the road to start spawning vehicles at
+            'spacing': [10.0, 10.0],            # Spacing between vehicles in meters
+            'max_s': [135.0, 115.0],            # Longitudinal distance along the road to stop spawning vehicles at
+        }
     }
+}
 
 # Action space configuration
 MAX_STEER = 0.3             # Number between 0.0 and 1.0
 MAX_THROTTLE_BRAKE = 1.0    # Number between 0.0 and 1.0
-THROTTLE_BRAKE_OFFSET = 0.2 # Number between 0.0 and 1.0
+THROTTLE_BRAKE_OFFSET = 0.0 # Number between 0.0 and 1.0
 assert MAX_STEER > 0.0
 assert MAX_THROTTLE_BRAKE > 0.0
 assert THROTTLE_BRAKE_OFFSET >= 0.0

@@ -55,7 +55,7 @@ class CarlaEnv:
 
 
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
-                 stall_speed=0.5, seconds_per_episode=50, fps=20, port=2000, verbose=False, pre_transform_image_height=90, 
+                 stall_speed=0.5, seconds_per_episode=50, fps=20, server_port=2000, tm_port=8000, verbose=False, pre_transform_image_height=90, 
                  pre_transform_image_width=160, fov=120, cam_x=1.3, cam_y=0.0, cam_z=1.75, cam_pitch=-15, 
                  lambda_r1=1.0, lambda_r2=0.3, lambda_r3=1.0, lambda_r4=0.005, lambda_r5=1.0):
 
@@ -67,7 +67,8 @@ class CarlaEnv:
         self.stall_speed = stall_speed
         self.seconds_per_episode = seconds_per_episode
         self.fps = fps
-        self.port = port
+        self.server_port = server_port
+        self.tm_port = tm_port
         self.dt = 1.0/fps
         self.verbose = verbose
         self.im_height = pre_transform_image_height
@@ -88,13 +89,13 @@ class CarlaEnv:
 
         # Server
         if os.name == "nt":
-            self.server = CarlaServer(port=self.port, offscreen=False, sound=False)
+            self.server = CarlaServer(port=self.server_port, offscreen=False, sound=False)
         else:
-            self.server = CarlaServer(port=self.port, offscreen=True, sound=True)
+            self.server = CarlaServer(port=self.server_port, offscreen=True, sound=True)
         self.server.launch(delay=20.0, retries=3)
 
         # Client
-        self.client = carla.Client('localhost', self.port)
+        self.client = carla.Client('localhost', self.server_port)
         self.timeout = self.client.set_timeout(TIMEOUT)
 
         # World
@@ -131,36 +132,49 @@ class CarlaEnv:
         # Route settings
         map_config = settings.map_config
         spawn_point_info = map_config[self.carla_town]
-        road_id = spawn_point_info['road_id']
-        start_s = int(spawn_point_info['start_s'])
-        start_lanes = spawn_point_info['start_lanes']
-        npc_spawn_horizon = int(spawn_point_info['npc_spawn_horizon'])
-        npc_spawn_spacing = int(spawn_point_info['npc_spawn_spacing'])
+        ego_config = spawn_point_info['ego_config']
+        npc_config = spawn_point_info['npc_config']
 
         # Ego vehicle spawn points
         self.ego_vehicle_possible_transforms = []
-        for i in range(len(start_lanes)):
-            ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lanes[i], s=start_s).transform
+        for i in range(len(ego_config['lanes'])):
+            ego_vehicle_transform = self.map.get_waypoint_xodr(road_id=ego_config['road_id'], 
+                                                               lane_id=ego_config['lanes'][i], 
+                                                               s=ego_config['start_s']).transform
             ego_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
             self.ego_vehicle_possible_transforms.append(ego_vehicle_transform)
 
         # NPC vehicle spawn points
-        distances = list(range(int(npc_spawn_horizon/npc_spawn_spacing+1)))
-        distances = [x*npc_spawn_spacing for x in distances]
-        distances_to_remove = []
-        for distance in distances: # Make sure that no NPC vehicles spawn right next (or on) the ego vehicle
-            if distance < start_s + npc_spawn_spacing and distance > start_s - npc_spawn_spacing:
-                distances_to_remove.append(distance)
-        for distance in distances_to_remove: distances.remove(distance)
-        assert len(distances)*len(start_lanes) > self.max_npc_vehicles, 'Not enough spawn points for the desired amount of NPC vehicles'
         self.npc_vehicle_possible_transforms = []
-        for i in range(len(distances)):
-            npc_s = distances[i]
-            for j in range(len(start_lanes)):
-                start_lane = start_lanes[j]
-                npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
-                npc_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
-                self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
+        for idx in range(len(npc_config['road_id'])):
+
+            # Extract current npc config information
+            road_id = npc_config['road_id'][idx]
+            start_lanes = npc_config['lanes'][idx]
+            start_s = npc_config['start_s'][idx]
+            npc_spawn_horizon = npc_config['max_s'][idx]
+            npc_spawn_spacing = npc_config['spacing'][idx]
+
+            # Calculate possible spawn points distances
+            distances = list(range(int(npc_spawn_horizon/npc_spawn_spacing+1)))
+            distances = [x*npc_spawn_spacing for x in distances]
+            if road_id == ego_config['road_id']:
+                distances_to_remove = []
+                for distance in distances: # Make sure that no NPC vehicles spawn right next (or on) the ego vehicle
+                    if distance < start_s + npc_spawn_spacing and distance > start_s - npc_spawn_spacing:
+                        distances_to_remove.append(distance)
+                for distance in distances_to_remove: distances.remove(distance)
+            assert len(distances)*len(start_lanes) > self.max_npc_vehicles, 'Not enough spawn points for the desired amount of NPC vehicles'
+
+            # Calculate possible spawn points transforms
+            for i in range(len(distances)):
+                npc_s = distances[i]
+                for j in range(len(start_lanes)):
+                    start_lane = start_lanes[j]
+                    npc_vehicle_transform = self.map.get_waypoint_xodr(road_id=road_id, lane_id=start_lane, s=npc_s).transform
+                    npc_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
+                    self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
+        print(f'[carla_env.py] Found {len(self.npc_vehicle_possible_transforms)} possible NPC vehicle spawn points for given configuration.')
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
@@ -178,8 +192,8 @@ class CarlaEnv:
         self.collision_sensor_bp = self.blueprint_library.find('sensor.other.collision')
 
         # Traffic manager
-        self.traffic_manager = self.client.get_trafficmanager()
-        self.traffic_manager.global_percentage_speed_difference(30.0)
+        self.traffic_manager = self.client.get_trafficmanager(self.tm_port)
+        self.traffic_manager.global_percentage_speed_difference(30)
 
         # Setup for NPC vehicles
         self.npc_vehicle_blueprints = []
@@ -268,7 +282,7 @@ class CarlaEnv:
         if self.verbose: print(f'spawned {npc_counter} out of {self.max_npc_vehicles} npc vehicles')
 
         # Make sure that all vehicles fell down to the ground after spawning
-        delta_t = math.sqrt((2*SPAWN_HEIGHT)/G) + 0.5   # Time to fall to the ground in seconds (ignoring air resistance) + margin
+        delta_t = math.sqrt((2*SPAWN_HEIGHT)/G) + 0.75   # Time to fall to the ground in seconds (ignoring air resistance) + margin
         nb_steps = math.ceil(delta_t/self.dt)           # Amount of steps in delta_t seconds (rounded up)
         for _ in range(nb_steps):
             self.world.tick(TIMEOUT)
