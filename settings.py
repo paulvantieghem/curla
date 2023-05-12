@@ -34,9 +34,9 @@ WEATHER_PRESETS =  [carla.WeatherParameters.ClearNoon,
 # WEATHER_PRESETS =  [carla.WeatherParameters.MidRainyNoon, ]
 
 # Action space configuration
-MAX_STEER = 0.3             # Number between 0.0 and 1.0
-MAX_THROTTLE_BRAKE = 1.0    # Number between 0.0 and 1.0
-THROTTLE_BRAKE_OFFSET = 0.0 # Number between 0.0 and 1.0
+MAX_STEER = 0.25                # Number between 0.0 and 1.0
+MAX_THROTTLE_BRAKE = 1.0        # Number between 0.0 and 1.0
+THROTTLE_BRAKE_OFFSET = 0.25    # Number between 0.0 and 1.0
 assert MAX_STEER > 0.0
 assert MAX_THROTTLE_BRAKE > 0.0
 assert THROTTLE_BRAKE_OFFSET >= 0.0
