@@ -75,7 +75,7 @@ def make_env(args):
     # Initialize the CARLA environment
     env = carla_env.CarlaEnv(args.carla_town, args.max_npc_vehicles, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
-                   args.fps, args.port, args.env_verbose, args.camera_image_height, args.camera_image_width, 
+                   args.fps, 2000, 8000, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
                    args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
     
@@ -105,10 +105,6 @@ def main():
     # Anchor/target data augmentor
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
     augmentor = make_augmentor(args.augmentation, camera_image_shape)
-    
-    # Set the output shape of the augmentation
-    args.augmented_image_height = augmentor.output_shape[0]
-    args.augmented_image_width = augmentor.output_shape[1]
 
     # Set up environment
     env = make_env(args)
