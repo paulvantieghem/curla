@@ -186,7 +186,7 @@ class ReplayBuffer(Dataset):
         # test = obses.to('cpu').detach().numpy().astype(np.uint8)
         # fig, axes = plt.subplots(2, 2, figsize=(12,6))
         # for i, ax in enumerate(axes.flat):
-        #     img = test[i, 0:3, :, :].transpose(1,2,0)
+        #     img = test[int(i*(self.batch_size/4)), 0:3, :, :].transpose(1,2,0)
         #     ax.imshow(img)
         #     ax.axis('off')
         # plt.show()

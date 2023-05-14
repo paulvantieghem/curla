@@ -139,6 +139,7 @@ class NoisyCover(IdentityAugmentation):
         
     def __init__(self, input_shape):
         super().__init__(input_shape)
+        self.output_shape = self.input_shape
         top_ratio = 0.31
         bottom_ratio = 0.20
         self.h = self.input_shape[0]
@@ -146,7 +147,7 @@ class NoisyCover(IdentityAugmentation):
         self.bottom = int(np.ceil(self.h * bottom_ratio))
         
         # Define the RandomGaussianNoise augmentation with 100% probability
-        self.aug = K.RandomGaussianNoise(mean=0.0, std=6.0, p=1.0)
+        self.aug = K.RandomGaussianNoise(mean=0.0, std=10.0, p=1.0)
 
 
     def anchor_augmentation(self, image):
@@ -156,10 +157,10 @@ class NoisyCover(IdentityAugmentation):
         Args:
             image: Image with shape (channels*frame_stack, height, width)
         Returns:
-            image: Image with shape (channels*frame_stack, height, width)
+            image: Image with added Gaussian noise with shape (channels*frame_stack, height, width)
         '''
 
-        return image
+        return self.aug(image)
     
     def target_augmentation(self, image_batch):
         '''
@@ -169,10 +170,8 @@ class NoisyCover(IdentityAugmentation):
         Args:
             image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
         Returns:
-            augmented_batch: Batch of cropped, noisy images with shape (batch_size, channels*frame_stack, height, width)
+            augmented_batch: Batch of partially covered, noisy images with shape (batch_size, channels*frame_stack, height, width)
         '''
-
-
 
         # Each image in the batch is actually a frame stack of `frame_stack` images,
         # resulting in a tensor of shape (batch_size, channels*frame_stack, height, width),
