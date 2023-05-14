@@ -197,6 +197,7 @@ class NoisyCover(IdentityAugmentation):
     
 
 def make_augmentor(name, input_shape):
+    print(f'CHOSEN AUGMENTATION: {name}')
     augmentor = None
     if name == 'identity':
         augmentor = IdentityAugmentation(input_shape)
