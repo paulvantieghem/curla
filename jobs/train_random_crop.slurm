@@ -54,5 +54,5 @@ LOG_ERR="$LOG_DIR/train_random_crop_$(date +%m-%d_%H-%M).err"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "50000" "--tm_port" "50101" > "$LOG_OUT" 2> "$LOG_ERR"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "50000" "--tm_port" "50100" > "$LOG_OUT" 2> "$LOG_ERR"
 echo "[MESSAGE] Finished apptainer run"
