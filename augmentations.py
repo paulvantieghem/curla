@@ -1,5 +1,7 @@
 import numpy as np
 from skimage.util.shape import view_as_windows
+import torch
+import random
 from kornia import augmentation as K
 
 class IdentityAugmentation:
@@ -124,13 +126,73 @@ class ColorJiggle(IdentityAugmentation):
 
         # Perform color jiggling augmentation on batch
         augmented_batch = self.aug(image_batch)
-        # augmented_batch = transforms.Lambda(lambda x: torch.stack([self.aug(observation) for observation in x]))(image_batch)
 
         # Reshape batch back to original shape
         augmented_batch = augmented_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
 
         # Denormalize image batch back to [0, 255]
         augmented_batch *= 255.0
+
+        return augmented_batch
+    
+class NoisyCover(IdentityAugmentation):
+        
+    def __init__(self, input_shape):
+        super().__init__(input_shape)
+        top_ratio = 0.31
+        bottom_ratio = 0.20
+        self.h = self.input_shape[0]
+        self.top = int(np.ceil(self.h * top_ratio))
+        self.bottom = int(np.ceil(self.h * bottom_ratio))
+        
+        # Define the RandomGaussianNoise augmentation with 100% probability
+        self.aug = K.RandomGaussianNoise(mean=0.0, std=6.0, p=1.0)
+
+
+    def anchor_augmentation(self, image):
+        '''
+        Returns the original image
+
+        Args:
+            image: Image with shape (channels*frame_stack, height, width)
+        Returns:
+            image: Image with shape (channels*frame_stack, height, width)
+        '''
+
+        return image
+    
+    def target_augmentation(self, image_batch):
+        '''
+        Applies a random transformation to the brightness, contrast, saturation 
+        and hue of the image batch
+
+        Args:
+            image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
+        Returns:
+            augmented_batch: Batch of cropped, noisy images with shape (batch_size, channels*frame_stack, height, width)
+        '''
+
+
+
+        # Each image in the batch is actually a frame stack of `frame_stack` images,
+        # resulting in a tensor of shape (batch_size, channels*frame_stack, height, width),
+        # which is not compatible with the augmentation function. Therefore, we reshape
+        # the batch to (batch_size*frame_stack, channels, height, width)
+        frame_stack = image_batch.shape[1]//3
+        image_batch = image_batch.reshape(-1, 3, *self.input_shape)
+
+        # Perform image crop
+        image_batch[:, :, 0:self.top, :] = 255*torch.rand(image_batch[:, :, 0:self.top, :].shape)
+        image_batch[:, :, self.h-self.bottom:self.h, :] = 255*torch.rand(image_batch[:, :, self.h-self.bottom:self.h, :].shape)
+
+        # Perform color jiggling augmentation on batch
+        augmented_batch = self.aug(image_batch)
+
+        # Reshape batch back to original shape
+        augmented_batch = augmented_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
+
+        # Clip values to [0, 255] with torch.clamp
+        augmented_batch = torch.clamp(augmented_batch, 0, 255)
 
         return augmented_batch
     
@@ -143,6 +205,8 @@ def make_augmentor(name, input_shape):
         augmentor = RandomCrop(input_shape)
     elif name == 'color_jiggle':
         augmentor = ColorJiggle(input_shape)
+    elif name == 'noisy_cover':
+        augmentor = NoisyCover(input_shape)
     else:
         raise ValueError('augmentation is not supported: %s' % name)
     return augmentor
