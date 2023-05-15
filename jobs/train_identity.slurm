@@ -48,13 +48,6 @@ LOG_ERR="$LOG_DIR/train_identity_$(date +%m-%d_%H-%M).err"
 CARLA_SERVER_PORT=2000
 CARLA_TM_PORT=8000
 
-# Check port availability, the following ports should be free in order to settle on a CARLA_SERVER_PORT:
-# - CARLA_SERVER_PORT
-# - CARLA_SERVER_PORT+1
-# - CARLA_SERVER_PORT+2
-CARLA_SERVER_PORT=2000
-CARLA_TM_PORT=8000
-
 # Search for a range of 3 free ports starting from CARLA_SERVER_PORT
 while [ $(netstat -tulpn | grep -E "($CARLA_SERVER_PORT|$((CARLA_SERVER_PORT+1))|$((CARLA_SERVER_PORT+2)))" | wc -l) -ne 0 ]; do
   CARLA_SERVER_PORT=$((CARLA_SERVER_PORT+1))
