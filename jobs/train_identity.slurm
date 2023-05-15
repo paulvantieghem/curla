@@ -39,12 +39,34 @@ if [ ! -d "$LOG_DIR" ]; then
   mkdir -p "$LOG_DIR"
 fi
 
-# Define the apptainer image, python script, augmentation and log files
+# Define the apptainer image, python script, augmentation, log file names and CARLA ports
 IMAGE="$CARLA_ROOT/conda_carla.sif"
 SCRIPT="$CONTENT_ROOT/train.py"
 AUGMENTATION="identity"
 LOG_OUT="$LOG_DIR/train_identity_$(date +%m-%d_%H-%M).out"
 LOG_ERR="$LOG_DIR/train_identity_$(date +%m-%d_%H-%M).err"
+CARLA_SERVER_PORT=2000
+CARLA_TM_PORT=8000
+
+# Check port availability, the following ports should be free in order to settle on a CARLA_SERVER_PORT:
+# - CARLA_SERVER_PORT
+# - CARLA_SERVER_PORT+1
+# - CARLA_SERVER_PORT+2
+CARLA_SERVER_PORT=2000
+CARLA_TM_PORT=8000
+
+# Search for a range of 3 free ports starting from CARLA_SERVER_PORT
+while [ $(netstat -tulpn | grep -E "($CARLA_SERVER_PORT|$((CARLA_SERVER_PORT+1))|$((CARLA_SERVER_PORT+2)))" | wc -l) -ne 0 ]; do
+  CARLA_SERVER_PORT=$((CARLA_SERVER_PORT+1))
+done
+echo "[MESSAGE] Using CARLA_SERVER_PORT=$CARLA_SERVER_PORT"
+
+# Search for a free port starting from CARLA_TM_PORT
+while [ $(netstat -tulpn | grep -E $CARLA_TM_PORT | wc -l) -ne 0 ]; do
+  CARLA_TM_PORT=$((CARLA_TM_PORT+1))
+done
+echo "[MESSAGE] Using CARLA_TM_PORT=$CARLA_TM_PORT"
+
 
 # Run the apptainer image containing carla and the conda environment to run a python script:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image.
@@ -54,5 +76,5 @@ LOG_ERR="$LOG_DIR/train_identity_$(date +%m-%d_%H-%M).err"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "2000" "--tm_port" "8000" > "$LOG_OUT" 2> "$LOG_ERR"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "$CARLA_SERVER_PORT" "--tm_port" "$CARLA_TM_PORT" > "$LOG_OUT" 2> "$LOG_ERR"
 echo "[MESSAGE] Finished apptainer run"

@@ -88,6 +88,10 @@ class CarlaEnv:
         # Initial values
         self.obs = None
 
+        # Print ports
+        print(f'CARLA server port: {self.server_port}')
+        print(f'CARLA traffic manager port: {self.tm_port}')
+
         # Server
         if os.name == "nt":
             self.server = CarlaServer(port=self.server_port, offscreen=False, sound=False)
