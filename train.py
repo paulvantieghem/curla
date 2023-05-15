@@ -173,11 +173,14 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
         L.log('eval/' + prefix + 'max_ep_reward', float(np.max(all_ep_rewards)), step)
         L.log('eval/' + prefix + 'mean_ep_reward', float(np.mean(all_ep_rewards)), step)
         L.log('eval/' + prefix + 'min_ep_reward', float(np.min(all_ep_rewards)), step)
+        L.log('eval/' + prefix + 'std_ep_reward', float(np.std(all_ep_rewards)), step)
         L.log('eval/' + prefix + 'max_ep_steps', float(np.max(all_ep_steps)), step)
         L.log('eval/' + prefix + 'mean_ep_steps', float(np.mean(all_ep_steps)), step)
         L.log('eval/' + prefix + 'min_ep_steps', float(np.min(all_ep_steps)), step)
+        L.log('eval/' + prefix + 'std_ep_steps', float(np.std(all_ep_steps)), step)
         for k, v in all_ep_infos.items():
             L.log('eval/' + prefix + 'z_mean_ep_' + k, float(np.mean(v)), step)
+            L.log('eval/' + prefix + 'z_std_ep_' + k, float(np.std(v)), step)
         return L
 
 def make_agent(obs_shape, action_shape, args, device, augmentor):
@@ -352,7 +355,10 @@ def main():
             if env.verbose: print('episode done: evaluation starts')
             print(f'[train.py] Started evaluation loop at step {step}')
             if args.num_eval_episodes > 0:
-                L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
+                if step > 0 and step % args.num_train_steps == 0: # Evaluate for 50 episodes at the end of training
+                    L = run_eval_loop(env, agent, augmentor, video, 50, L, step, args, sample_stochastically=False)
+                else:
+                    L = run_eval_loop(env, agent, augmentor, video, args.num_eval_episodes, L, step, args, sample_stochastically=False)
             done = True
             print(f'[train.py] Finished evaluation loop at step {step}')
 
