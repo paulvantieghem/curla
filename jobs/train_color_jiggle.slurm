@@ -48,8 +48,8 @@ SCRIPT="$CONTENT_ROOT/train.py"
 AUGMENTATION="color_jiggle"
 LOG_OUT="$LOG_DIR/train_color_jiggle_$(date +%m-%d_%H-%M).out"
 LOG_ERR="$LOG_DIR/train_color_jiggle_$(date +%m-%d_%H-%M).err"
-CARLA_SERVER_PORT=2100
-CARLA_TM_PORT=8100
+CARLA_SERVER_PORT=3100
+CARLA_TM_PORT=9100
 
 # Search for a range of 3 free ports starting from CARLA_SERVER_PORT
 while [ $(netstat -tulpn | grep -E "($CARLA_SERVER_PORT|$((CARLA_SERVER_PORT+1))|$((CARLA_SERVER_PORT+2)))" | wc -l) -ne 0 ]; do
