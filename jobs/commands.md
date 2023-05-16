@@ -24,10 +24,12 @@ sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -
 sbatch -A lp_rl_thesis -M genius -N 1 -n 4 --gpus-per-node=1 --mem-per-cpu=20G -p gpu_v100_long jobs/train_noisy_cover.slurm
 ```
 
-wice A100 GPU
+Genius P100 GPU
 ```
-sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu jobs/train_color_jiggle.slurm
-sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu jobs/train_noisy_cover.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100_long jobs/train_identity.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100_long jobs/train_random_crop.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100_long jobs/train_color_jiggle.slurm
+sbatch -A lp_rl_thesis -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p gpu_p100_long jobs/train_noisy_cover.slurm
 ```
 
 #### Tensorboard
