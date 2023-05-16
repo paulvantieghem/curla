@@ -45,8 +45,8 @@ SCRIPT="$CONTENT_ROOT/train.py"
 AUGMENTATION="noisy_cover"
 LOG_OUT="$LOG_DIR/train_noisy_cover_$(date +%m-%d_%H-%M).out"
 LOG_ERR="$LOG_DIR/train_noisy_cover_$(date +%m-%d_%H-%M).err"
-CARLA_SERVER_PORT=2000
-CARLA_TM_PORT=8000
+CARLA_SERVER_PORT=5000
+CARLA_TM_PORT=11000
 
 # Search for a range of 3 free ports starting from CARLA_SERVER_PORT
 while [ $(netstat -tulpn | grep -E "($CARLA_SERVER_PORT|$((CARLA_SERVER_PORT+1))|$((CARLA_SERVER_PORT+2)))" | wc -l) -ne 0 ]; do
