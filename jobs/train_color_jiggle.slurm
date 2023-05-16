@@ -71,5 +71,5 @@ echo "[MESSAGE] Using CARLA_TM_PORT=$CARLA_TM_PORT"
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "$CARLA_SERVER_PORT" "--tm_port" "$CARLA_TM_PORT" > "$LOG_OUT" 2> "$LOG_ERR"
+apptainer run --nv --net -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--augmentation" "$AUGMENTATION" "--server_port" "$CARLA_SERVER_PORT" "--tm_port" "$CARLA_TM_PORT" > "$LOG_OUT" 2> "$LOG_ERR"
 echo "[MESSAGE] Finished apptainer run"
