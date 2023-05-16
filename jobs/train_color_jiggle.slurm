@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --time=72:00:00
+#SBATCH --time=100:00:00
 
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
