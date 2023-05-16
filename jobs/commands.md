@@ -36,11 +36,11 @@ sbatch -A lp_rl_thesis -M genius -N 1 -n 9 --gpus-per-node=1 --mem-per-cpu=8G -p
 
 wice A100 GPU
 ```
-sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_identity.slurm
-sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_random_crop.slurm
+sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_identity.slurm
+sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_random_crop.slurm
 
-sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_color_jiggle.slurm
-sbatch --cluster=wice -A lp_edu_alg_parallel_comp -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_noisy_cover.slurm
+sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_color_jiggle.slurm
+sbatch --cluster=wice -A lp_rl_thesis -N 1 -n 18 --gpus-per-node=1 --partition=gpu --time=72:00:00 jobs/train_noisy_cover.slurm
 ```
 
 #### Tensorboard
