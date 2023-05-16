@@ -19,6 +19,9 @@ module load libpng
 module load libjpeg-turbo
 module load CUDA
 
+# Sleep for some time to avoid simulaneous start of differnt jobs
+sleep 300
+
 # Check CUDA version
 echo "nvcc --version:"
 nvcc --version
