@@ -37,25 +37,34 @@ conda env create -f environment.yml
 ```
 
 #### 1.2 CARLA
-Download the CARLA 0.9.14 release and extract it in the `carla` directory:
+The recommened version of the CARLA simulator is version `0.9.8`, because it is the most recent version proven to be stable enough not to crash during long experiments (~10^6 training steps). More recent versions of the CARLA simulator are compatible (versions `0.9.11` and `0.9.14` were also tested) with the code, but the CARLA simulator is prone to crashing during long training experiments.
+
+Download the CARLA `0.9.8` release and extract it in the `carla` directory:
 ```
 cd path/to/my_project
 mkdir carla
 cd carla
-wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.14.tar.gz
-tar -xzf CARLA_0.9.14.tar.gz
-rm CARLA_0.9.14.tar.gz
+wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.8.tar.gz
+tar -xzf CARLA_0.9.8.tar.gz
+rm CARLA_0.9.8.tar.gz
 ```
+On Windows, you will have to download and extract the CARLA `0.9.8` release manually. Releases can be downloaded from [the CARLA repository](https://github.com/carla-simulator/carla/releases).
 
-On Windows, you will have to download and extract the CARLA 0.9.14 release manually. Releases can be downloaded from [the CARLA repository](https://github.com/carla-simulator/carla/releases).
+Install the CARLA client library using `conda develop`:
+```
+conda activate curla
+conda install -y conda-build
+conda develop path/to/my_project/carla/PythonAPI/carla/dist/carla-0.9.8-py3.5-linux-x86_64.egg
+conda deactivate
+```
 
 ### 2. Training
 
-To train a CURL agent on the highway of `Town04` with the default (hyper)parameters, run:
+To train a CURL agent for `N` training steps on the highway of `Town04` with the default (hyper)parameters, run:
 ```
 conda activate curla
 cd path/to/my_project/curla
-python train.py --num_train_steps 1_000_000
+python train.py --num_train_steps N
 ```
 
 In your console, you should see printouts that look like:
