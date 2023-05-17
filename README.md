@@ -60,7 +60,7 @@ conda deactivate
 
 ### 2. Training
 
-To train a CURL agent for `N` training steps on the highway of `Town04` with the default (hyper)parameters, run:
+To train a CURL agent for `N` training steps on the highway of `Town04` with the default (hyper)parameters, run the command listed below. Note that the `train.py` script will automatically launch the CARLA simulator, so no need to launch one manually.
 ```
 conda activate curla
 cd path/to/my_project/curla
