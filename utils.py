@@ -176,27 +176,10 @@ class ReplayBuffer(Dataset):
             not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
             pos = torch.as_tensor(pos, device=self.device).float()
 
-            start = torch.cuda.Event(enable_timing=True)
-            end = torch.cuda.Event(enable_timing=True)
-
             # Apply augmentations to the targets
-            start.record()
             obses = self.augmentor.target_augmentation(obses)
             next_obses = self.augmentor.target_augmentation(next_obses)
             pos = self.augmentor.target_augmentation(pos)
-            end.record()
-            torch.cuda.synchronize()
-            print('Time for target augmentation: %.2f ms' % start.elapsed_time(end))
-
-        #### DEBUG ####
-        # import matplotlib.pyplot as plt
-        # test = obses.to('cpu').detach().numpy().astype(np.uint8)
-        # fig, axes = plt.subplots(2, 2, figsize=(12,6))
-        # for i, ax in enumerate(axes.flat):
-        #     img = test[int(i*(self.batch_size/4)), 0:3, :, :].transpose(1,2,0)
-        #     ax.imshow(img)
-        #     ax.axis('off')
-        # plt.show()
 
         # Store CPC kwargs in a dict
         cpc_kwargs = dict(obs_anchor=obses, obs_pos=pos, time_anchor=None, time_pos=None)
