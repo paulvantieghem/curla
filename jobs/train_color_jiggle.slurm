@@ -17,9 +17,6 @@ module load libpng
 module load libjpeg-turbo
 module load CUDA
 
-# Sleep for some time to avoid simulaneous start of differnt jobs
-sleep 200
-
 # Check CUDA version
 echo "nvcc --version:"
 nvcc --version
@@ -48,18 +45,6 @@ LOG_OUT="$LOG_DIR/train_color_jiggle_$(date +%m-%d_%H-%M).out"
 LOG_ERR="$LOG_DIR/train_color_jiggle_$(date +%m-%d_%H-%M).err"
 CARLA_SERVER_PORT=2000
 CARLA_TM_PORT=8000
-
-# Search for a range of 3 free ports starting from CARLA_SERVER_PORT
-while [ $(netstat -tulpn | grep -E "($CARLA_SERVER_PORT|$((CARLA_SERVER_PORT+1))|$((CARLA_SERVER_PORT+2)))" | wc -l) -ne 0 ]; do
-  CARLA_SERVER_PORT=$((CARLA_SERVER_PORT+1))
-done
-echo "[MESSAGE] Using CARLA_SERVER_PORT=$CARLA_SERVER_PORT"
-
-# Search for a free port starting from CARLA_TM_PORT
-while [ $(netstat -tulpn | grep -E $CARLA_TM_PORT | wc -l) -ne 0 ]; do
-  CARLA_TM_PORT=$((CARLA_TM_PORT+1))
-done
-echo "[MESSAGE] Using CARLA_TM_PORT=$CARLA_TM_PORT"
 
 # Run the apptainer image containing carla and the conda environment to run a python script:
 #   * `--nv` binds the NVIDIA drivers such that the GPU can be used from within the apptainer image.
