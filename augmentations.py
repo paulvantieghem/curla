@@ -160,7 +160,7 @@ class NoisyCover(IdentityAugmentation):
             image: Image with added Gaussian noise with shape (channels*frame_stack, height, width)
         '''
 
-        return self.aug(image)
+        return image
     
     def target_augmentation(self, image_batch):
         '''
