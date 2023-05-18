@@ -156,10 +156,9 @@ class CarlaEnv:
             if road_id == ego_config['road_id']:
                 distances_to_remove = []
                 for distance in distances: # Make sure that no NPC vehicles spawn right next (or on) the ego vehicle
-                    if distance < start_s + npc_spawn_spacing and distance > start_s - npc_spawn_spacing:
+                    if distance < ego_config['start_s'] + npc_spawn_spacing and distance > ego_config['start_s'] - npc_spawn_spacing:
                         distances_to_remove.append(distance)
                 for distance in distances_to_remove: distances.remove(distance)
-            assert len(distances)*len(start_lanes) > self.max_npc_vehicles, 'Not enough spawn points for the desired amount of NPC vehicles'
 
             # Calculate possible spawn points transforms
             for i in range(len(distances)):
@@ -170,6 +169,7 @@ class CarlaEnv:
                     npc_vehicle_transform.location.z += SPAWN_HEIGHT # To avoid collision with road when spawning
                     self.npc_vehicle_possible_transforms.append(npc_vehicle_transform)
         print(f'[carla_env.py] Found {len(self.npc_vehicle_possible_transforms)} possible NPC vehicle spawn points for given configuration.')
+        assert len(self.npc_vehicle_possible_transforms) > self.max_npc_vehicles, 'Not enough NPC vehicle spawn points for given configuration'
 
         # Ego vehicle settings
         self.ego_vehicle_bp = self.blueprint_library.filter('vehicle.tesla.model3')[0]
