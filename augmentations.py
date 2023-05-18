@@ -180,11 +180,11 @@ class NoisyCover(IdentityAugmentation):
         frame_stack = image_batch.shape[1]//3
         image_batch = image_batch.reshape(-1, 3, *self.input_shape)
 
-        # Perform image crop
+        # Perfrom noisy covers on top and bottom of image
         image_batch[:, :, 0:self.top, :] = 255*torch.rand(image_batch[:, :, 0:self.top, :].shape)
         image_batch[:, :, self.h-self.bottom:self.h, :] = 255*torch.rand(image_batch[:, :, self.h-self.bottom:self.h, :].shape)
 
-        # Perform color jiggling augmentation on batch
+        # Add gaussian noise to the image
         augmented_batch = self.aug(image_batch)
 
         # Reshape batch back to original shape
