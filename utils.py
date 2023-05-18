@@ -176,10 +176,17 @@ class ReplayBuffer(Dataset):
             not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
             pos = torch.as_tensor(pos, device=self.device).float()
 
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+
             # Apply augmentations to the targets
+            start.record()
             obses = self.augmentor.target_augmentation(obses)
             next_obses = self.augmentor.target_augmentation(next_obses)
             pos = self.augmentor.target_augmentation(pos)
+            end.record()
+            torch.cuda.synchronize()
+            print('Time for target augmentation: %.2f ms' % start.elapsed_time(end))
 
         #### DEBUG ####
         # import matplotlib.pyplot as plt

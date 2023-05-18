@@ -111,7 +111,7 @@ class ColorJiggle(IdentityAugmentation):
         Args:
             image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
         Returns:
-            augmented_batch: Batch of color jiggled images with shape (batch_size, channels*frame_stack, height, width)
+            image_batch: Batch of color jiggled images with shape (batch_size, channels*frame_stack, height, width)
         '''
 
         # Normalize image batch to [0, 1]
@@ -125,15 +125,15 @@ class ColorJiggle(IdentityAugmentation):
         image_batch = image_batch.reshape(-1, 3, *self.input_shape)
 
         # Perform color jiggling augmentation on batch
-        augmented_batch = self.aug(image_batch)
+        image_batch = self.aug(image_batch)
 
         # Reshape batch back to original shape
-        augmented_batch = augmented_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
+        image_batch = image_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
 
         # Denormalize image batch back to [0, 255]
-        augmented_batch *= 255.0
+        image_batch *= 255.0
 
-        return augmented_batch
+        return image_batch
     
 class NoisyCover(IdentityAugmentation):
         
@@ -145,6 +145,13 @@ class NoisyCover(IdentityAugmentation):
         self.h = self.input_shape[0]
         self.top = int(np.ceil(self.h * top_ratio))
         self.bottom = int(np.ceil(self.h * bottom_ratio))
+
+        # Indexes of rows of the image that should get covered
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.cover_indexes = torch.tensor(np.concatenate((np.arange(0, self.top), 
+                                                          np.arange(self.h-self.bottom, self.h))), 
+                                                          dtype=torch.int64, 
+                                                          device=device)
         
         # Define the RandomGaussianNoise augmentation with 100% probability
         self.aug = K.RandomGaussianNoise(mean=0.0, std=10.0, p=1.0)
@@ -170,7 +177,8 @@ class NoisyCover(IdentityAugmentation):
         Args:
             image_batch: Batch of images with shape (batch_size, channels*frame_stack, height, width)
         Returns:
-            augmented_batch: Batch of partially covered, noisy images with shape (batch_size, channels*frame_stack, height, width)
+            image_batch: Batch of partially covered (by blocks of a random color), noisy images 
+            with shape (batch_size, channels*frame_stack, height, width)
         '''
 
         # Each image in the batch is actually a frame stack of `frame_stack` images,
@@ -180,20 +188,21 @@ class NoisyCover(IdentityAugmentation):
         frame_stack = image_batch.shape[1]//3
         image_batch = image_batch.reshape(-1, 3, *self.input_shape)
 
-        # Perfrom noisy covers on top and bottom of image
-        image_batch[:, :, 0:self.top, :] = 255*torch.rand(image_batch[:, :, 0:self.top, :].shape)
-        image_batch[:, :, self.h-self.bottom:self.h, :] = 255*torch.rand(image_batch[:, :, self.h-self.bottom:self.h, :].shape)
+        # Cover top and bottom of image with random color
+        image_batch[:, 0, :, :].index_fill_(1, self.cover_indexes, np.random.randint(0, 255))
+        image_batch[:, 1, :, :].index_fill_(1, self.cover_indexes, np.random.randint(0, 255))
+        image_batch[:, 2, :, :].index_fill_(1, self.cover_indexes, np.random.randint(0, 255))
 
         # Add gaussian noise to the image
-        augmented_batch = self.aug(image_batch)
+        image_batch = self.aug(image_batch)
 
         # Reshape batch back to original shape
-        augmented_batch = augmented_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
+        image_batch = image_batch.reshape(-1, 3*frame_stack, self.input_shape[0], self.input_shape[1])
 
         # Clip values to [0, 255] with torch.clamp
-        augmented_batch = torch.clamp(augmented_batch, 0, 255)
+        image_batch = torch.clamp(image_batch, 0, 255)
 
-        return augmented_batch
+        return image_batch
     
 
 def make_augmentor(name, input_shape):
