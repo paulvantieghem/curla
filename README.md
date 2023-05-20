@@ -110,3 +110,9 @@ At each evaluation step during training, the current CURL model is saved in the 
 eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
 ```
 Here, `experiment_dir_path` is the path to the directory of the experiment you want to evaluate that contains the `model` directory, and `model_step` is the training step at which the model was saved. The rest of the arguments are automatically read from the `args.log` file in the experiment directory to match the training arguments exactly.
+
+
+
+https://github.com/paulvantieghem/curla/assets/43028370/f2e06e63-3931-42ad-9c91-e7a671e53ca4
+
+
