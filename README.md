@@ -6,11 +6,9 @@ Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinf
 * CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
 
 
-### 0. Example evaluation episodes
+### 0. Example evaluation video
 
-https://github.com/paulvantieghem/curla/assets/43028370/cd9b79d7-eb4c-4fc1-88de-044038ba85b4
-
-https://github.com/paulvantieghem/curla/assets/43028370/64f6048b-c872-41d6-8576-c841f034f3b3
+https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-0e9e9619f4fe
 
 
 Note: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
