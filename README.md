@@ -6,6 +6,12 @@ Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinf
 * CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
 
 
+### 0. Example evaluation episodes
+
+https://github.com/paulvantieghem/curla/assets/43028370/cd9b79d7-eb4c-4fc1-88de-044038ba85b4
+
+https://github.com/paulvantieghem/curla/assets/43028370/64f6048b-c872-41d6-8576-c841f034f3b3
+
 
 ### 1. Installation
 System requirements:
@@ -113,6 +119,7 @@ Here, `experiment_dir_path` is the path to the directory of the experiment you w
 
 
 
-https://github.com/paulvantieghem/curla/assets/43028370/f2e06e63-3931-42ad-9c91-e7a671e53ca4
+
+
 
 
