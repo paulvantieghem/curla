@@ -1,15 +1,12 @@
 import os
-import time
 import argparse
 import torch
 import numpy as np
-import random
-import math
 import json
+import carla
 
 import utils
 from augmentations import make_augmentor
-from curl_sac import CurlSacAgent
 import carla_env
 from video import VideoRecorder
 from train import make_agent
@@ -17,7 +14,7 @@ from train import make_agent
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_dir_path', default='', type=str)
-    parser.add_argument('--model_step', default=0, type=int)
+    parser.add_argument('--model_step', default=1_000_000, type=int)
     parser.add_argument('--env_verbose', default=False, action='store_true')
     args = parser.parse_args()
     return args
@@ -51,10 +48,6 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
                 # Sample action from agent
                 with utils.eval_mode(agent):
                     action = agent.sample_action(obs)
-                    # if episode_step < 20*20:
-                    #     action = np.array([1.0, 0.0])
-                    # else:
-                    #     action = np.array([1.0, -0.005])
 
                 # Take step in environment
                 obs, reward, done, info = env.step(action)
@@ -99,6 +92,11 @@ def main():
         args.__dict__.update(json.load(f))
     if verbose: args.env_verbose = True
 
+    # Set a fixed random seed for fair comparison across experiments.
+    # The random seed 0 is sure to be an unused seed because the models
+    # randomly select a seed from 1 to 1,000,000 in train.py.
+    args.seed = 0
+
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
@@ -108,6 +106,10 @@ def main():
 
     # Set up environment
     env = make_env(args)
+
+    # In the evaluation, only a novel weather preset is used in order 
+    # to test the generalization/robustness capabilities of the agent.
+    env.weather_presets = [carla.WeatherParameters.MidRainyNoon, ]
 
     # Shapes
     action_shape = env.action_space.shape
@@ -125,7 +127,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=2, record_video=True)
+    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=10, record_video=True)
 
     # Deactivate the environment
     env.deactivate()
