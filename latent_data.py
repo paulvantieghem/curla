@@ -57,21 +57,28 @@ def run_episode(env, agent, augmentor, step, experiment_dir_path, weather_name):
             obs = augmentor.anchor_augmentation(obs)
 
             # Get the latent representation
-            latent_representation = agent.actor.encoder(obs)
+            with torch.no_grad():
+                gpu_obs = torch.FloatTensor(obs).to('cuda')
+                gpu_obs = gpu_obs.unsqueeze(0)
+                latent_representation = agent.actor.encoder(gpu_obs)
 
             # Sample action from agent
             with utils.eval_mode(agent):
                 action = agent.sample_action(obs)
 
             # Get the values
-            q1 = agent.critic.Q1(latent_representation, action)
-            q2 = agent.critic.Q2(latent_representation, action)
+            with torch.no_grad():
+                gpu_action = torch.FloatTensor(action).to('cuda')
+                gpu_action = gpu_action.unsqueeze(0)
+                q1 = agent.critic.Q1(latent_representation, gpu_action)
+                q2 = agent.critic.Q2(latent_representation, gpu_action)
 
             # Save the latent representation and the values
-            latent_representation = latent_representation.detach().cpu().numpy()
+            latent_representation = list(latent_representation.detach().cpu().numpy().squeeze())
+            latent_representation = [float(x) for x in latent_representation]
             q1 = q1.detach().cpu().numpy()
             q2 = q2.detach().cpu().numpy()
-            q = float(np.mean([q1, q2], axis=0))
+            q = float(np.min([q1, q2], axis=0))
             latent_value_dict[step] = {'latent_representation': latent_representation, 'q_value': q}
 
             # Take step in environment
@@ -124,6 +131,9 @@ def main():
 
         # Launch the CARLA server and load the model
         env = make_env(args)
+        env.weather_presets = [WEATHER_PRESETS[weather_name],]
+        print(env.weather_presets)
+        print(f'Running episode for weather preset {weather_name}...')
         action_shape = env.action_space.shape
         pre_aug_obs_shape = env.observation_space.shape
         obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
@@ -131,9 +141,6 @@ def main():
         agent = make_agent(obs_shape, action_shape, args, device, augmentor)
         model_dir_path = os.path.join(args.experiment_dir_path, 'model')
         agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
-
-        # Set the weather preset
-        env.weather_presets = [WEATHER_PRESETS[weather_name],]
 
         # Run the episode
         run_episode(env, agent, augmentor, args.model_step, args.experiment_dir_path, weather_name)
