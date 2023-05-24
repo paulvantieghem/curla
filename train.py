@@ -65,7 +65,6 @@ def parse_args():
 
     # Train
     parser.add_argument('--agent', default='curl_sac', type=str)
-    parser.add_argument('--load_pretrained', default=False, action='store_true')
     parser.add_argument('--init_steps', default=1000, type=int)
     parser.add_argument('--num_train_steps', default=1_000_000, type=int)
     parser.add_argument('--batch_size', default=256, type=int)  # CURL paper: 512
@@ -314,24 +313,6 @@ def main():
         device=device,
         augmentor=augmentor
     )
-
-    # Load pretrained model
-    if args.load_pretrained:
-
-        # Check if model_dir exists
-        model_dir = './pretrained_models'
-        assert os.path.exists(model_dir), 'Model directory %s does not exist' % model_dir
-
-        # Find models containing args.augmentation
-        pretrained_models = os.listdir(model_dir)
-        pretrained_models = [model for model in pretrained_models if args.augmentation in model]
-        pretrained_models.sort()
-        if len(pretrained_models) == 0:
-            print(f'[WARNING] No pretrained models found for augmentation {args.augmentation}')
-        else:
-            # Load the model that was trained for the most steps
-            step = int(pretrained_models[-1].split('_')[-1].split('.')[0])
-            agent.load(model_dir, args.augmentation, str(step))
 
     # Initializations
     episode, episode_reward, done, info = 0, 0, True, None

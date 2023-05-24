@@ -54,7 +54,7 @@ class Actor(nn.Module):
     """MLP actor network."""
     def __init__(
         self, obs_shape, action_shape, hidden_dim,
-        encoder_feature_dim, log_std_min, log_std_max, num_layers, num_filters, return_latent=False
+        encoder_feature_dim, log_std_min, log_std_max, num_layers, num_filters
     ):
         super().__init__()
 
@@ -72,15 +72,10 @@ class Actor(nn.Module):
         self.outputs = dict()
         self.apply(weight_init)
 
-        self.return_latent = return_latent
-
     def forward(
         self, obs, compute_pi=True, compute_log_pi=True, detach_encoder=False
     ):
         obs = self.encoder(obs, detach=detach_encoder)
-
-        if self.return_latent:
-            self.latent_representation = obs.to('cpu').detach().numpy().copy()
 
         mu, log_std = self.trunk(obs).chunk(2, dim=-1)
 
@@ -236,7 +231,6 @@ class CurlSacAgent(object):
         action_shape,
         device,
         augmentor,
-        return_latent=False,
         hidden_dim=256,
         discount=0.99,
         init_temperature=0.01,
@@ -263,7 +257,6 @@ class CurlSacAgent(object):
         curl_latent_dim=128
     ):
         self.augmentor = augmentor
-        self.return_latent = return_latent
         self.device = device
         self.discount = discount
         self.critic_tau = critic_tau
@@ -280,7 +273,7 @@ class CurlSacAgent(object):
         self.actor = Actor(
             obs_shape, action_shape, hidden_dim,
             encoder_feature_dim, actor_log_std_min, actor_log_std_max,
-            num_layers, num_filters, self.return_latent
+            num_layers, num_filters
         ).to(device)
 
         self.critic = Critic(
