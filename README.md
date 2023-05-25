@@ -13,6 +13,12 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 
 Note: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
 
+
+Augmentations to choose from:
+
+![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/a8e961f8-17db-41df-9c82-79406c9489af)
+
+
 ### 1. Installation
 System requirements:
 * Linux or Windows operating system
