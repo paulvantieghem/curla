@@ -101,15 +101,19 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
 
         for step in range(nb_steps):
 
+            if step % 1000 == 0:
+                print(f'Step {step}/{nb_steps}')
+
             if done:
                 if episode > 0:
-                    video.save(f'episode_{episode}.mp4')
+                    video.save(f'episode_{episode}_{int(cumul_reward)}.mp4')
                 obs = env.reset()
                 weather_preset_idx = env.weather_preset_idx
                 video.init(enabled=True)
                 done = False
                 episode += 1
                 episode_step = 0
+                cumul_reward = 0
 
             # Perform anchor augmentation
             obs = augmentor.anchor_augmentation(obs)
@@ -121,6 +125,7 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
             # Take step in environment
             obs, reward, done, _ = env.step(action)
             speed = env.abs_kmh
+            cumul_reward += reward
             episode_step += 1
 
             # Save data to replay buffer
@@ -128,6 +133,9 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
 
             # Administration and logging
             video.record(env)
+
+            if step + 2 == nb_steps: 
+                done = True
 
         # Save the replay buffer
         replay_buffer.save(os.path.join(path, 'replay_buffer.npz'))
@@ -141,9 +149,6 @@ def main():
 
     # Set a fixed random seed for reproducibility across weather presets.
     args.seed = 0
-
-    # Set shorter episode time
-    args.seconds_per_episode = 20
 
     # Random seed
     utils.set_seed_everywhere(args.seed)
@@ -163,7 +168,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run the episode
-    run_episodes(env, agent, augmentor, nb_steps=1000)
+    run_episodes(env, agent, augmentor, nb_steps=10000)
 
     # Deactivate the environment (kills the CARLA server)
     env.deactivate()

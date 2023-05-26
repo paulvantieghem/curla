@@ -1,13 +1,10 @@
 # Data
 _out/
-models/
 experiments/
-eval_*/
-viz_*/
 *.out
 *.err
 debug_commands.md
-logs/
+latent_data/
 
 # macOS files
 .DS_Store
