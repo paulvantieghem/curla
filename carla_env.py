@@ -230,7 +230,8 @@ class CarlaEnv:
         self.starting_frame_number = None
 
         # Set random weather preset with a random sun azimuth angle between 30 and 330 degrees
-        weather_preset = random.choice(self.weather_presets)
+        self.weather_preset_idx = random.randint(0, len(self.weather_presets)-1)
+        weather_preset = self.weather_presets[self.weather_preset_idx]
         weather_preset.sun_azimuth_angle = np.random.randint(30, 330)
         self.world.set_weather(weather_preset)
 
