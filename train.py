@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument('--lambda_r5', default=1.0, type=float)     # Speeding (-)
 
     # Image augmentation settings
-    parser.add_argument('--augmentation', default='random_crop', type=str)
+    parser.add_argument('--augmentation', default='color_jiggle', type=str)
     parser.add_argument('--frame_stack', default=3, type=int)
 
     # Replay buffer
