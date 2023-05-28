@@ -254,7 +254,8 @@ class CurlSacAgent(object):
         log_interval=100,
         log_param_hist_imgs=False,
         detach_encoder=False,
-        curl_latent_dim=128
+        curl_latent_dim=128,
+        pixel_sac=False
     ):
         self.augmentor = augmentor
         self.device = device
@@ -269,6 +270,7 @@ class CurlSacAgent(object):
         self.image_shape = obs_shape[-2:]
         self.curl_latent_dim = curl_latent_dim
         self.detach_encoder = detach_encoder
+        self.pixel_sac = pixel_sac
 
         self.actor = Actor(
             obs_shape, action_shape, hidden_dim,
@@ -442,9 +444,10 @@ class CurlSacAgent(object):
             utils.soft_update_params(self.critic.Q2, self.critic_target.Q2, self.critic_tau)
             utils.soft_update_params(self.critic.encoder, self.critic_target.encoder, self.encoder_tau)
         
-        if step % self.cpc_update_freq == 0:
-            obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]
-            self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
+        if not self.pixel_sac:
+            if step % self.cpc_update_freq == 0:
+                obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]
+                self.update_cpc(obs_anchor, obs_pos,cpc_kwargs, L, step)
 
     def save(self, model_dir, augmentation, step):
         torch.save(self.CURL.state_dict(), '%s/%s_curl_%s.pt' % (model_dir, augmentation, step))

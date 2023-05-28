@@ -65,6 +65,7 @@ def parse_args():
 
     # Train
     parser.add_argument('--agent', default='curl_sac', type=str)
+    parser.add_argument('--pixel_sac', default=False, action='store_true')
     parser.add_argument('--init_steps', default=1000, type=int)
     parser.add_argument('--num_train_steps', default=1_000_000, type=int)
     parser.add_argument('--batch_size', default=256, type=int)  # CURL paper: 512
@@ -211,7 +212,8 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
             log_interval=args.log_interval,
             log_param_hist_imgs = args.log_param_hist_imgs,
             detach_encoder=args.detach_encoder,
-            curl_latent_dim=args.curl_latent_dim
+            curl_latent_dim=args.curl_latent_dim,
+            pixel_sac=args.pixel_sac
 
         )
     else:
@@ -247,6 +249,10 @@ def main():
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
+    if args.pixel_sac == True:
+        print('[train.py] Pixel SAC mode selected, setting augmentation to "identity" and not using contrastive loss objective!')
+        args.augmentation = 'identity'
+
     # Anchor/target data augmentor
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
     augmentor = make_augmentor(args.augmentation, camera_image_shape)
@@ -262,8 +268,9 @@ def main():
     ts = datetime.now()
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
+    exp_type = 'pixel_sac' if args.pixel_sac else str(args.augmentation)
     exp_name = env_name + '--' + ts + '--im' + str(args.camera_image_height) + 'x' + str(args.camera_image_width) +'-b'  \
-    + str(args.batch_size) + '-s' + str(args.seed) + '-' + args.augmentation
+    + str(args.batch_size) + '-s' + str(args.seed) + '-' + exp_type
     working_dir = os.path.join(working_dir, exp_name)
     utils.make_dir(working_dir)
     global video_dir 
