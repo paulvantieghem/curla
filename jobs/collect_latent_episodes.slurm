@@ -40,7 +40,7 @@ fi
 # Define the apptainer image, python script, augmentation, log file names and CARLA ports
 IMAGE="$CARLA_ROOT/conda_carla.sif"
 SCRIPT="$CONTENT_ROOT/latent_episodes.py"
-EXPERIMENT_DIR="./experiments/Town04--05-21--14-34-45--im90x160-b256-s566179-color_jiggle"
+EXPERIMENT_DIR="$CONTENT_ROOT/experiments/Town04--05-21--14-34-45--im90x160-b256-s566179-color_jiggle"
 LOG_OUT="$LOG_DIR/collect_latent_episodes_$(date +%m-%d_%H-%M).out"
 LOG_ERR="$LOG_DIR/collect_latent_episodes_$(date +%m-%d_%H-%M).err"
 CARLA_SERVER_PORT=2000
