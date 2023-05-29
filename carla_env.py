@@ -180,10 +180,6 @@ class CarlaEnv:
         self.camera_sensor_bp.set_attribute('image_size_y', f'{RENDER_HEIGHT}')
         self.camera_sensor_bp.set_attribute('fov', f'{self.fov}')
         self.camera_sensor_bp.set_attribute('sensor_tick', f'{self.dt}')
-        if os.name == 'nt': 
-            default_exposure = float(self.camera_sensor_bp.get_attribute('exposure_compensation'))
-            windows_adjusted_exposure = default_exposure + 0.1
-            self.camera_sensor_bp.set_attribute('exposure_compensation', str(windows_adjusted_exposure))
         self.camera_sensor_transform = carla.Transform(carla.Location(x=self.cam_x, y=self.cam_y, z=self.cam_z), carla.Rotation(pitch=self.cam_pitch))
 
         # Collision sensor settings

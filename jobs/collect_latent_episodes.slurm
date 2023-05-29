@@ -3,9 +3,9 @@
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --mail-user=paul.vantieghemdetenberghe@student.kuleuven.be
 
-#SBATCH --job-name=train_pixel_sac
-#SBATCH --output=train_pixel_sac.out
-#SBATCH --error=train_pixel_sac.err
+#SBATCH --job-name=collect_latent_episodes
+#SBATCH --output=collect_latent_episodes.out
+#SBATCH --error=collect_latent_episodes.err
 
 # Purge loaded modules
 module --force purge
@@ -39,9 +39,10 @@ fi
 
 # Define the apptainer image, python script, augmentation, log file names and CARLA ports
 IMAGE="$CARLA_ROOT/conda_carla.sif"
-SCRIPT="$CONTENT_ROOT/train.py"
-LOG_OUT="$LOG_DIR/train_pixel_sac_$(date +%m-%d_%H-%M).out"
-LOG_ERR="$LOG_DIR/train_pixel_sac_$(date +%m-%d_%H-%M).err"
+SCRIPT="$CONTENT_ROOT/latent_episodes.py"
+EXPERIMENT_DIR="./experiments/Town04--05-21--14-34-45--im90x160-b256-s566179-color_jiggle"
+LOG_OUT="$LOG_DIR/collect_latent_episodes_$(date +%m-%d_%H-%M).out"
+LOG_ERR="$LOG_DIR/collect_latent_episodes_$(date +%m-%d_%H-%M).err"
 CARLA_SERVER_PORT=2000
 CARLA_TM_PORT=8000
 
@@ -53,5 +54,5 @@ CARLA_TM_PORT=8000
 #     the apptainer image. These are only necessary if your python script lives there or accesses other files on these
 #     partitions.
 echo "[MESSAGE] Starting apptainer run"
-apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--pixel_sac" "--server_port" "$CARLA_SERVER_PORT" "--tm_port" "$CARLA_TM_PORT" > "$LOG_OUT" 2> "$LOG_ERR"
+apptainer run --nv -B $VSC_HOME -B $VSC_DATA -B $VSC_SCRATCH "$IMAGE" "$SCRIPT" "--experiment_dir_path" "$EXPERIMENT_DIR" > "$LOG_OUT" 2> "$LOG_ERR"
 echo "[MESSAGE] Finished apptainer run"

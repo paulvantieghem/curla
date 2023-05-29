@@ -147,9 +147,6 @@ def main():
     with open(os.path.join(args.experiment_dir_path, 'args.json'), 'r') as f:
         args.__dict__.update(json.load(f))
 
-    # Set a fixed random seed for reproducibility across weather presets.
-    args.seed = 0
-
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
@@ -168,7 +165,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run the episode
-    run_episodes(env, agent, augmentor, nb_steps=10000)
+    run_episodes(env, agent, augmentor, nb_steps=15_000)
 
     # Deactivate the environment (kills the CARLA server)
     env.deactivate()
