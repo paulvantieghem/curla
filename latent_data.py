@@ -57,7 +57,7 @@ def main():
 
         # Get data from replay buffer
         obs = replay_buffer.obses[i]
-        action = replay_buffer.actions[i]
+        # action = replay_buffer.actions[i]
         reward = float(replay_buffer.rewards[i])
         done = int(replay_buffer.dones[i])
         speed = int(replay_buffer.speeds[i])
@@ -75,16 +75,15 @@ def main():
             gpu_obs = gpu_obs.unsqueeze(0)
             latent_representation = agent.actor.encoder(gpu_obs)
 
-        # Get the models own action (OPTIONAL)
-        # with utils.eval_mode(agent):
-        #     action = agent.sample_action(obs)
+        # Get the model's own action for the calculation of the Q-values
+        with utils.eval_mode(agent):
+            action = agent.sample_action(obs)
         
         # Get the values
         with torch.no_grad():
             gpu_action = torch.FloatTensor(action).to('cuda')
             gpu_action = gpu_action.unsqueeze(0)
-            q1 = agent.critic.Q1(latent_representation, gpu_action)
-            q2 = agent.critic.Q2(latent_representation, gpu_action)
+            q1, q2 = agent.critic(gpu_obs, gpu_action)
 
         # Save the latent representation and the values
         latent_representation = list(latent_representation.detach().cpu().numpy().squeeze())

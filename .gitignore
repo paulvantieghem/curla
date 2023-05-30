@@ -5,6 +5,7 @@ experiments/
 *.err
 debug_commands.md
 latent_data/
+old_latent_data/
 
 # macOS files
 .DS_Store

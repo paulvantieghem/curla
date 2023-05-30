@@ -12,6 +12,15 @@ from video import VideoRecorder
 from train import make_agent
 from torch.utils.data import Dataset
 
+WEATHER_PRESETS =  {0: 'ClearNoon',
+                    1: 'ClearSunset', 
+                    2: 'CloudyNoon', 
+                    3: 'CloudySunset', 
+                    4: 'WetNoon', 
+                    5: 'WetSunset', 
+                    6: 'MidRainSunset',
+                    7: 'MidRainyNoon'}
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_dir_path', default='', type=str)
@@ -110,6 +119,7 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
                 obs = env.reset()
                 weather_preset_idx = env.weather_preset_idx
                 video.init(enabled=True)
+                print(f'Episode {episode} - Weather preset: {WEATHER_PRESETS[weather_preset_idx]}')
                 done = False
                 episode += 1
                 episode_step = 0
@@ -156,6 +166,12 @@ def main():
 
     # Launch the CARLA server and load the model
     env = make_env(args)
+
+    # Include MidRainyNoon weather preset for evaluation on unseen weather conditions
+    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon)
+    print(f'Weather presets: {env.weather_presets}')
+
+    # Initialize the agent
     action_shape = env.action_space.shape
     pre_aug_obs_shape = env.observation_space.shape
     obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)

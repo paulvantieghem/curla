@@ -16,7 +16,22 @@ WEATHER_PRESETS =  {0: 'ClearNoon',
                     3: 'CloudySunset', 
                     4: 'WetNoon', 
                     5: 'WetSunset', 
-                    6: 'MidRainSunset'}
+                    6: 'MidRainSunset',
+                    7: 'MidRainyNoon'}
+
+def get_experiment_title(name):
+    title = None
+    if name == 'pixel_sac':
+        title = 'Experiment: Pixel SAC'
+    elif name == 'identity':
+        title = 'Experiment: CURL-SAC with identity augmentation'
+    elif name == 'random_crop':
+        title = 'Experiment: CURL-SAC with random crop augmentation'
+    elif name == 'color_jiggle':
+        title = 'Experiment: CURL-SAC with color jiggle augmentation'
+    elif name == 'noisy_cover':
+        title = 'Experiment: CURL-SAC with noisy cover augmentation'
+    return title
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -44,30 +59,47 @@ def plot_latent_tsne(file_path, file_name):
     q_values = np.array(q_values, dtype=np.float32)
     weather_presets = np.array(weather_presets, dtype=np.uint8)
 
+    # Print some statistics
+    print('-'*50)
+    print(f'Mean Q-value: {np.mean(q_values)}')
+    print(f'Median Q-value: {np.median(q_values)}')
+    print(f'Max Q-value: {np.max(q_values)}')
+    print(f'Min Q-value: {np.min(q_values)}')
+    print(f'Standard deviation Q-value: {np.std(q_values)}')
+    nb_std = 1
+    max_tick = int(np.mean(q_values) + nb_std*np.std(q_values))
+    min_tick = int(np.mean(q_values) - nb_std*np.std(q_values))
+    print('-'*50)
+
     # Perform t-SNE on the latent representations
     tsne = TSNE(n_components=2)
+    print('Performing t-SNE on the latent representations...')
     vec_2d = tsne.fit_transform(representations)
+    print('Done.')
+
+    # Figure settings
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
+    marker_size = 5
 
     # Visualize latent representations in function of Q-values
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
-    scatter = ax1.scatter(vec_2d[:,0], vec_2d[:,1], c=q_values, cmap='viridis', s=10)
+    scatter = ax1.scatter(vec_2d[:,0], vec_2d[:,1], c=q_values, cmap='viridis', s=marker_size, vmin=min_tick, vmax=max_tick)
     ax1.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-    cbar = plt.colorbar(scatter, ax=ax1, location='left')
-    cbar.ax.set_yticklabels(np.linspace(int(np.min(q_values)), int(np.max(q_values)), 10, endpoint=False).astype(np.int32))
+    cbar = plt.colorbar(scatter, ax=ax1, location='left', extend='both')
     cbar.set_label('Q Value')
 
     # Visualize latent representations in function of weather presets
-    scatter = ax2.scatter(vec_2d[:,0], vec_2d[:,1], c=weather_presets, cmap='tab10', s=10)
+    scatter = ax2.scatter(vec_2d[:,0], vec_2d[:,1], c=weather_presets, cmap='tab10', s=marker_size)
     ax2.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
     cbar = plt.colorbar(scatter, ax=ax2)
     cbar.ax.set_yticklabels(WEATHER_PRESETS.values())
     cbar.set_label('Weather Preset')
 
     # Save the figure
-    title = file_name.split('.')[0]
-    fig.suptitle(f'Augmentation: {title}')
+    exp_name = file_name.split('.')[0]
+    title = get_experiment_title(exp_name)
+    fig.suptitle(f'{title}')
     plt.tight_layout()
-    plt.savefig(os.path.join(file_path, f'{title}.png'))
+    plt.savefig(os.path.join(file_path, f'{exp_name}.png'))
 
 def main():
 
