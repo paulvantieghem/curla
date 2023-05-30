@@ -10,14 +10,23 @@ import matplotlib
 import warnings
 warnings.filterwarnings(action='ignore')
 
-WEATHER_PRESETS =  {0: 'ClearNoon',
+WEATHER_PRESETS =  {
+                    # Training weather presets
+                    0: 'ClearNoon',
                     1: 'ClearSunset', 
                     2: 'CloudyNoon', 
                     3: 'CloudySunset', 
                     4: 'WetNoon', 
                     5: 'WetSunset', 
                     6: 'MidRainSunset',
-                    7: 'MidRainyNoon'}
+                    # Novel weather presets
+                    7: 'MidRainyNoon',
+                    8: 'WetCloudySunset',
+                    9: 'HardRainNoon'
+                    }
+
+# Greenish, blueish colors for indexes 0-6, redish, yellowish colors for indexes 7-9
+weather_colors = ['#00ff00', '#00ffff', '#0000ff', '#ff00ff', '#008000', '#008080', '#000080', '#ff0000', '#ffff00', '#800000']
 
 def get_experiment_title(name):
     title = None
@@ -88,10 +97,12 @@ def plot_latent_tsne(file_path, file_name):
     cbar.set_label('Q Value')
 
     # Visualize latent representations in function of weather presets
-    scatter = ax2.scatter(vec_2d[:,0], vec_2d[:,1], c=weather_presets, cmap='tab10', s=marker_size)
+    cmap = plt.cm.colors.ListedColormap(weather_colors)
+    scatter = ax2.scatter(vec_2d[:,0], vec_2d[:,1], c=weather_presets, cmap=cmap, s=marker_size, vmin=0, vmax=len(WEATHER_PRESETS))
     ax2.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
     cbar = plt.colorbar(scatter, ax=ax2)
-    cbar.ax.set_yticklabels(WEATHER_PRESETS.values())
+    cbar.set_ticks(np.arange(len(WEATHER_PRESETS)) + 0.5)
+    cbar.set_ticklabels(WEATHER_PRESETS.values())
     cbar.set_label('Weather Preset')
 
     # Save the figure

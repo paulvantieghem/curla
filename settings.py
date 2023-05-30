@@ -31,7 +31,13 @@ WEATHER_PRESETS =  [carla.WeatherParameters.ClearNoon,
                     carla.WeatherParameters.MidRainSunset]
 
 # Carla weather presets for evaluation on unseen weather conditions
-# WEATHER_PRESETS =  [carla.WeatherParameters.MidRainyNoon, ]
+# WEATHER_PRESETS =  [carla.WeatherParameters.MidRainyNoon,
+#                     carla.WeatherParameters.WetCloudyNoon,
+#                     carla.WeatherParameters.WetCloudySunset,
+#                     carla.WeatherParameters.SoftRainNoon,
+#                     carla.WeatherParameters.SoftRainSunset,
+#                     carla.WeatherParameters.HardRainNoon,
+#                     carla.WeatherParameters.HardRainSunset]
 
 # Action space configuration
 MAX_STEER = 0.25                # Number between 0.0 and 1.0

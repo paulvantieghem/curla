@@ -19,7 +19,9 @@ WEATHER_PRESETS =  {0: 'ClearNoon',
                     4: 'WetNoon', 
                     5: 'WetSunset', 
                     6: 'MidRainSunset',
-                    7: 'MidRainyNoon'}
+                    7: 'MidRainyNoon',
+                    8: 'WetCloudySunset',
+                    9: 'HardRainNoon'}
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -164,12 +166,16 @@ def main():
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
     augmentor = make_augmentor(args.augmentation, camera_image_shape)
 
+    # Limit episodes to 40 seconds
+    args.seconds_per_episode = 40
+
     # Launch the CARLA server and load the model
     env = make_env(args)
 
     # Include MidRainyNoon weather preset for evaluation on unseen weather conditions
-    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon)
-    print(f'Weather presets: {env.weather_presets}')
+    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon,
+                               carla.WeatherParameters.WetCloudySunset,
+                               carla.WeatherParameters.HardRainNoon)
 
     # Initialize the agent
     action_shape = env.action_space.shape
@@ -181,7 +187,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run the episode
-    run_episodes(env, agent, augmentor, nb_steps=15_000)
+    run_episodes(env, agent, augmentor, nb_steps=20_000)
 
     # Deactivate the environment (kills the CARLA server)
     env.deactivate()
