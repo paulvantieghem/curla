@@ -91,9 +91,9 @@ class CustomReplayBuffer(Dataset):
 def run_episodes(env, agent, augmentor, nb_steps=1000):
         
         # Initializations
-        path = './latent_data'
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'latent_data')
         if not os.path.exists(path):
-            os.mkdir(path)
+            os.makedirs(path)
         video = VideoRecorder(path, env.fps)
         done = True
         episode = 0
