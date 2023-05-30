@@ -173,9 +173,9 @@ def main():
     env = make_env(args)
 
     # Include MidRainyNoon weather preset for evaluation on unseen weather conditions
-    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon,
-                               carla.WeatherParameters.WetCloudySunset,
-                               carla.WeatherParameters.HardRainNoon)
+    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon)
+    env.weather_presets.append(carla.WeatherParameters.WetCloudySunset)
+    env.weather_presets.append(carla.WeatherParameters.HardRainNoon)
 
     # Initialize the agent
     action_shape = env.action_space.shape
