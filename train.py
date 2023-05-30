@@ -184,6 +184,12 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
         return L
 
 def make_agent(obs_shape, action_shape, args, device, augmentor):
+
+    # Backwards compatibility for older saved models
+    if not hasattr(args, 'pixel_sac'):
+        args.pixel_sac = False
+
+    # Make the agent
     if args.agent == 'curl_sac':
         return CurlSacAgent(
             obs_shape=obs_shape,
@@ -213,9 +219,9 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
             log_param_hist_imgs = args.log_param_hist_imgs,
             detach_encoder=args.detach_encoder,
             curl_latent_dim=args.curl_latent_dim,
-            pixel_sac=args.pixel_sac
-
+            pixel_sac=args.pixel_sac,
         )
+    
     else:
         assert 'agent is not supported: %s' % args.agent
 
