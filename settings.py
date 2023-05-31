@@ -21,7 +21,7 @@ map_config = {
     }
 }
 
-# Carla weather presets for norma training and evaluation
+# Carla weather presets for normal training and evaluation
 WEATHER_PRESETS =  [carla.WeatherParameters.ClearNoon,
                     carla.WeatherParameters.ClearSunset, 
                     carla.WeatherParameters.CloudyNoon, 

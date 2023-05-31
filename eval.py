@@ -11,6 +11,11 @@ import carla_env
 from video import VideoRecorder
 from train import make_agent
 
+WEATHER_PRESETS =  {'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
+                    'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
+                    'HardRainNoon': carla.WeatherParameters.HardRainNoon}
+                    
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_dir_path', default='', type=str)
@@ -23,6 +28,9 @@ def parse_args():
 def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes=10, record_video=False):
         
         # Initializations
+        exp_name = os.path.basename(experiment_dir_path)
+        exp_name = exp_name.split('-')[-1]
+        print(f'Running evaluation loop for experiment {exp_name}')
         ep_rewards = []
         ep_steps = []
         path = os.path.join(experiment_dir_path, 'eval_videos')
@@ -36,6 +44,8 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
         # Run evaluation loop
         for i in range(num_episodes):
             obs = env.reset()
+            chosen_preset = list(WEATHER_PRESETS.keys())[env.weather_preset_idx]
+            print(f'Episode {i+1} - Weather preset: {chosen_preset}')
             video.init(enabled=record_video)
             done = False
             episode_reward = 0
@@ -61,6 +71,12 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
             ep_steps.append(episode_step)
             ep_rewards.append(episode_reward)
             print('Episode %d/%d, Cumulative reward: %f, Steps: %f' % (i + 1, num_episodes, episode_reward, episode_step))
+
+        # Add mean, max, min, std of rewards and steps to file as line to eval_results.csv
+        with open('./eval_results.csv', 'a') as f:
+            f.write(f'{exp_name},{np.mean(ep_rewards)},{np.max(ep_rewards)},{np.min(ep_rewards)},{np.std(ep_rewards)},{np.mean(ep_steps)},{np.max(ep_steps)},{np.min(ep_steps)},{np.std(ep_steps)}\n')
+        
+
         return ep_rewards, ep_steps
 
 def make_env(args):
@@ -107,9 +123,9 @@ def main():
     # Set up environment
     env = make_env(args)
 
-    # In the evaluation, only a novel weather preset is used in order 
+    # In the evaluation, only novel weather presets are used in order 
     # to test the generalization/robustness capabilities of the agent.
-    env.weather_presets = [carla.WeatherParameters.MidRainyNoon, ]
+    env.weather_presets = list(WEATHER_PRESETS.values())
 
     # Shapes
     action_shape = env.action_space.shape
@@ -127,7 +143,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=10, record_video=True)
+    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=20, record_video=True)
 
     # Deactivate the environment
     env.deactivate()

@@ -5,6 +5,9 @@ import numpy as np
 import json
 import carla
 from tqdm import tqdm
+from sklearn.manifold import TSNE
+import warnings
+warnings.filterwarnings(action='ignore')
 
 import utils
 from augmentations import make_augmentor
@@ -30,6 +33,9 @@ def main():
     # Set a fixed random seed for reproducibility across weather presets.
     args.seed = 0
 
+    if not hasattr(args, 'pixel_sac'):
+        args.pixel_sac = False
+
     # Random seed
     utils.set_seed_everywhere(args.seed)
 
@@ -49,8 +55,9 @@ def main():
     replay_buffer = CustomReplayBuffer(obs_shape=obs_shape, action_shape=action_shape, capacity=10_000)
     replay_buffer.load('./latent_data/replay_buffer.npz')
 
-    # Initialize dictionary to store latent representations and values
-    latent_value_dict = {}
+    # Initialize arrays
+    representations = []
+    q_values = []
 
     # Loop over replay buffer and save latent representation and values
     for i in tqdm(range(replay_buffer.obses.shape[0])):
@@ -91,17 +98,27 @@ def main():
         q1 = q1.detach().cpu().numpy()
         q2 = q2.detach().cpu().numpy()
         q = float(np.min([q1, q2], axis=0))
-        latent_value_dict[i] = {'latent_representation': latent_representation, 
-                                'q_value': q,
-                                'reward': reward,
-                                'speed': speed,
-                                'weather_preset_idx': weather_preset_idx}
+        
+        # Add data to arrays
+        representations.append(latent_representation)
+        q_values.append(q)
+
+    # Convert arrays to numpy arrays
+    representations = np.array(representations, dtype=np.float32)
+    q_values = np.array(q_values, dtype=np.float32)
+
+    # Perform t-SNE on the latent representations
+    tsne = TSNE(n_components=2)
+    print('Performing t-SNE on the latent representations...')
+    tsne_representations = tsne.fit_transform(representations)
+    print('Done.')
 
     # Save latent_value_dict dictionary to file
-    augmentation_name = str(args.augmentation)
-    with open(os.path.join('latent_data', f'{augmentation_name}.json'), 'w') as f:
-        json.dump(latent_value_dict, f)
-
-
+    exp_name = 'pixel_sac' if args.pixel_sac else str(args.augmentation)
+    np.savez_compressed(f'./latent_data/{exp_name}.npz',
+                        representations=representations,
+                        q_values=q_values,
+                        tsne_representations=tsne_representations)
+    
 if __name__ == "__main__":
     main()

@@ -52,7 +52,6 @@ class CarlaEnv:
     MAX_STEER = settings.MAX_STEER
     MAX_THROTTLE_BRAKE = settings.MAX_THROTTLE_BRAKE
     THROTTLE_BRAKE_OFFSET = settings.THROTTLE_BRAKE_OFFSET
-    weather_presets = settings.WEATHER_PRESETS
 
 
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
@@ -84,6 +83,7 @@ class CarlaEnv:
         self.lambda_r3 = lambda_r3
         self.lambda_r4 = lambda_r4
         self.lambda_r5 = lambda_r5
+        self.weather_presets = settings.WEATHER_PRESETS
 
         # Initial values
         self.obs = None

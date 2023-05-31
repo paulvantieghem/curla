@@ -12,16 +12,19 @@ from video import VideoRecorder
 from train import make_agent
 from torch.utils.data import Dataset
 
-WEATHER_PRESETS =  {0: 'ClearNoon',
-                    1: 'ClearSunset', 
-                    2: 'CloudyNoon', 
-                    3: 'CloudySunset', 
-                    4: 'WetNoon', 
-                    5: 'WetSunset', 
-                    6: 'MidRainSunset',
-                    7: 'MidRainyNoon',
-                    8: 'WetCloudySunset',
-                    9: 'HardRainNoon'}
+WEATHER_PRESETS =  {# Original weather presets
+                    'ClearNoon': carla.WeatherParameters.ClearNoon,
+                    'ClearSunset': carla.WeatherParameters.ClearSunset, 
+                    'CloudyNoon': carla.WeatherParameters.CloudyNoon,
+                    'CloudySunset': carla.WeatherParameters.CloudySunset,
+                    'WetNoon': carla.WeatherParameters.WetNoon,
+                    'WetSunset': carla.WeatherParameters.WetSunset, 
+                    'MidRainSunset': carla.WeatherParameters.MidRainSunset,
+                    # Novel weather presets
+                    'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
+                    'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
+                    'HardRainNoon': carla.WeatherParameters.HardRainNoon
+                    }
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -50,7 +53,7 @@ def make_env(args):
 
 class CustomReplayBuffer(Dataset):
     
-    def __init__(self, obs_shape, action_shape, capacity):
+    def __init__(self, obs_shape=(90,160), action_shape=(2,), capacity=20_000):
 
         # Initialize the replay buffer
         self.capacity = capacity
@@ -121,7 +124,7 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
                 obs = env.reset()
                 weather_preset_idx = env.weather_preset_idx
                 video.init(enabled=True)
-                print(f'Episode {episode} - Weather preset: {WEATHER_PRESETS[weather_preset_idx]}')
+                print(f'Episode {episode} - Weather preset: {list(WEATHER_PRESETS.keys())[weather_preset_idx]}')
                 done = False
                 episode += 1
                 episode_step = 0
@@ -172,10 +175,8 @@ def main():
     # Launch the CARLA server and load the model
     env = make_env(args)
 
-    # Include MidRainyNoon weather preset for evaluation on unseen weather conditions
-    env.weather_presets.append(carla.WeatherParameters.MidRainyNoon,
-                               carla.WeatherParameters.WetCloudySunset,
-                               carla.WeatherParameters.HardRainNoon)
+    # Include novel weather presets for evaluation
+    env.weather_presets = list(WEATHER_PRESETS.values())
 
     # Initialize the agent
     action_shape = env.action_space.shape
