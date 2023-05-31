@@ -79,14 +79,15 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
 
         return ep_rewards, ep_steps
 
-def make_env(args):
+def make_env(args, weather_presets):
 
     # Initialize the CARLA environment
     env = carla_env.CarlaEnv(args.carla_town, args.max_npc_vehicles, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, 2000, 8000, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5,
+                   weather_presets=weather_presets)
     
     # Set the random seed and reset
     env.seed(args.seed)
@@ -120,12 +121,9 @@ def main():
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
     augmentor = make_augmentor(args.augmentation, camera_image_shape)
 
-    # Set up environment
-    env = make_env(args)
-
     # In the evaluation, only novel weather presets are used in order 
     # to test the generalization/robustness capabilities of the agent.
-    env.weather_presets = list(WEATHER_PRESETS.values())
+    env = make_env(args, list(WEATHER_PRESETS.values()))
 
     # Shapes
     action_shape = env.action_space.shape

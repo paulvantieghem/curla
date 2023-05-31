@@ -57,7 +57,7 @@ class CarlaEnv:
     def __init__(self, carla_town='Town04', max_npc_vehicles=10, desired_speed=65, max_stall_time=5, 
                  stall_speed=0.5, seconds_per_episode=50, fps=20, server_port=2000, tm_port=8000, verbose=False, pre_transform_image_height=90, 
                  pre_transform_image_width=160, fov=120, cam_x=1.3, cam_y=0.0, cam_z=1.75, cam_pitch=-15, 
-                 lambda_r1=1.0, lambda_r2=0.3, lambda_r3=1.0, lambda_r4=0.005, lambda_r5=1.0):
+                 lambda_r1=1.0, lambda_r2=0.3, lambda_r3=1.0, lambda_r4=0.005, lambda_r5=1.0, weather_presets=None):
 
         # Set parameters
         self.carla_town = carla_town
@@ -83,7 +83,7 @@ class CarlaEnv:
         self.lambda_r3 = lambda_r3
         self.lambda_r4 = lambda_r4
         self.lambda_r5 = lambda_r5
-        self.weather_presets = settings.WEATHER_PRESETS
+        self.weather_presets = weather_presets if weather_presets is not None else settings.WEATHER_PRESETS
 
         # Initial values
         self.obs = None
