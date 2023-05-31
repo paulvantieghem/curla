@@ -34,18 +34,18 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
         ep_rewards = []
         ep_steps = []
         path = os.path.join(experiment_dir_path, 'eval_videos')
-        if not os.path.exists(path):
-            os.mkdir(path)
-        else:
-            for file in os.listdir(path):
-                os.remove(os.path.join(path, file))
+        if record_video:
+            if not os.path.exists(path):
+                os.mkdir(path)
+            else:
+                for file in os.listdir(path):
+                    os.remove(os.path.join(path, file))
         video = VideoRecorder(path, env.fps)
 
         # Run evaluation loop
         for i in range(num_episodes):
             obs = env.reset()
             chosen_preset = list(WEATHER_PRESETS.keys())[env.weather_preset_idx]
-            print(f'Episode {i+1} - Weather preset: {chosen_preset}')
             video.init(enabled=record_video)
             done = False
             episode_reward = 0
@@ -67,16 +67,15 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
                 episode_reward += reward
                 episode_step += 1
                     
-            video.save(f'{step}_{i}_r{int(episode_reward)}.mp4')
+            video.save(f'{step}_{i+1}_r{int(episode_reward)}.mp4')
             ep_steps.append(episode_step)
             ep_rewards.append(episode_reward)
-            print('Episode %d/%d, Cumulative reward: %f, Steps: %f' % (i + 1, num_episodes, episode_reward, episode_step))
+            print('Episode %d/%d | Weather preset: %s | Cumulative reward: %f | Steps: %f' % (i + 1, num_episodes, chosen_preset, episode_reward, episode_step))
 
         # Add mean, max, min, std of rewards and steps to file as line to eval_results.csv
         with open('./eval_results.csv', 'a') as f:
-            f.write(f'{exp_name},{np.mean(ep_rewards)},{np.max(ep_rewards)},{np.min(ep_rewards)},{np.std(ep_rewards)},{np.mean(ep_steps)},{np.max(ep_steps)},{np.min(ep_steps)},{np.std(ep_steps)}\n')
+            f.write(f'{exp_name},{int(np.mean(ep_rewards))},{int(np.max(ep_rewards))},{int(np.min(ep_rewards))},{int(np.std(ep_rewards))},{int(np.mean(ep_steps))},{int(np.max(ep_steps))},{int(np.min(ep_steps))},{int(np.std(ep_steps))}\n')
         
-
         return ep_rewards, ep_steps
 
 def make_env(args, weather_presets):
@@ -141,7 +140,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run evaluation loop
-    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=20, record_video=True)
+    ep_rewards, ep_steps = run_eval_loop(env, agent, augmentor, args.model_step, args.experiment_dir_path, num_episodes=50, record_video=False)
 
     # Deactivate the environment
     env.deactivate()
