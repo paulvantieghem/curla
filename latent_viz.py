@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from latent_episodes import CustomReplayBuffer
 
 WEATHER_PRESETS =  {
@@ -21,9 +22,24 @@ WEATHER_PRESETS =  {
                     8: 'WetCloudySunset*',
                     9: 'HardRainNoon*'}
 
-def find_nearest(array, value):
-    idx = (np.linalg.norm(array - value, axis=1)).argmin()
-    return idx
+def get_closest_obs_diff_weather(idx, representations, replay_buffer):
+
+    # Get the closest observation in latent space to the idx-th observation with a different weather preset
+    idxes = []
+    preset1 = WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idx][0]]
+    for i in range(len(replay_buffer.weather_preset_idxs)):
+        if replay_buffer.weather_preset_idxs[i] != replay_buffer.weather_preset_idxs[idx]:
+            preset2 = WEATHER_PRESETS[replay_buffer.weather_preset_idxs[i][0]]
+            if 'Noon' in preset1 and 'Sunset' in preset2:
+                idxes.append(i)
+            elif 'Sunset' in preset1 and 'Noon' in preset2:
+                idxes.append(i)
+    idxes = np.array(idxes)
+    idxes = idxes[np.argsort(np.linalg.norm(representations[idxes] - representations[idx], axis=1))]
+    idx1 = idxes[0]
+    distance1 = np.linalg.norm(representations[idx1] - representations[idx])
+
+    return [idx, idx1], distance1
 
 def get_experiment_title(name):
     title = None
@@ -37,7 +53,14 @@ def get_experiment_title(name):
         title = 'Experiment: CURL-SAC with color jiggle augmentation'
     elif name == 'noisy_cover':
         title = 'Experiment: CURL-SAC with noisy cover augmentation'
+    elif name == 'identity_detached':
+        title = 'Experiment: CURL-SAC with identity augmentation and detached encoder'
     return title
+
+def get_image_from_obs(obs):
+    obs = obs[0:3, :, :]
+    obs = np.transpose(obs, (1, 2, 0))
+    return obs
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -73,55 +96,40 @@ def plot_latent_tsne(file_path, file_name):
     # Get experiment name
     exp_name = file_name.split('.')[0]
 
-    ###################################################
-    ### Specific observations in latent space plots ###
-    ###################################################
-    if exp_name == 'pixel_sac':
-        point1 = np.array([])
-        point2 = np.array([])
-        point3 = np.array([])
-    elif exp_name == 'identity':
-        point1 = np.array([])
-        point2 = np.array([])
-        point3 = np.array([])
-    elif exp_name == 'random_crop':
-        point1 = np.array([])
-        point2 = np.array([])
-        point3 = np.array([])
-    elif exp_name == 'color_jiggle':
-        point1 = np.array([-57.124, 51.5779])
-        point2 = np.array([-59.461, 51.8416])
-        point3 = np.array([-59.007, 52.0403])
-    elif exp_name == 'noisy_cover':
-        point1 = np.array([])
-        point2 = np.array([])
-        point3 = np.array([])
-    
-    # Get average point to plot as a large red circle
-    avg_point = np.mean(np.stack([point1, point2, point3]), axis=0)
-
-    # Get indices of closest points found in t-SNE figure
-    idx1 = find_nearest(tsne_representations, point1)
-    idx2 = find_nearest(tsne_representations, point2)
-    idx3 = find_nearest(tsne_representations, point3)
-    idxes = [idx1, idx2, idx3]
+    # ###################################################
+    # ### Specific observations in latent space plots ###
+    # ###################################################
+    idxes1, distance1 = get_closest_obs_diff_weather(7108, representations, replay_buffer)
+    idxes2, distance2 = get_closest_obs_diff_weather(2565, representations, replay_buffer)
+    print(f'Distance between observations1: {distance1}')
+    print(f'Distance between observations2: {distance2}')
 
     # Process the corresponding observations
-    observations = [replay_buffer.obses[idx1],
-                replay_buffer.obses[idx2],
-                replay_buffer.obses[idx3]]
-    for i in range(len(observations)):
-        obs = observations[i]
-        obs = obs[0:3, :, :]
-        obs = np.transpose(obs, (1, 2, 0))
-        observations[i] = obs
+    observations1 = [replay_buffer.obses[idx] for idx in idxes1]
+    for i in range(len(observations1)):
+        observations1[i] = get_image_from_obs(observations1[i])
+    observations2 = [replay_buffer.obses[idx] for idx in idxes2]
+    for i in range(len(observations2)):
+        observations2[i] = get_image_from_obs(observations2[i])
+
 
     # Plot the corresponding images
-    plt.figure(figsize=(12, 3), dpi=200)
-    for i in range(len(observations)):
-        plt.subplot(1, 3, i+1)
-        plt.imshow(observations[i])
-        plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes[i]][0]]}')
+    plt.figure(figsize=(8, 6), dpi=200)
+    for i in range(len(observations1)):
+        plt.subplot(2, 2, i+1)
+        plt.imshow(observations1[i])
+        if i == 0:
+            plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes1[i]][0]]} (O)', color='red')
+        else:
+            plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes1[i]][0]]} (X)', color='red')
+        plt.axis('off')
+    for i in range(len(observations2)):
+        plt.subplot(2, 2, i+3)
+        plt.imshow(observations2[i])
+        if i == 0:
+            plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes2[i]][0]]} (O)', color='blue')
+        else:
+            plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes2[i]][0]]} (X)', color='blue')
         plt.axis('off')
     plt.tight_layout()
     plt.savefig(os.path.join(file_path, f'tsne_{exp_name}_images.png'))
@@ -141,9 +149,16 @@ def plot_latent_tsne(file_path, file_name):
     cbar = plt.colorbar(scatter, ax=ax1, location='left', extend='both')
     cbar.set_label('Q Value')
 
-    # Add avg_point to the plot as a large red circle
-    ax1.scatter(avg_point[0], avg_point[1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
-
+    # Draw a red cross at points in idxes1 and a red line to connect them
+    ax1.scatter(tsne_representations[idxes1[0],0], tsne_representations[idxes1[0],1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
+    ax1.scatter(tsne_representations[idxes1[1],0], tsne_representations[idxes1[1],1], s=60, marker='x', c='red', linewidths=2, zorder=10)
+    ax1.plot([tsne_representations[idxes1[0],0], tsne_representations[idxes1[1],0]], [tsne_representations[idxes1[0],1], tsne_representations[idxes1[1],1]], color='red', linewidth=2, zorder=10)
+    # Draw a blue cross at points in idxes2 and a blue line to connect them
+    ax1.scatter(tsne_representations[idxes2[0],0], tsne_representations[idxes2[0],1], s=60, facecolors='none', edgecolors='blue', linewidths=2, zorder=10)
+    ax1.scatter(tsne_representations[idxes2[1],0], tsne_representations[idxes2[1],1], s=60, marker='x', c='blue', linewidths=2, zorder=10)
+    ax1.plot([tsne_representations[idxes2[0],0], tsne_representations[idxes2[1],0]], [tsne_representations[idxes2[0],1], tsne_representations[idxes2[1],1]], color='blue', linewidth=2, zorder=10)
+    
+    
     # Visualize latent representations in function of weather presets
     scatter = ax2.scatter(tsne_representations[:,0], tsne_representations[:,1], 
                           c=replay_buffer.weather_preset_idxs, cmap='tab10', s=marker_size, vmin=0, vmax=len(WEATHER_PRESETS))
@@ -153,8 +168,15 @@ def plot_latent_tsne(file_path, file_name):
     cbar.set_ticklabels(WEATHER_PRESETS.values())
     cbar.set_label('Weather Preset')
 
-    # Add avg_point to the plot as a large red circle
-    ax2.scatter(avg_point[0], avg_point[1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
+    # Draw a red cross at points in idxes1 and a red line to connect them
+    # Draw a red cross at points in idxes1 and a red line to connect them
+    ax2.scatter(tsne_representations[idxes1[0],0], tsne_representations[idxes1[0],1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
+    ax2.scatter(tsne_representations[idxes1[1],0], tsne_representations[idxes1[1],1], s=60, marker='x', c='red', linewidths=2, zorder=10)
+    ax2.plot([tsne_representations[idxes1[0],0], tsne_representations[idxes1[1],0]], [tsne_representations[idxes1[0],1], tsne_representations[idxes1[1],1]], color='red', linewidth=2, zorder=10)
+    # Draw a blue cross at points in idxes2 and a blue line to connect them
+    ax2.scatter(tsne_representations[idxes2[0],0], tsne_representations[idxes2[0],1], s=60, facecolors='none', edgecolors='blue', linewidths=2, zorder=10)
+    ax2.scatter(tsne_representations[idxes2[1],0], tsne_representations[idxes2[1],1], s=60, marker='x', c='blue', linewidths=2, zorder=10)
+    ax2.plot([tsne_representations[idxes2[0],0], tsne_representations[idxes2[1],0]], [tsne_representations[idxes2[0],1], tsne_representations[idxes2[1],1]], color='blue', linewidth=2, zorder=10)
 
     # Save the figure
     title = get_experiment_title(exp_name)
