@@ -5,7 +5,6 @@ import numpy as np
 import argparse
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-import matplotlib
 from latent_episodes import CustomReplayBuffer
 
 WEATHER_PRESETS =  {
@@ -22,9 +21,9 @@ WEATHER_PRESETS =  {
                     8: 'WetCloudySunset*',
                     9: 'HardRainNoon*'}
 
-SELECTED_OBSERVATIONS = {'scenario_1': [5035, 7109, 0],
-                         'scenario_2': [0, 0, 0],
-                         'scenario_3': [0, 0, 0]}
+def find_nearest(array, value):
+    idx = (np.linalg.norm(array - value, axis=1)).argmin()
+    return idx
 
 def get_experiment_title(name):
     title = None
@@ -59,19 +58,6 @@ def plot_latent_tsne(file_path, file_name):
         representations = f['representations']
         tsne_representations = f['tsne_representations']
 
-    # Visualize selected observations
-    for scenario in SELECTED_OBSERVATIONS:
-        fig, axs = plt.subplots(1, 3, figsize=(8, 4))
-        for i in range(len(axs)):
-            obs = replay_buffer.obses[SELECTED_OBSERVATIONS[scenario][i], 0:3, :, :]
-            obs = obs.transpose(1, 2, 0)
-            axs[i].imshow(obs)
-            axs[i].tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-            axs[i].set_title(f'Observation {SELECTED_OBSERVATIONS[scenario][i]}')
-        plt.tight_layout()
-        plt.show()
-
-
     # Print some statistics
     print('-'*50)
     print(f'Mean Q-value: {np.mean(q_values)}')
@@ -84,8 +70,68 @@ def plot_latent_tsne(file_path, file_name):
     min_tick = int(np.mean(q_values) - nb_std*np.std(q_values))
     print('-'*50)
 
+    # Get experiment name
+    exp_name = file_name.split('.')[0]
+
+    ###################################################
+    ### Specific observations in latent space plots ###
+    ###################################################
+    if exp_name == 'pixel_sac':
+        point1 = np.array([])
+        point2 = np.array([])
+        point3 = np.array([])
+    elif exp_name == 'identity':
+        point1 = np.array([])
+        point2 = np.array([])
+        point3 = np.array([])
+    elif exp_name == 'random_crop':
+        point1 = np.array([])
+        point2 = np.array([])
+        point3 = np.array([])
+    elif exp_name == 'color_jiggle':
+        point1 = np.array([-57.124, 51.5779])
+        point2 = np.array([-59.461, 51.8416])
+        point3 = np.array([-59.007, 52.0403])
+    elif exp_name == 'noisy_cover':
+        point1 = np.array([])
+        point2 = np.array([])
+        point3 = np.array([])
+    
+    # Get average point to plot as a large red circle
+    avg_point = np.mean(np.stack([point1, point2, point3]), axis=0)
+
+    # Get indices of closest points found in t-SNE figure
+    idx1 = find_nearest(tsne_representations, point1)
+    idx2 = find_nearest(tsne_representations, point2)
+    idx3 = find_nearest(tsne_representations, point3)
+    idxes = [idx1, idx2, idx3]
+
+    # Process the corresponding observations
+    observations = [replay_buffer.obses[idx1],
+                replay_buffer.obses[idx2],
+                replay_buffer.obses[idx3]]
+    for i in range(len(observations)):
+        obs = observations[i]
+        obs = obs[0:3, :, :]
+        obs = np.transpose(obs, (1, 2, 0))
+        observations[i] = obs
+
+    # Plot the corresponding images
+    plt.figure(figsize=(12, 3), dpi=200)
+    for i in range(len(observations)):
+        plt.subplot(1, 3, i+1)
+        plt.imshow(observations[i])
+        plt.title(f'Weather: {WEATHER_PRESETS[replay_buffer.weather_preset_idxs[idxes[i]][0]]}')
+        plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(os.path.join(file_path, f'tsne_{exp_name}_images.png'))
+
+    ###########################################################
+    ### t-SNE plot of latents by Q-value and weather preset ###
+    ###########################################################
+
     # Figure settings
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), dpi=200)
     marker_size = 5
 
     # Visualize latent representations in function of Q-values
@@ -95,28 +141,8 @@ def plot_latent_tsne(file_path, file_name):
     cbar = plt.colorbar(scatter, ax=ax1, location='left', extend='both')
     cbar.set_label('Q Value')
 
-    # Visualize selected observations
-    marker_size_factor = 10
-    scatter_1 = ax1.scatter(tsne_representations[SELECTED_OBSERVATIONS['scenario_1'],0], 
-                            tsne_representations[SELECTED_OBSERVATIONS['scenario_1'],1], 
-                            c='red', marker='o', s=marker_size*marker_size_factor, facecolors='none', edgecolors='red')
-    for i, txt in enumerate(SELECTED_OBSERVATIONS['scenario_1']):
-        ax1.annotate(str(i), (tsne_representations[SELECTED_OBSERVATIONS['scenario_1'][i],0], 
-                           tsne_representations[SELECTED_OBSERVATIONS['scenario_1'][i],1]))
-        
-    # scatter_2 = ax1.scatter(tsne_representations[SELECTED_OBSERVATIONS['scenario_2'],0], 
-    #                         tsne_representations[SELECTED_OBSERVATIONS['scenario_2'],1], 
-    #                         c='red', marker='s', s=marker_size*marker_size_factor, facecolors='none', edgecolors='red')
-    # for i, txt in enumerate(SELECTED_OBSERVATIONS['scenario_2']):
-    #     ax1.annotate(str(i), (tsne_representations[SELECTED_OBSERVATIONS['scenario_2'][i],0], 
-    #                        tsne_representations[SELECTED_OBSERVATIONS['scenario_2'][i],1]))
-        
-    # scatter_3 = ax1.scatter(tsne_representations[SELECTED_OBSERVATIONS['scenario_3'],0], 
-    #                         tsne_representations[SELECTED_OBSERVATIONS['scenario_3'],1], 
-    #                         c='red', marker='^', s=marker_size*marker_size_factor, facecolors='none', edgecolors='red')
-    # for i, txt in enumerate(SELECTED_OBSERVATIONS['scenario_3']):
-    #     ax1.annotate(str(i), (tsne_representations[SELECTED_OBSERVATIONS['scenario_3'][i],0], 
-    #                        tsne_representations[SELECTED_OBSERVATIONS['scenario_3'][i],1]))
+    # Add avg_point to the plot as a large red circle
+    ax1.scatter(avg_point[0], avg_point[1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
 
     # Visualize latent representations in function of weather presets
     scatter = ax2.scatter(tsne_representations[:,0], tsne_representations[:,1], 
@@ -127,35 +153,42 @@ def plot_latent_tsne(file_path, file_name):
     cbar.set_ticklabels(WEATHER_PRESETS.values())
     cbar.set_label('Weather Preset')
 
+    # Add avg_point to the plot as a large red circle
+    ax2.scatter(avg_point[0], avg_point[1], s=60, facecolors='none', edgecolors='red', linewidths=2, zorder=10)
+
     # Save the figure
-    exp_name = file_name.split('.')[0]
     title = get_experiment_title(exp_name)
     fig.suptitle(f'{title}')
     plt.tight_layout()
+    # plt.show()
     plt.savefig(os.path.join(file_path, f'tsne_{exp_name}_values_weather.png'))
 
-    # Figure settings
-    fig, (ax3, ax4) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
-    marker_size = 5
+    #################################################
+    ### t-SNE plot of latents by reward and speed ###
+    #################################################
 
-    # Visualize latent representations in function of replay_buffer.rewards
-    scatter = ax3.scatter(tsne_representations[:,0], tsne_representations[:,1], 
-                          c=replay_buffer.rewards, cmap='viridis', s=marker_size, vmin=np.mean(replay_buffer.rewards)-np.std(replay_buffer.rewards), vmax=np.mean(replay_buffer.rewards)+np.std(replay_buffer.rewards))
-    ax3.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-    cbar = plt.colorbar(scatter, ax=ax3)
-    cbar.set_label('Reward')
+    # # Figure settings
+    # fig, (ax3, ax4) = plt.subplots(1, 2, figsize=(7, 3), dpi=200)
+    # marker_size = 5
 
-    # Visualize latent representations in function of replay_buffer.speeds
-    scatter = ax4.scatter(tsne_representations[:,0], tsne_representations[:,1], 
-                          c=replay_buffer.speeds, cmap='viridis', s=marker_size)
-    ax4.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-    cbar = plt.colorbar(scatter, ax=ax4)
-    cbar.set_label('Speed')
+    # # Visualize latent representations in function of replay_buffer.rewards
+    # scatter = ax3.scatter(tsne_representations[:,0], tsne_representations[:,1], 
+    #                       c=replay_buffer.rewards, cmap='viridis', s=marker_size, vmin=np.mean(replay_buffer.rewards)-np.std(replay_buffer.rewards), vmax=np.mean(replay_buffer.rewards)+np.std(replay_buffer.rewards))
+    # ax3.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+    # cbar = plt.colorbar(scatter, ax=ax3)
+    # cbar.set_label('Reward')
 
-    # Save the figure
-    fig.suptitle(f'{title}')
-    plt.tight_layout()
-    plt.savefig(os.path.join(file_path, f'tsne_{exp_name}_replay_buffer.rewards_replay_buffer.speeds.png'))
+    # # Visualize latent representations in function of replay_buffer.speeds
+    # scatter = ax4.scatter(tsne_representations[:,0], tsne_representations[:,1], 
+    #                       c=replay_buffer.speeds, cmap='viridis', s=marker_size)
+    # ax4.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+    # cbar = plt.colorbar(scatter, ax=ax4)
+    # cbar.set_label('Speed')
+
+    # # Save the figure
+    # fig.suptitle(f'{title}')
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(file_path, f'tsne_{exp_name}_rewards_speeds.png'))
 
 
 def main():
