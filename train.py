@@ -81,7 +81,7 @@ def parse_args():
     parser.add_argument('--encoder_tau', default=0.05, type=float)
     parser.add_argument('--num_layers', default=4, type=int)
     parser.add_argument('--num_filters', default=32, type=int)
-    parser.add_argument('--curl_latent_dim', default=128, type=int)
+    parser.add_argument('--detach_encoder', default=False, action='store_true')
 
     # Actor
     parser.add_argument('--actor_lr', default=1e-3, type=float)
@@ -110,7 +110,6 @@ def parse_args():
     parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--save_freq', default=100_000, type=int)
-    parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--log_interval', default=500, type=int)
     parser.add_argument('--log_param_hist_imgs', default=False, action='store_true')
     args = parser.parse_args()
@@ -218,7 +217,6 @@ def make_agent(obs_shape, action_shape, args, device, augmentor):
             log_interval=args.log_interval,
             log_param_hist_imgs = args.log_param_hist_imgs,
             detach_encoder=args.detach_encoder,
-            curl_latent_dim=args.curl_latent_dim,
             pixel_sac=args.pixel_sac,
         )
     
@@ -275,6 +273,7 @@ def main():
     ts = ts.strftime("%m-%d--%H-%M-%S")    
     env_name = args.carla_town
     exp_type = 'pixel_sac' if args.pixel_sac else str(args.augmentation)
+    if args.detach_encoder: exp_type += '_detached'
     exp_name = env_name + '--' + ts + '--im' + str(args.camera_image_height) + 'x' + str(args.camera_image_width) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed) + '-' + exp_type
     working_dir = os.path.join(working_dir, exp_name)

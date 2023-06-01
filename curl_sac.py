@@ -183,14 +183,10 @@ class CURL(nn.Module):
     CURL
     """
 
-    def __init__(self, obs_shape, z_dim, batch_size, critic, critic_target, output_type="continuous"):
+    def __init__(self, obs_shape, z_dim, critic, critic_target, output_type="continuous"):
         super(CURL, self).__init__()
-        self.batch_size = batch_size
-
         self.encoder = critic.encoder
-
         self.encoder_target = critic_target.encoder 
-
         self.W = nn.Parameter(torch.rand(z_dim, z_dim))
         self.output_type = output_type
 
@@ -254,7 +250,6 @@ class CurlSacAgent(object):
         log_interval=100,
         log_param_hist_imgs=False,
         detach_encoder=False,
-        curl_latent_dim=128,
         pixel_sac=False
     ):
         self.augmentor = augmentor
@@ -268,7 +263,6 @@ class CurlSacAgent(object):
         self.log_interval = log_interval
         self.log_param_hist_imgs = log_param_hist_imgs
         self.image_shape = obs_shape[-2:]
-        self.curl_latent_dim = curl_latent_dim
         self.detach_encoder = detach_encoder
         self.pixel_sac = pixel_sac
 
@@ -307,8 +301,9 @@ class CurlSacAgent(object):
         self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=alpha_lr, betas=(alpha_beta, 0.999))
 
         # Create CURL encoder (the 128 batch size is probably unnecessary)
-        self.CURL = CURL(obs_shape, encoder_feature_dim, self.curl_latent_dim, 
-                            self.critic,self.critic_target, output_type='continuous').to(self.device)
+        self.CURL = CURL(obs_shape, encoder_feature_dim,
+                            self.critic,self.critic_target,
+                            output_type='continuous').to(self.device)
 
         # Optimizer for critic encoder for reconstruction loss
         self.encoder_optimizer = torch.optim.Adam(self.critic.encoder.parameters(), lr=encoder_lr)
