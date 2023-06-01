@@ -12,6 +12,20 @@ from video import VideoRecorder
 from train import make_agent
 from torch.utils.data import Dataset
 
+WEATHER_PRESETS =  {# Original weather presets
+                    'ClearNoon': carla.WeatherParameters.ClearNoon,
+                    'ClearSunset': carla.WeatherParameters.ClearSunset, 
+                    'CloudyNoon': carla.WeatherParameters.CloudyNoon,
+                    'CloudySunset': carla.WeatherParameters.CloudySunset,
+                    'WetNoon': carla.WeatherParameters.WetNoon,
+                    'WetSunset': carla.WeatherParameters.WetSunset, 
+                    'MidRainSunset': carla.WeatherParameters.MidRainSunset,
+                    # Novel weather presets
+                    'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
+                    'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
+                    'HardRainNoon': carla.WeatherParameters.HardRainNoon
+                    }
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_dir_path', default='', type=str)
@@ -19,14 +33,15 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def make_env(args):
+def make_env(args, weather_presets):
 
     # Initialize the CARLA environment
     env = carla_env.CarlaEnv(args.carla_town, args.max_npc_vehicles, 
                    args.desired_speed, args.max_stall_time, args.stall_speed, args.seconds_per_episode,
                    args.fps, 2000, 8000, args.env_verbose, args.camera_image_height, args.camera_image_width, 
                    args.fov, args.cam_x, args.cam_y, args.cam_z, args.cam_pitch,
-                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5)
+                   args.lambda_r1, args.lambda_r2, args.lambda_r3, args.lambda_r4, args.lambda_r5,
+                   weather_presets=weather_presets)
     
     # Set the random seed and reset
     env.seed(args.seed)
@@ -39,7 +54,7 @@ def make_env(args):
 
 class CustomReplayBuffer(Dataset):
     
-    def __init__(self, obs_shape, action_shape, capacity):
+    def __init__(self, obs_shape=(90,160), action_shape=(2,), capacity=20_000):
 
         # Initialize the replay buffer
         self.capacity = capacity
@@ -110,6 +125,7 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
                 obs = env.reset()
                 weather_preset_idx = env.weather_preset_idx
                 video.init(enabled=True)
+                print(f'Episode {episode} - Weather preset: {list(WEATHER_PRESETS.keys())[weather_preset_idx]}')
                 done = False
                 episode += 1
                 episode_step = 0
@@ -154,8 +170,13 @@ def main():
     camera_image_shape = (args.camera_image_height, args.camera_image_width)
     augmentor = make_augmentor(args.augmentation, camera_image_shape)
 
-    # Launch the CARLA server and load the model
-    env = make_env(args)
+    # Limit episodes to 40 seconds
+    args.seconds_per_episode = 40
+
+    # Include novel weather presets for evaluation
+    env = make_env(args, list(WEATHER_PRESETS.values()))
+
+    # Initialize the agent
     action_shape = env.action_space.shape
     pre_aug_obs_shape = env.observation_space.shape
     obs_shape = (3*args.frame_stack, args.augmented_image_height, args.augmented_image_width)
@@ -165,7 +186,7 @@ def main():
     agent.load(model_dir_path, str(args.augmentation), str(args.model_step))
 
     # Run the episode
-    run_episodes(env, agent, augmentor, nb_steps=15_000)
+    run_episodes(env, agent, augmentor, nb_steps=20_000)
 
     # Deactivate the environment (kills the CARLA server)
     env.deactivate()
