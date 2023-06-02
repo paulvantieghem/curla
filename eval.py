@@ -53,7 +53,7 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
             while not done:
 
                 # Perform anchor augmentation
-                obs = augmentor.anchor_augmentation(obs)
+                obs = augmentor.evaluation_augmentation(obs)
 
                 # Sample action from agent
                 with utils.eval_mode(agent):

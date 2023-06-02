@@ -10,10 +10,10 @@ class IdentityAugmentation:
         self.input_shape = input_shape
         self.output_shape = input_shape
 
-    def anchor_augmentation(self, image):
+    def evaluation_augmentation(self, image):
         return image
 
-    def target_augmentation(self, image_batch):
+    def training_augmentation(self, image_batch):
         return image_batch
 
 
@@ -23,7 +23,7 @@ class RandomCrop(IdentityAugmentation):
         self.cropping_factor = 0.84
         self.output_shape = tuple(int(np.ceil(x*self.cropping_factor)) for x in self.input_shape)
 
-    def anchor_augmentation(self, image):
+    def evaluation_augmentation(self, image):
         '''
         Performs a center crop on the input image to the output shape
 
@@ -44,7 +44,7 @@ class RandomCrop(IdentityAugmentation):
 
         return cropped_image
 
-    def target_augmentation(self, image_batch):
+    def training_augmentation(self, image_batch):
         '''
         Performs random cropping on a batch of images in a vectorized 
         way using sliding windows and picking out random ones
@@ -91,7 +91,7 @@ class ColorJiggle(IdentityAugmentation):
                                  keepdim=True)
 
 
-    def anchor_augmentation(self, image):
+    def evaluation_augmentation(self, image):
         '''
         Returns the original image
 
@@ -103,7 +103,7 @@ class ColorJiggle(IdentityAugmentation):
 
         return image
     
-    def target_augmentation(self, image_batch):
+    def training_augmentation(self, image_batch):
         '''
         Applies a random transformation to the brightness, contrast, saturation 
         and hue of the image batch
@@ -157,7 +157,7 @@ class NoisyCover(IdentityAugmentation):
         self.aug = K.RandomGaussianNoise(mean=0.0, std=10.0, p=1.0)
 
 
-    def anchor_augmentation(self, image):
+    def evaluation_augmentation(self, image):
         '''
         Returns the original image
 
@@ -169,7 +169,7 @@ class NoisyCover(IdentityAugmentation):
 
         return image
     
-    def target_augmentation(self, image_batch):
+    def training_augmentation(self, image_batch):
         '''
         Applies a random transformation to the brightness, contrast, saturation 
         and hue of the image batch

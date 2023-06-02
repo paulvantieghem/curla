@@ -336,7 +336,7 @@ class CurlSacAgent(object):
 
     def sample_action(self, obs):
         if obs.shape[-2:] != self.image_shape:
-            obs = self.augmentor.anchor_augmentation(obs)
+            obs = self.augmentor.evaluation_augmentation(obs)
  
         with torch.no_grad():
             obs = torch.FloatTensor(obs).to(self.device)

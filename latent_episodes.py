@@ -132,7 +132,7 @@ def run_episodes(env, agent, augmentor, nb_steps=1000):
                 cumul_reward = 0
 
             # Perform anchor augmentation
-            obs = augmentor.anchor_augmentation(obs)
+            obs = augmentor.evaluation_augmentation(obs)
 
             # Sample action from agent
             with utils.eval_mode(agent):

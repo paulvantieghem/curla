@@ -153,9 +153,9 @@ class ReplayBuffer(Dataset):
             pos = obses.copy()
 
             # Apply augmentations to the targets
-            obses = self.augmentor.target_augmentation(obses)
-            next_obses = self.augmentor.target_augmentation(next_obses)
-            pos = self.augmentor.target_augmentation(pos)
+            obses = self.augmentor.training_augmentation(obses)
+            next_obses = self.augmentor.training_augmentation(next_obses)
+            pos = self.augmentor.training_augmentation(pos)
 
             # Index and convert to PyTorch tensors on the device
             obses = torch.as_tensor(obses, device=self.device).float()
@@ -177,9 +177,9 @@ class ReplayBuffer(Dataset):
             pos = torch.as_tensor(pos, device=self.device).float()
 
             # Apply augmentations to the targets
-            obses = self.augmentor.target_augmentation(obses)
-            next_obses = self.augmentor.target_augmentation(next_obses)
-            pos = self.augmentor.target_augmentation(pos)
+            obses = self.augmentor.training_augmentation(obses)
+            next_obses = self.augmentor.training_augmentation(next_obses)
+            pos = self.augmentor.training_augmentation(pos)
 
         # Store CPC kwargs in a dict
         cpc_kwargs = dict(obs_anchor=obses, obs_pos=pos, time_anchor=None, time_pos=None)

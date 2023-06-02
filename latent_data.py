@@ -74,7 +74,7 @@ def main():
         weather_preset_idx
 
         # Perform anchor augmentation
-        obs = augmentor.anchor_augmentation(obs)
+        obs = augmentor.evaluation_augmentation(obs)
 
         # Get the latent representation
         with torch.no_grad():

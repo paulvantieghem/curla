@@ -16,7 +16,7 @@ frame_batch = np.expand_dims(frame_stack, axis=0)
 frame_batch = np.concatenate([frame_batch, frame_batch], axis=0).astype(np.float32)
 
 # Loop over augmentations and visualize
-augmentations = ['identity', 'random_crop', 'color_jiggle','noisy_cover']
+augmentations = ['Identity', 'Random Crop', 'Color Jiggle','Noisy Cover']
 fig, axs = plt.subplots(len(augmentations), 2, figsize=(10, 15), dpi=300)
 for aug in augmentations:
     frame_stack = np.concatenate(frames, axis=0).astype(np.float32)
@@ -26,8 +26,8 @@ for aug in augmentations:
     if aug == 'color_jiggle' or aug == 'noisy_cover':
         frame_stack = torch.as_tensor(frame_stack, device='cuda')
         frame_batch = torch.as_tensor(frame_batch, device='cuda')
-    anchor_aug = augmentor.anchor_augmentation(frame_stack)
-    target_aug = augmentor.target_augmentation(frame_batch)[0]
+    anchor_aug = augmentor.evaluation_augmentation(frame_stack)
+    target_aug = augmentor.training_augmentation(frame_batch)[0]
     if aug == 'color_jiggle' or aug == 'noisy_cover':
         anchor_aug = anchor_aug.detach().cpu().numpy()
         target_aug = target_aug.detach().cpu().numpy()
@@ -39,8 +39,8 @@ for aug in augmentations:
     target_aug = cv2.cvtColor(target_aug, cv2.COLOR_BGR2RGB)
     axs[augmentations.index(aug), 0].imshow(anchor_aug)
     axs[augmentations.index(aug), 1].imshow(target_aug)
-    axs[augmentations.index(aug), 0].set_title(f'{aug} anchor augmentation')
-    axs[augmentations.index(aug), 1].set_title(f'{aug} target augmentation')
+    axs[augmentations.index(aug), 0].set_title(f'{aug} - Evaluation Augmentation')
+    axs[augmentations.index(aug), 1].set_title(f'{aug} - Training Augmentation')
     axs[augmentations.index(aug), 0].axis('off')
     axs[augmentations.index(aug), 1].axis('off')
 fig.tight_layout()

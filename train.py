@@ -135,7 +135,7 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
                 time.sleep(1.0/float(args.fps))
                 
                 # Apply anchor augmentation
-                obs = augmentor.anchor_augmentation(obs)
+                obs = augmentor.evaluation_augmentation(obs)
                 
                 # Sample action from agent
                 with utils.eval_mode(agent):
