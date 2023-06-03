@@ -16,7 +16,8 @@ Note: The oscillations due to sudden steering commands are partly due to the phy
 
 Augmentations to choose from:
 
-![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/a8e961f8-17db-41df-9c82-79406c9489af)
+![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383)
+
 
 
 ### 1. Installation
