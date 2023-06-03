@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Input image
-image = cv2.imread(os.path.join('_out', 'im_2_133.png'))
+image = cv2.imread(os.path.join('_out', 'im_0_0.png'))
 
 # Create a frame stack
 image = np.transpose(image, (2, 0, 1))
@@ -16,7 +16,7 @@ frame_batch = np.expand_dims(frame_stack, axis=0)
 frame_batch = np.concatenate([frame_batch, frame_batch], axis=0).astype(np.float32)
 
 # Loop over augmentations and visualize
-augmentations = ['Identity', 'Random Crop', 'Color Jiggle','Noisy Cover']
+augmentations = ['identity', 'random_crop', 'color_jiggle','noisy_cover']
 fig, axs = plt.subplots(len(augmentations), 2, figsize=(10, 15), dpi=300)
 for aug in augmentations:
     frame_stack = np.concatenate(frames, axis=0).astype(np.float32)
@@ -41,7 +41,7 @@ for aug in augmentations:
     axs[augmentations.index(aug), 1].imshow(target_aug)
     axs[augmentations.index(aug), 0].set_title(f'{aug} - Evaluation Augmentation')
     axs[augmentations.index(aug), 1].set_title(f'{aug} - Training Augmentation')
-    axs[augmentations.index(aug), 0].axis('off')
-    axs[augmentations.index(aug), 1].axis('off')
+    # axs[augmentations.index(aug), 0].axis('off')
+    # axs[augmentations.index(aug), 1].axis('off')
 fig.tight_layout()
 plt.savefig(os.path.join('augmentations.png'))

@@ -6,7 +6,7 @@ experiments/
 debug_commands.md
 latent_data/
 old_latent_data/
-eval_results.csv
+eval_results*.csv
 test.py
 
 # macOS files

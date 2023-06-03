@@ -11,9 +11,23 @@ import carla_env
 from video import VideoRecorder
 from train import make_agent
 
-WEATHER_PRESETS =  {'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
-                    'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
-                    'HardRainNoon': carla.WeatherParameters.HardRainNoon}
+USE_NOVEL_PRESETS = False
+
+if USE_NOVEL_PRESETS:
+    # Evaluation weather presets
+    WEATHER_PRESETS =  {'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
+                        'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
+                        'HardRainNoon': carla.WeatherParameters.HardRainNoon}
+
+else:
+    # Training weather presets
+    WEATHER_PRESETS = {'ClearNoon': carla.WeatherParameters.ClearNoon,
+                        'ClearSunset': carla.WeatherParameters.ClearSunset,
+                        'CloudyNoon': carla.WeatherParameters.CloudyNoon,
+                        'CloudySunset': carla.WeatherParameters.CloudySunset,
+                        'WetNoon': carla.WeatherParameters.WetNoon,
+                        'WetSunset': carla.WeatherParameters.WetSunset,
+                        'MidRainSunset': carla.WeatherParameters.MidRainSunset}
                     
 
 def parse_args():
@@ -72,8 +86,15 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
             ep_rewards.append(episode_reward)
             print('Episode %d/%d | Weather preset: %s | Cumulative reward: %f | Steps: %f' % (i + 1, num_episodes, chosen_preset, episode_reward, episode_step))
 
-        # Add mean, max, min, std of rewards and steps to file as line to eval_results.csv
-        with open('./eval_results.csv', 'a') as f:
+        # Write results to csv file
+        if USE_NOVEL_PRESETS:
+            results_path = './eval_results_novel.csv'
+        else:
+            results_path = './eval_results_train.csv'
+        if not os.path.exists(results_path):
+            with open(results_path, 'w') as f:
+                f.write('experiment, mean_reward, max_reward, min_reward, std_reward, mean_steps, max_steps, min_steps, std_steps\n')
+        with open(results_path, 'a') as f:
             f.write(f'{exp_name},{int(np.mean(ep_rewards))},{int(np.max(ep_rewards))},{int(np.min(ep_rewards))},{int(np.std(ep_rewards))},{int(np.mean(ep_steps))},{int(np.max(ep_steps))},{int(np.min(ep_steps))},{int(np.std(ep_steps))}\n')
         
         return ep_rewards, ep_steps
