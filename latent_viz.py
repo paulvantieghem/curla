@@ -229,7 +229,7 @@ def main():
 
     # Iterate over every .json file in the latent_data directory
     for file_name in os.listdir('./latent_data'):
-        exp_name = 'pixel_sac' if args.pixel_sac else str(args.augmentation)
+        exp_name = args.experiment_dir_path.split('-')[-1]
         if file_name.endswith('.npz') and exp_name in file_name:
             file_path = './latent_data'
             print(f'Plotting latent t-SNE for {file_name}')

@@ -114,7 +114,7 @@ def main():
     print('Done.')
 
     # Save latent_value_dict dictionary to file
-    exp_name = 'pixel_sac' if args.pixel_sac else str(args.augmentation)
+    exp_name = args.experiment_dir_path.split('-')[-1]
     np.savez_compressed(f'./latent_data/{exp_name}.npz',
                         representations=representations,
                         q_values=q_values,
