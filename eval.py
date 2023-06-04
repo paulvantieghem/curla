@@ -11,13 +11,17 @@ import carla_env
 from video import VideoRecorder
 from train import make_agent
 
-USE_NOVEL_PRESETS = False
+USE_NOVEL_PRESETS = True
 
 if USE_NOVEL_PRESETS:
     # Evaluation weather presets
     WEATHER_PRESETS =  {'MidRainyNoon': carla.WeatherParameters.MidRainyNoon,
+                        'WetCloudyNoon': carla.WeatherParameters.WetCloudyNoon,
                         'WetCloudySunset': carla.WeatherParameters.WetCloudySunset,
-                        'HardRainNoon': carla.WeatherParameters.HardRainNoon}
+                        'SoftRainNoon': carla.WeatherParameters.SoftRainNoon,
+                        'SoftRainSunset': carla.WeatherParameters.SoftRainSunset,
+                        'HardRainNoon': carla.WeatherParameters.HardRainNoon,
+                        'HardRainSunset': carla.WeatherParameters.HardRainSunset}
 
 else:
     # Training weather presets
@@ -93,9 +97,9 @@ def run_eval_loop(env, agent, augmentor, step, experiment_dir_path, num_episodes
             results_path = './eval_results_train.csv'
         if not os.path.exists(results_path):
             with open(results_path, 'w') as f:
-                f.write('experiment, mean_reward, max_reward, min_reward, std_reward, mean_steps, max_steps, min_steps, std_steps\n')
+                f.write('experiment, mean_reward, max_reward, min_reward, mean_steps, max_steps, min_steps\n')
         with open(results_path, 'a') as f:
-            f.write(f'{exp_name},{int(np.mean(ep_rewards))},{int(np.max(ep_rewards))},{int(np.min(ep_rewards))},{int(np.std(ep_rewards))},{int(np.mean(ep_steps))},{int(np.max(ep_steps))},{int(np.min(ep_steps))},{int(np.std(ep_steps))}\n')
+            f.write(f'{exp_name},{int(np.mean(ep_rewards))},{int(np.max(ep_rewards))},{int(np.min(ep_rewards))},{int(np.mean(ep_steps))},{int(np.max(ep_steps))},{int(np.min(ep_steps))}\n')
         
         return ep_rewards, ep_steps
 
