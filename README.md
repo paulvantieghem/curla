@@ -13,13 +13,6 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 
 **Note**: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
 
-
-Augmentations to choose from:
-
-![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383)
-
-
-
 ### 1. Installation
 System requirements:
 * Linux or Windows operating system
@@ -115,7 +108,8 @@ Tensorboard logging is enabled by default. To view the logs, run the following c
 tensorboard --logdir experiments --port 6006
 ```
 
-For custom training, have a look at the `train.py` file and the `settings.py` file.
+For custom training, have a look at the section `4. Custom Training`
+
 
 ### 3. Evaluation
 At each evaluation step during training, the current CURL model is saved in the `experiments/experiment_name/model` directory. To evaluate a saved model, run:
@@ -125,7 +119,11 @@ eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
 Here, `experiment_dir_path` is the path to the directory of the experiment you want to evaluate that contains the `model` directory, and `model_step` is the training step at which the model was saved. The rest of the arguments are automatically read from the `args.log` file in the experiment directory to match the training arguments exactly.
 
 
+# 4. Custom Training
 
+Augmentations to choose from:
+
+![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383)
 
 
 
