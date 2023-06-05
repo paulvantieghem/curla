@@ -22,6 +22,12 @@ WEATHER_PRESETS =  {
                     8: 'WetCloudySunset*',
                     9: 'HardRainNoon*'}
 
+def cosine_similarity(x, Y):
+    sim = np.zeros(Y.shape[0])
+    for i in range(Y.shape[0]):
+        sim[i] = np.dot(x, Y[i]) / (np.linalg.norm(x) * np.linalg.norm(Y[i]))
+    return sim
+
 def get_closest_obs_diff_weather(idx, representations, replay_buffer):
 
     # Get the closest observation in latent space to the idx-th observation with a different weather preset
@@ -36,6 +42,7 @@ def get_closest_obs_diff_weather(idx, representations, replay_buffer):
                 idxes.append(i)
     idxes = np.array(idxes)
     idxes = idxes[np.argsort(np.linalg.norm(representations[idxes] - representations[idx], axis=1))]
+    # idxes = idxes[np.argsort(cosine_similarity(representations[idx], representations[idxes]))]
     idx1 = idxes[0]
     distance1 = np.linalg.norm(representations[idx1] - representations[idx])
 

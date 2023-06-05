@@ -107,11 +107,25 @@ def main():
     representations = np.array(representations, dtype=np.float32)
     q_values = np.array(q_values, dtype=np.float32)
 
+    # # Calculate the cosine similarity between the latent representations
+    # from sklearn.metrics.pairwise import cosine_similarity
+    # S = cosine_similarity(representations)
+    # D = 1. - S
+
     # Perform t-SNE on the latent representations
     tsne = TSNE(n_components=2)
     print('Performing t-SNE on the latent representations...')
     tsne_representations = tsne.fit_transform(representations)
+    # tsne_representations = tsne.fit_transform(D)
     print('Done.')
+
+    # # Use PCA to reduce the dimensionality of the latent representations
+    # from sklearn.decomposition import PCA
+    # pca = PCA(n_components=2)
+    # print('Performing PCA on the latent representations...')
+    # pca_representations = pca.fit_transform(representations)
+    # print('Done.')
+
 
     # Save latent_value_dict dictionary to file
     exp_name = args.experiment_dir_path.split('-')[-1]
