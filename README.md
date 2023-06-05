@@ -119,7 +119,7 @@ eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
 Here, `experiment_dir_path` is the path to the directory of the experiment you want to evaluate that contains the `model` directory, and `model_step` is the training step at which the model was saved. The rest of the arguments are automatically read from the `args.log` file in the experiment directory to match the training arguments exactly.
 
 
-# 4. Custom Training
+### 4. Custom Training
 
 Augmentations to choose from:
 
