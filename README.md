@@ -16,9 +16,13 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 
 #### Visualization of the latent space representations
 
-![tsne_color_jiggle_values_weather](https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d)
-![tsne_color_jiggle_images](https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42)
+<p align="center">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d" width="600">
+</p>
 
+<p align="center">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="600">
+</p>
 
 
 ### 1. Installation
@@ -139,8 +143,9 @@ Possible methods to train agents:
 For hyperparameter tweaking and simulator settings, have a look at the arguments that can be passed to `train.py` and the configuration in `settings.py`.
 
 Visualization of the augmentations:
-![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383)
 
-
+<p align="center">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383" width="600">
+</p>
 
 
