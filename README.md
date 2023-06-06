@@ -132,7 +132,7 @@ Possible methods to train agents:
 * CURL with the color jiggle augmentation: `python train.py --augmentation color_jiggle`
 * CURL with the noisy cover augmentation: `python train.py --augmentation noisy_cover`
 
-Custom augmentations can be added to `augmentations.py`
+For hyperparameter tweaking and simulator settings, have a look at the arguments that can be passed to `train.py` and the configuration in `settings.py`. Custom augmentations can be added to `augmentations.py`
 
 Visualization of the augmentations:
 
@@ -157,6 +157,4 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 <p align="center">
   <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="500">
 </p>
-
-For hyperparameter tweaking and simulator settings, have a look at the arguments that can be passed to `train.py` and the configuration in `settings.py`.
 
