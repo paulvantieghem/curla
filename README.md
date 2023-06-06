@@ -17,11 +17,11 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 #### Visualization of the latent space representations
 
 <p align="center">
-  <img src="https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d" width="600">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d" width="800">
 </p>
 
 <p align="center">
-  <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="600">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="500">
 </p>
 
 
