@@ -144,7 +144,8 @@ Visualization of the augmentations:
 
 #### 5.1 Evaluation video <a name="evaluation_video"></a>
 
-https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-0e9e9619f4fe
+https://github.com/paulvantieghem/curla/assets/43028370/e99d6bba-9fdd-4a3f-a4dd-5bb5cd40baf9
+
 
 **Note**: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
 
