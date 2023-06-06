@@ -5,8 +5,14 @@ Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinf
 * CURL: Contrastive Unsupervised Representations for Reinforcement Learning (Laskin et al., 2020) [[Paper](https://arxiv.org/abs/2004.04136)/[Code](https://github.com/MishaLaskin/curl)].
 * CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
 
+# Table of contents
+1. [Example results](#example_results)
+2. [Installation](#installation)
+3. [Training](#training)
+4. [Evaluation](#evaluation)
+5. [Custom Training](#custom_training)
 
-### 0. Example results
+### 0. Example results <a name="example_results"></a>
 
 #### Evaluation video
 
@@ -25,7 +31,7 @@ https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-
 </p>
 
 
-### 1. Installation
+### 1. Installation <a name="installation"></a>
 System requirements:
 * Linux or Windows operating system
 * An NVIDIA GPU with at least 6GB of memory
@@ -76,7 +82,7 @@ conda develop path/to/my_project/carla/PythonAPI/carla/dist/carla-0.9.8-py3.5-li
 conda deactivate
 ```
 
-### 2. Training
+### 2. Training <a name="training"></a>
 
 To train a CURL agent for `N` training steps on the highway of `Town04` with the default (hyper)parameters, run the command listed below. Note that the `train.py` script will automatically launch the CARLA simulator, so no need to launch one manually.
 ```
@@ -123,7 +129,7 @@ tensorboard --logdir experiments --port 6006
 For custom training, have a look at the section `4. Custom Training`
 
 
-### 3. Evaluation
+### 3. Evaluation <a name="evaluation"></a>
 At each evaluation step during training, the current CURL model is saved in the `experiments/experiment_name/model` directory. To evaluate a saved model, run:
 ```
 eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
@@ -131,7 +137,7 @@ eval.py --experiment_dir_path path/to/experiment_name --model_step 1_000_000
 Here, `experiment_dir_path` is the path to the directory of the experiment you want to evaluate that contains the `model` directory, and `model_step` is the training step at which the model was saved. The rest of the arguments are automatically read from the `args.log` file in the experiment directory to match the training arguments exactly.
 
 
-### 4. Custom Training
+### 4. Custom Training <a name="custom_training"></a>
 
 Possible methods to train agents:
 * Pixel SAC: `python train.py --pixel_sac`
