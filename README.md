@@ -121,8 +121,16 @@ Here, `experiment_dir_path` is the path to the directory of the experiment you w
 
 ### 4. Custom Training
 
-Augmentations to choose from:
+Possible methods to train agents:
+* Pixel SAC: `python train.py --pixel_sac`
+* CURL with the identity augmentation: `python train.py --augmentation identity`
+* CURL with the random crop augmentation: `python train.py --augmentation random_crop`
+* CURL with the color jiggle augmentation: `python train.py --augmentation color_jiggle`
+* CURL with the noisy cover augmentation: `python train.py --augmentation noisy_cover`
 
+For hyperparameter tweaking and simulator settings, have a look at the arguments that can be passed to `train.py` and the configuration in `settings.py`.
+
+Visualization of the augmentations:
 ![augmentations](https://github.com/paulvantieghem/curla/assets/43028370/360ea7da-ed60-437b-b4c9-3e0c98aa1383)
 
 
