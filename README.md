@@ -6,29 +6,15 @@ Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinf
 * CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
 
 # Table of contents
-1. [Example results](#example_results)
-2. [Installation](#installation)
-3. [Training](#training)
-4. [Evaluation](#evaluation)
-5. [Custom Training](#custom_training)
-
-### 0. Example results <a name="example_results"></a>
-
-#### Evaluation video
-
-https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-0e9e9619f4fe
-
-**Note**: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
-
-#### Visualization of the latent space representations
-
-<p align="center">
-  <img src="https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d" width="800">
-</p>
-
-<p align="center">
-  <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="500">
-</p>
+1. [Installation](#installation)
+    1. [CURLA](#curla)
+    2. [CARLA](#carla)
+2. [Training](#training)
+3. [Evaluation](#evaluation)
+4. [Custom Training](#custom_training)
+5. [Example results](#example_results)
+    1. [Evaluation video](#evaluation_video)
+    2. [Visualization of the latent space representations](#latent_viz)
 
 
 ### 1. Installation <a name="installation"></a>
@@ -46,7 +32,7 @@ Recommended directory structure at the end of the installation:
 │   ├── carla
 ```
 
-#### 1.1 CURLA
+#### 1.1 CURLA <a name="curla"></a>
 Make the root directory and clone the curla repository:
 ```
 mkdir my_project
@@ -60,7 +46,7 @@ cd path/to/my_project/curla
 conda env create -f environment.yml
 ```
 
-#### 1.2 CARLA
+#### 1.2 CARLA <a name="carla"></a>
 The recommened version of the CARLA simulator is version `0.9.8`, because it is the most recent version proven to be stable enough not to crash during long experiments (~10^6 training steps). More recent versions of the CARLA simulator are compatible (versions `0.9.11` and `0.9.14` were also tested) with the code, but the CARLA simulator is prone to crashing during long training experiments.
 
 Download the CARLA `0.9.8` release and extract it in the `carla` directory:
@@ -145,6 +131,24 @@ Possible methods to train agents:
 * CURL with the random crop augmentation: `python train.py --augmentation random_crop`
 * CURL with the color jiggle augmentation: `python train.py --augmentation color_jiggle`
 * CURL with the noisy cover augmentation: `python train.py --augmentation noisy_cover`
+
+### 5. Example results <a name="example_results"></a>
+
+#### 5.1 Evaluation video <a name="evaluation_video"></a>
+
+https://github.com/paulvantieghem/curla/assets/43028370/ec6a1995-b94b-4f85-8145-0e9e9619f4fe
+
+**Note**: The oscillations due to sudden steering commands are partly due to the physics in CARLA version `0.9.8`. More recent versions (`>=0.9.10`) have updated turn physics, making the results much smoother. These newer versions of CARLA are not reliable/stable enough for long training however, as will be discuessed below. Another option is add a moving average to the steering command, but this comes at the risk of slower reactions.
+
+#### 5.2 Visualization of the latent space representations <a name="latent_viz"></a>
+
+<p align="center">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/40e75c63-4db8-441b-b5c5-8e230d32096d" width="800">
+</p>
+
+<p align="center">
+  <img src="https://github.com/paulvantieghem/curla/assets/43028370/cdd8736f-284f-436e-b810-0d8fe793ca42" width="500">
+</p>
 
 For hyperparameter tweaking and simulator settings, have a look at the arguments that can be passed to `train.py` and the configuration in `settings.py`.
 
