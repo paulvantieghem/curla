@@ -132,7 +132,7 @@ Possible methods to train agents:
 * CURL with the color jiggle augmentation: `python train.py --augmentation color_jiggle`
 * CURL with the noisy cover augmentation: `python train.py --augmentation noisy_cover`
 
-Custom augmentations can be added to `augmentation.py`
+Custom augmentations can be added to `augmentations.py`
 
 Visualization of the augmentations:
 
