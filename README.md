@@ -1,6 +1,6 @@
 # CURLA
 **CURLA: CURL x CARLA**   
-Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinforcement Learning
+Robust end-to-end Autonomous Driving by combining Contrastive Learning and Reinforcement Learning. This repository applies the CURL methodology to an end-to-end autonomous driving task in a custom simulated environment built on top of the CARLA simulator. The code allows users to train and evaluate visual RL agents using the Soft Actor-Critic (SAC) algorithm, combined with an auxiliary self-supervised contrastive learning task (instance discrimination) for better representation learning, leading to increased sample-efficiency and robustness/generalizability.
 
 * CURL: Contrastive Unsupervised Representations for Reinforcement Learning (Laskin et al., 2020) [[Paper](https://arxiv.org/abs/2004.04136)/[Code](https://github.com/MishaLaskin/curl)].
 * CARLA: Open-source simulator for autonomous driving research (Dosovitskiy et al., 2017) [[Paper](https://arxiv.org/abs/1711.03938)/[Code](https://github.com/carla-simulator/carla)].
