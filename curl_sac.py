@@ -58,7 +58,7 @@ class Actor(nn.Module):
     ):
         super().__init__()
 
-        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim)
 
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
@@ -143,7 +143,7 @@ class Critic(nn.Module):
 
         super().__init__()
 
-        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim)
 
         self.Q1 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
         self.Q2 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
