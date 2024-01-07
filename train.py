@@ -31,11 +31,11 @@ def parse_args():
     # Carla environment settings
     parser.add_argument('--carla_town', default='Town04', type=str)
     parser.add_argument('--max_npc_vehicles', default=10, type=int)
-    parser.add_argument('--desired_speed', default=65, type=int) # km/h | NPCs drive at 70% of the speed limit (90), which is 63 km/h
+    parser.add_argument('--desired_speed', default=63, type=int) # km/h | NPCs drive at 70% of the speed limit (90), which is 63 km/h
     parser.add_argument('--max_stall_time', default=5, type=int) # seconds
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
     parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
-    parser.add_argument('--fps', default=20, type=int) # Hz
+    parser.add_argument('--fps', default=10, type=int) # Hz
     parser.add_argument('--env_verbose', default=False, action='store_true') # Verbosity of the CARLA environment 'CarlaEnv' class
     parser.add_argument('--server_port', default=2000, type=int) # TCP port for the CARLA simulator
     parser.add_argument('--tm_port', default=8000, type=int) # TCP port for the Traffic Manager
@@ -67,7 +67,7 @@ def parse_args():
     parser.add_argument('--agent', default='curl_sac', type=str)
     parser.add_argument('--pixel_sac', default=False, action='store_true')
     parser.add_argument('--init_steps', default=1000, type=int)
-    parser.add_argument('--num_train_steps', default=1_000_000, type=int)
+    parser.add_argument('--num_train_steps', default=500_000, type=int)
     parser.add_argument('--batch_size', default=256, type=int)  # CURL paper: 512
     parser.add_argument('--hidden_dim', default=1024, type=int) # CURL paper: 1024
 

@@ -8,7 +8,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchinfo
 from typing import Tuple
 
 # Basic block for ResNet
@@ -135,7 +134,11 @@ if __name__ == "__main__":
     # Print the model summary
     batch_size = 256
     input_size = (batch_size, n_channels, height, width)
-    torchinfo.summary(model, input_size=input_size)
+    try:
+        import torchinfo
+        torchinfo.summary(model, input_size=input_size)
+    except:
+        print("Could not print model summary!")
 
     # Test copy_conv_weights_from feature
     model2 = CNNEncoder(obs_shape=obs_shape, latent_dim=latent_dim)
