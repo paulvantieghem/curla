@@ -64,7 +64,7 @@ class Actor(nn.Module):
         self.log_std_max = log_std_max
 
         self.trunk = nn.Sequential(
-            nn.Linear(self.encoder.feature_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(self.encoder.latent_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, 2 * action_shape[0])
         )
@@ -145,8 +145,8 @@ class Critic(nn.Module):
 
         self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim)
 
-        self.Q1 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
-        self.Q2 = QFunction(self.encoder.feature_dim, action_shape[0], hidden_dim)
+        self.Q1 = QFunction(self.encoder.latent_dim, action_shape[0], hidden_dim)
+        self.Q2 = QFunction(self.encoder.latent_dim, action_shape[0], hidden_dim)
 
         self.outputs = dict()
         self.apply(weight_init)

@@ -40,6 +40,8 @@ class BasicBlock(nn.Module):
 class CNNEncoder(nn.Module):
     def __init__(self, obs_shape: Tuple, latent_dim: int):
         super(CNNEncoder, self).__init__()
+        self.obs_shape = obs_shape
+        self.latent_dim = latent_dim
 
         # Assert correctness of input shape
         assert len(obs_shape) == 3, "'obs_shape' must be 3 dimensional (C, H, W)!"
