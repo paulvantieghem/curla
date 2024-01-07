@@ -168,8 +168,6 @@ class Critic(nn.Module):
         if step % log_freq != 0:
             return
 
-        self.encoder.log(L, step, log_freq)
-
         for k, v in self.outputs.items():
             L.log_histogram('train_critic/%s_hist' % k, v, step)
 
