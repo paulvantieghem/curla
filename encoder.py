@@ -68,7 +68,6 @@ class CNNEncoder(nn.Module):
         """Tie all convolutional layers of the encoder network with the source encoder network."""
         assert isinstance(source, CNNEncoder), "Source must be an instance of CNNEncoder!"
         for layer_self, layer_source in zip(self.convs, source.convs):
-            # Convulutional layers can be nested in Sequential layers within BasicBlock layers
             if isinstance(layer_self, nn.Conv2d) and isinstance(layer_source, nn.Conv2d):
                 # Copy the weights and biases
                 layer_self.weight.data.copy_(layer_source.weight.data)
@@ -78,9 +77,16 @@ class CNNEncoder(nn.Module):
             # Should take BasicBlock layers into account
             elif isinstance(layer_self, nn.Sequential) and isinstance(layer_source, nn.Sequential):
                 if isinstance(layer_self[0], BasicBlock) and isinstance(layer_source[0], BasicBlock):
-                    # Copy conv1 and conv2
-                    layer_self[0].conv1.weight.data.copy_(layer_source[0].conv1.weight.data)
-                    layer_self[0].conv2.weight.data.copy_(layer_source[0].conv2.weight.data)
+                    # Copy conv1, bn1, conv2, bn2
+                    for self_conv, source_conv in zip([layer_self[0].conv1, layer_self[0].conv2], [layer_source[0].conv1, layer_source[0].conv2]):
+                        self_conv.weight.data.copy_(source_conv.weight.data)
+                        if self_conv.bias is not None:
+                            self_conv.bias.data.copy_(source_conv.bias.data)
+                    for self_bn, source_bn in zip([layer_self[0].bn1, layer_self[0].bn2], [layer_source[0].bn1, layer_source[0].bn2]):
+                        self_bn.weight.data.copy_(source_bn.weight.data)
+                        self_bn.bias.data.copy_(source_bn.bias.data)
+                        self_bn.running_mean.data.copy_(source_bn.running_mean.data)
+                        self_bn.running_var.data.copy_(source_bn.running_var.data)
                     
 # Get torch device
 def get_device():
@@ -125,13 +131,4 @@ if __name__ == "__main__":
     model2 = CNNEncoder(obs_shape=obs_shape, latent_dim=latent_dim)
     model2.to(device)
     model.copy_conv_weights_from(model2)
-    print("\nWeights of the convolutional layers of both models are equal: ")
-    for layer_self, layer_source in zip(model.convs, model2.convs):
-        if isinstance(layer_self, nn.Conv2d) and isinstance(layer_source, nn.Conv2d):
-            print("1:", torch.equal(layer_self.weight.data, layer_source.weight.data))
-        elif isinstance(layer_self, nn.Sequential) and isinstance(layer_source, nn.Sequential):
-            print(layer_self._get_name())
-            if isinstance(layer_self[0], BasicBlock) and isinstance(layer_source[0], BasicBlock):
-                print("2:", torch.equal(layer_self[0].conv1.weight.data, layer_source[0].conv1.weight.data))
-                print("3:", torch.equal(layer_self[0].conv2.weight.data, layer_source[0].conv2.weight.data))
 
