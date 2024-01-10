@@ -41,8 +41,8 @@ def parse_args():
     parser.add_argument('--tm_port', default=8000, type=int) # TCP port for the Traffic Manager
 
     # Carla camera settings
-    parser.add_argument('--camera_image_height', default=128, type=int) # pixels
-    parser.add_argument('--camera_image_width', default=256, type=int)  # pixels
+    parser.add_argument('--camera_image_height', default=90, type=int) # pixels
+    parser.add_argument('--camera_image_width', default=160, type=int)  # pixels
     parser.add_argument('--cam_x', default=1.3, type=float)     # meters
     parser.add_argument('--cam_y', default=0.0, type=float)     # meters
     parser.add_argument('--cam_z', default=1.75, type=float)    # meters
