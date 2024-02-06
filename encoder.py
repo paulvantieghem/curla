@@ -147,8 +147,8 @@ if __name__ == "__main__":
     height = 90
     width = 160
     obs_shape = (n_channels, height, width)
-    latent_dim = 50
-    model = CNNEncoder(obs_shape=obs_shape, feature_dim=latent_dim, num_layers=4, num_filters=32, output_logits=False)
+    feature_dim = 50
+    model = CNNEncoder(obs_shape=obs_shape, feature_dim=feature_dim, num_layers=4, num_filters=32, output_logits=False)
     device = get_device()
     model.to(device)
 
