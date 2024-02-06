@@ -650,7 +650,7 @@ class CarlaEnv:
         x = frame.shape[1] - 170
 
         # Add driving mode information to the frame as text
-        if self.curl_driving:
+        if not self.curl_driving:
             # Write 'Autopilot: OFF' in red
             mode_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
             cv2.putText(frame, 'Autopilot: OFF', (x, 30), *mode_settings)

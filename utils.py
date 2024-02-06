@@ -248,15 +248,18 @@ class FrameStack(gym.Wrapper):
             dtype=env.observation_space.dtype
         )
         self._max_episode_steps = env._max_episode_steps
+        self.curl_driving = False
 
     def reset(self):
         obs = self.env.reset()
+        self.curl_driving = self.env.curl_driving
         for _ in range(self._k):
             self._frames.append(obs)
         return self._get_obs()
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
+        self.env.curl_driving = self.curl_driving
         self._frames.append(obs)
         return self._get_obs(), reward, done, info
 
