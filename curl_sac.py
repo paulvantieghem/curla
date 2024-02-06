@@ -62,7 +62,7 @@ class Actor(nn.Module):
     ):
         super().__init__()
 
-        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim)
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
 
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
@@ -147,7 +147,7 @@ class Critic(nn.Module):
 
         super().__init__()
 
-        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim)
+        self.encoder = encoder.CNNEncoder(obs_shape, encoder_feature_dim, num_layers, num_filters, output_logits=True)
 
         self.Q1 = QFunction(self.encoder.latent_dim, action_shape[0], hidden_dim)
         self.Q2 = QFunction(self.encoder.latent_dim, action_shape[0], hidden_dim)
@@ -302,7 +302,7 @@ class CurlSacAgent(object):
 
         self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=alpha_lr, betas=(alpha_beta, 0.999))
 
-        # Create CURL encoder (the 128 batch size is probably unnecessary)
+        # Create CURL encoder
         self.CURL = CURL(obs_shape, encoder_feature_dim,
                             self.critic,self.critic_target,
                             output_type='continuous').to(self.device)
@@ -423,7 +423,7 @@ class CurlSacAgent(object):
             L.log('train/curl_loss', loss, step)
 
 
-    def update(self, replay_buffer, L, step):
+    def update(self, replay_buffer, L, step, only_cpc=False):
 
         # Sample a batch from the replay buffer
         obs, action, reward, next_obs, not_done, cpc_kwargs = replay_buffer.sample_cpc()
@@ -431,16 +431,20 @@ class CurlSacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
 
-        self.update_critic(obs, action, reward, next_obs, not_done, L, step)
+        # Update the critic and actor
+        if not only_cpc:
 
-        if step % self.actor_update_freq == 0:
-            self.update_actor_and_alpha(obs, L, step)
+            self.update_critic(obs, action, reward, next_obs, not_done, L, step)
 
-        if step % self.critic_target_update_freq == 0:
-            utils.soft_update_params(self.critic.Q1, self.critic_target.Q1, self.critic_tau)
-            utils.soft_update_params(self.critic.Q2, self.critic_target.Q2, self.critic_tau)
-            utils.soft_update_params(self.critic.encoder, self.critic_target.encoder, self.encoder_tau)
-        
+            if step % self.actor_update_freq == 0:
+                self.update_actor_and_alpha(obs, L, step)
+
+            if step % self.critic_target_update_freq == 0:
+                utils.soft_update_params(self.critic.Q1, self.critic_target.Q1, self.critic_tau)
+                utils.soft_update_params(self.critic.Q2, self.critic_target.Q2, self.critic_tau)
+                utils.soft_update_params(self.critic.encoder, self.critic_target.encoder, self.encoder_tau)
+
+        # Update the CURL encoder and the critic
         if not self.pixel_sac:
             if step % self.cpc_update_freq == 0:
                 obs_anchor, obs_pos = cpc_kwargs["obs_anchor"], cpc_kwargs["obs_pos"]

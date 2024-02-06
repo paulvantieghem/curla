@@ -35,7 +35,8 @@ def parse_args():
     parser.add_argument('--max_stall_time', default=5, type=int) # seconds
     parser.add_argument('--stall_speed', default=0.5, type=float) # km/h
     parser.add_argument('--seconds_per_episode', default=50, type=int) # seconds
-    parser.add_argument('--fps', default=15, type=int) # Hz
+    parser.add_argument('--fps', default=20, type=int) # Hz
+    parser.add_argument('--start_acc_time', default=2.5, type=float) # seconds (acceleration time of the ego vehicle at the beginning of each episode)
     parser.add_argument('--env_verbose', default=False, action='store_true') # Verbosity of the CARLA environment 'CarlaEnv' class
     parser.add_argument('--server_port', default=2000, type=int) # TCP port for the CARLA simulator
     parser.add_argument('--tm_port', default=8000, type=int) # TCP port for the Traffic Manager
@@ -66,9 +67,9 @@ def parse_args():
     # Train
     parser.add_argument('--agent', default='curl_sac', type=str)
     parser.add_argument('--pixel_sac', default=False, action='store_true')
-    parser.add_argument('--init_steps', default=1000, type=int)
+    parser.add_argument('--init_steps', default=5_000, type=int)
     parser.add_argument('--num_train_steps', default=750_000, type=int)
-    parser.add_argument('--batch_size', default=256, type=int)  # CURL paper: 512
+    parser.add_argument('--batch_size', default=512, type=int)  # CURL paper: 512
     parser.add_argument('--hidden_dim', default=1024, type=int) # CURL paper: 1024
 
     # Eval
@@ -139,6 +140,7 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
                 
                 # Sample action from agent
                 with utils.eval_mode(agent):
+                    env.curl_driving = True
                     if sample_stochastically:
                         action = agent.sample_action(obs)
                     else:
@@ -328,6 +330,7 @@ def main():
 
     # Initializations
     episode, episode_reward, done, info = 0, 0, True, None
+
     fps = 0.0
     sys_mem_pcnt = 0.0
     proc_mem_GB = 0.0
@@ -397,18 +400,29 @@ def main():
             # Log episode stats
             L.log('train/episode', episode, step)
 
-        # Sample action from the agent
+        # Action to take depends on the number of steps taken so far
         if step < args.init_steps:
             # Sample a random action within the bounds of the action space
             action = env.action_space.sample()
+        elif episode_step < args.fps*args.start_acc_time:
+            # Accelerate in a straight line for the first 'args.start_acc_time' seconds
+            action = np.array([0.5, 0.0])
         else:
             # Evaluate the policy (CURL model) based on the observation
             with utils.eval_mode(agent):
+                env.curl_driving = True
                 action = agent.sample_action(obs)
 
         # Update the weights of the CURL model
         if step >= args.init_steps:
-            agent.update(replay_buffer, L, step)
+
+            # If the CURL agent isn't driving, only perform the CPC update
+            if episode_step < args.fps*args.start_acc_time:
+                agent.update(replay_buffer, L, step, only_cpc=True)
+
+            # Otherwise, perform the full CURL update
+            else:
+                agent.update(replay_buffer, L, step)
 
         # Take the environment step
         next_obs, reward, done, info = env.step(action)

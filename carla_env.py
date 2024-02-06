@@ -87,6 +87,7 @@ class CarlaEnv:
 
         # Initial values
         self.obs = None
+        self.curl_driving = False
 
         # Print ports
         print(f'CARLA server port: {self.server_port}')
@@ -319,6 +320,7 @@ class CarlaEnv:
         self.episode_step = 0
         self.stall_counter = 0
         self.abs_kmh = 0.0
+        self.curl_driving = False
         if self.verbose: print('episode started')
 
         return self.obs
@@ -644,28 +646,41 @@ class CarlaEnv:
             cv2.arrowedLine(frame, (x, y), (x - dx1, y + dy1), bar_color, 2, cv2.LINE_AA)
             cv2.arrowedLine(frame, (x, y), (x - dx2, y + dy2), (255, 255, 255), 1, cv2.LINE_AA)
 
+        # Get the x-coordinate for the episode information
+        x = frame.shape[1] - 170
+
+        # Add driving mode information to the frame as text
+        if self.curl_driving:
+            # Write 'Autopilot: OFF' in red
+            mode_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+            cv2.putText(frame, 'Autopilot: OFF', (x, 30), *mode_settings)
+        else:
+           # Write 'Autopilot: ON' in green
+            mode_settings = (cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+            cv2.putText(frame, 'Autopilot: ON', (x, 30), *mode_settings)
+
         # Add episode information to the frame as text
         if self.info is not None:
-            x = frame.shape[1] - 170
-            cv2.putText(frame, 'Cumulative reward', (x, 30), *text_settings)
+            
+            cv2.putText(frame, 'Cumulative reward', (x, 60), *text_settings)
             r1 = self.info['r1']
-            cv2.putText(frame, f'r1: +{np.abs(r1):.4f}', (x, 60), *text_settings)
+            cv2.putText(frame, f'r1: +{np.abs(r1):.4f}', (x, 90), *text_settings)
             r2 = self.info['r2']
-            cv2.putText(frame, f'r2: -{np.abs(r2):.4f}', (x, 90), *text_settings)
+            cv2.putText(frame, f'r2: -{np.abs(r2):.4f}', (x, 120), *text_settings)
             r3 = self.info['r3']
-            cv2.putText(frame, f'r3: -{np.abs(r3):.4f}', (x, 120), *text_settings)
+            cv2.putText(frame, f'r3: -{np.abs(r3):.4f}', (x, 150), *text_settings)
             r4 = self.info['r4']
-            cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 150), *text_settings)
+            cv2.putText(frame, f'r4: -{np.abs(r4):.4f}', (x, 180), *text_settings)
             r5 = self.info['r5']
-            cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 180), *text_settings)
+            cv2.putText(frame, f'r5: -{np.abs(r5):.4f}', (x, 210), *text_settings)
             r = r1 + r2 + r3 + r4 + r5
-            cv2.putText(frame, f'Total: {r:.1f}', (x, 210), *text_settings)
-            cv2.putText(frame, '-------------', (x, 240), *text_settings)
+            cv2.putText(frame, f'Total: {r:.1f}', (x, 240), *text_settings)
+            cv2.putText(frame, '-------------', (x, 270), *text_settings)
             mean_kmh = self.info['mean_kmh']
-            cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 270), *text_settings)
+            cv2.putText(frame, f'Mean km/h: {mean_kmh:.1f}', (x, 300), *text_settings)
             max_kmh = self.info['max_kmh']
-            cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 300), *text_settings)
-            cv2.putText(frame, f'Cur km/h:  {self.abs_kmh:.1f}', (x, 330), *text_settings)
+            cv2.putText(frame, f'Max km/h:  {max_kmh:.1f}', (x, 330), *text_settings)
+            cv2.putText(frame, f'Cur km/h:  {self.abs_kmh:.1f}', (x, 360), *text_settings)
 
         return frame
     
