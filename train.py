@@ -137,14 +137,18 @@ def run_eval_loop(env, agent, augmentor, video, num_episodes, L, step, args, sam
                 
                 # Apply anchor augmentation
                 obs = augmentor.evaluation_augmentation(obs)
-                
-                # Sample action from agent
-                with utils.eval_mode(agent):
-                    env.curl_driving = True
-                    if sample_stochastically:
-                        action = agent.sample_action(obs)
-                    else:
-                        action = agent.select_action(obs)
+
+                if episode_steps < args.fps*args.start_acc_time:
+                    # Accelerate in a straight line for the first 'args.start_acc_time' seconds
+                    action = np.array([0.5, 0.0])
+                else:
+                    # Sample action from agent
+                    with utils.eval_mode(agent):
+                        env.curl_driving = True
+                        if sample_stochastically:
+                            action = agent.sample_action(obs)
+                        else:
+                            action = agent.select_action(obs)
                         
                 # Take an environment step
                 obs, reward, done, info = env.step(action)
